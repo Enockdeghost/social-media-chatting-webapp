@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications {% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Header -->
+        <div class="sticky-top bg-dark pt-3 pb-2 border-bottom border-secondary">
+            <div class="d-flex justify-content-between align-items-center px-3">
+                <h5 class="fw-bold mb-0">Notifications</h5>
+                <button class="btn action-btn">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+
+            <!-- Notification Tabs -->
+            <nav class="nav nav-tabs border-0 mt-3" role="tablist">
+                <a class="nav-link active border-0 text-light" href="#">All</a>
+                <a class="nav-link border-0 text-light" href="#">Mentions</a>
+            </nav>
+        </div>
+
+        <!-- Notifications List -->
+        <div class="notifications-list">
+            {% for notification in notifications %}
+            <div class="post-card {% if not notification.is_read %}bg-opacity-10 bg-primary{% endif %}">
+                <div class="d-flex">
+                    <div class="me-3">
+                        {% if 'mentioned' in notification.content %}
+                        <div class="bg-info rounded-circle p-2">
+                            <i class="fas fa-at text-white"></i>
+                        </div>
+                        {% elif 'liked' in notification.content %}
+                        <div class="bg-danger rounded-circle p-2">
+                            <i class="fas fa-heart text-white"></i>
+                        </div>
+                        {% elif 'following' in notification.content %}
+                        <div class="bg-success rounded-circle p-2">
+                            <i class="fas fa-user-plus text-white"></i>
+                        </div>
+                        {% elif 'commented' in notification.content %}
+                        <div class="bg-warning rounded-circle p-2">
+                            <i class="fas fa-comment text-white"></i>
+                        </div>
+                        {% else %}
+                        <div class="bg-primary rounded-circle p-2">
+                            <i class="fas fa-bell text-white"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex-grow-1">
+                        <div class="notification-content">
+                            {{ notification.content }}
+                        </div>
+                        <div class="text-muted small mt-1">
+                            {{ notification.created_at.strftime('%b %d at %H:%M') }}
+                        </div>
+                    </div>
+
+                    {% if notification.link %}
+                    <div class="ms-3">
+                        <a href="{{ notification.link }}" class="btn action-btn">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No notifications yet</h5>
+                <p class="text-muted">When you get notifications, they'll show up here.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

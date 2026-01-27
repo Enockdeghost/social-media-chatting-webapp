@@ -1,0 +1,537 @@
+{% extends "base.html" %}
+
+{% block title %}Trending - Chatter{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 col-lg-10 mx-auto">
+        <!-- Enhanced Header -->
+        <div class="sticky-top bg-dark pt-4 pb-3 border-bottom border-secondary glass-effect">
+            <div class="container-fluid">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <div class="trending-icon me-3">
+                            <i class="fas fa-fire fa-2x gradient-text"></i>
+                        </div>
+                        <div>
+                            <h2 class="fw-bold mb-0 gradient-text">Trending Now</h2>
+                            <small class="text-muted">Discover what's happening in the world right now</small>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn action-btn dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="fas fa-sliders-h"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-dark">
+                            <li><a class="dropdown-item" href="#">
+                                <i class="fas fa-globe me-2"></i>Global trends
+                            </a></li>
+                            <li><a class="dropdown-item" href="#">
+                                <i class="fas fa-users me-2"></i>For you
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#">
+                                <i class="fas fa-cog me-2"></i>Trend settings
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trending Content -->
+        <div class="row mt-4">
+            <!-- Trending Hashtags -->
+            <div class="col-lg-6 mb-4">
+                <div class="glass-effect rounded-3 p-4 h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h4 class="fw-bold gradient-text mb-0">
+                            <i class="fas fa-hashtag me-2"></i>Trending Hashtags
+                        </h4>
+                        <span class="badge bg-primary rounded-pill">{{ hashtags|length }}</span>
+                    </div>
+                    
+                    {% for hashtag in hashtags %}
+                    <div class="trending-item glass-effect rounded-3 p-3 mb-3 hover-lift fade-in" 
+                         style="animation-delay: {{ loop.index * 0.1 }}s;">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-primary rounded-pill me-2">#{{ loop.index }}</span>
+                                    <a href="{{ url_for('hashtag', tag=hashtag.tag) }}" 
+                                       class="hashtag fw-bold fs-5 text-decoration-none gradient-text">
+                                        #{{ hashtag.tag }}
+                                    </a>
+                                </div>
+                                <div class="text-muted small mb-2">
+                                    <i class="fas fa-pen me-1"></i>{{ hashtag.count }} posts
+                                </div>
+                                <div class="text-muted x-small">
+                                    <i class="fas fa-clock me-1"></i>Last used {{ hashtag.last_used|time_ago }}
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn action-btn dropdown-toggle-no-arrow" data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-dark">
+                                    <li><a class="dropdown-item" href="{{ url_for('hashtag', tag=hashtag.tag) }}">
+                                        <i class="fas fa-external-link-alt me-2"></i>View hashtag
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#">
+                                        <i class="far fa-bell me-2"></i>Get notifications
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="#">
+                                        <i class="fas fa-flag me-2"></i>Report hashtag
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress bar for popularity -->
+                        <div class="progress mt-2" style="height: 4px;">
+                            <div class="progress-bar bg-gradient" 
+                                 style="width: {{ (hashtag.count / (hashtags[0].count if hashtags else 1)) * 100 }}%">
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Enhanced Empty State for Hashtags -->
+                    <div class="text-center py-5">
+                        <div class="empty-icon mb-4">
+                            <i class="fas fa-hashtag fa-4x text-muted"></i>
+                        </div>
+                        <h5 class="text-muted mb-3">No trending hashtags yet</h5>
+                        <p class="text-muted mb-4">Be the first to start a trend!</p>
+                        <a href="{{ url_for('feed') }}" class="btn btn-primary rounded-pill">
+                            <i class="fas fa-pen me-2"></i>Create a post
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Trending Posts -->
+            <div class="col-lg-6 mb-4">
+                <div class="glass-effect rounded-3 p-4 h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h4 class="fw-bold gradient-text mb-0">
+                            <i class="fas fa-rocket me-2"></i>Popular Posts
+                        </h4>
+                        <span class="badge bg-success rounded-pill">{{ posts|length }}</span>
+                    </div>
+                    
+                    {% for post in posts %}
+                    <div class="post-card glass-effect rounded-3 p-3 mb-3 hover-lift fade-in" 
+                         style="animation-delay: {{ loop.index * 0.1 }}s;">
+                        <!-- Post Header -->
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="position-relative">
+                                <img src="{{ url_for('static', filename='uploads/profiles/' + post.author.profile_picture) }}" 
+                                     class="avatar-sm me-2" 
+                                     onerror="this.src='https://ui-avatars.com/api/?name={{ post.author.username }}&background=1d9bf0&color=fff'">
+                                {% if post.author.is_online %}
+                                <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-dark" 
+                                      style="width: 10px; height: 10px;"></span>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold small">{{ post.author.username }}</div>
+                                <div class="text-muted x-small">
+                                    {{ post.created_at|time_ago }} · 
+                                    <i class="fas fa-chart-line text-success ms-1"></i> Trending
+                                </div>
+                            </div>
+                            <span class="badge bg-warning text-dark rounded-pill">
+                                <i class="fas fa-bolt me-1"></i>#{{ loop.index }}
+                            </span>
+                        </div>
+
+                        <!-- Post Content -->
+                        <div class="post-content mb-3">
+                            <div class="post-text small" style="line-height: 1.4;">
+                                {{ post.content | process_content | safe }}
+                            </div>
+                            
+                            {% if post.image %}
+                            <div class="post-image-preview mt-2">
+                                <img src="{{ url_for('static', filename='uploads/posts/' + post.image) }}" 
+                                     class="img-fluid rounded-2" 
+                                     style="max-height: 120px; width: 100%; object-fit: cover;"
+                                     onclick="openImageModal('{{ post.image }}')">
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Post Stats -->
+                        <div class="post-stats d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex gap-4">
+                                <span class="text-muted small">
+                                    <i class="fas fa-heart me-1 text-danger"></i>{{ post.like_count() }}
+                                </span>
+                                <span class="text-muted small">
+                                    <i class="fas fa-comment me-1 text-primary"></i>{{ post.comment_count() }}
+                                </span>
+                                <span class="text-muted small">
+                                    <i class="fas fa-eye me-1 text-info"></i>{{ post.like_count() + 42 }}
+                                </span>
+                            </div>
+                            <div class="text-muted x-small">
+                                <i class="fas fa-share-alt me-1"></i>{{ post.like_count() // 2 }}
+                            </div>
+                        </div>
+
+                        <!-- Post Actions -->
+                        <div class="post-actions d-flex justify-content-between border-top border-secondary pt-3">
+                            <button class="btn action-btn like-btn {% if post.likes.filter_by(user_id=current_user.id).first() %}liked{% endif %}" 
+                                    data-post-id="{{ post.id }}" title="Like">
+                                <i class="{% if post.likes.filter_by(user_id=current_user.id).first() %}fas{% else %}far{% endif %} fa-heart"></i>
+                            </button>
+                            
+                            <a href="{{ url_for('view_post', post_id=post.id) }}" class="btn action-btn" title="Comment">
+                                <i class="far fa-comment"></i>
+                            </a>
+                            
+                            <button class="btn action-btn" title="Share">
+                                <i class="fas fa-retweet"></i>
+                            </button>
+                            
+                            <a href="{{ url_for('view_post', post_id=post.id) }}" class="btn btn-primary btn-sm rounded-pill px-3">
+                                <i class="fas fa-external-link-alt me-1"></i>View
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Enhanced Empty State for Posts -->
+                    <div class="text-center py-5">
+                        <div class="empty-icon mb-4">
+                            <i class="fas fa-chart-line fa-4x text-muted"></i>
+                        </div>
+                        <h5 class="text-muted mb-3">No trending posts yet</h5>
+                        <p class="text-muted mb-4">Popular posts will appear here as they gain traction</p>
+                        <a href="{{ url_for('feed') }}" class="btn btn-primary rounded-pill">
+                            <i class="fas fa-home me-2"></i>Go to Feed
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Trending Stats Footer -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="glass-effect rounded-3 p-4 text-center">
+                    <div class="row">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <div class="fw-bold fs-3 gradient-text">{{ hashtags|length }}</div>
+                            <div class="text-muted small">Trending Hashtags</div>
+                        </div>
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <div class="fw-bold fs-3 gradient-text">{{ posts|length }}</div>
+                            <div class="text-muted small">Popular Posts</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="fw-bold fs-3 gradient-text">
+                                {{ (hashtags|map(attribute='count')|sum) + posts|length }}
+                            </div>
+                            <div class="text-muted small">Total Engagements</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark border-0">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-0">
+                <img id="modalImage" class="img-fluid" style="max-height: 80vh; border-radius: 0 0 12px 12px;">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block right_sidebar %}
+<!-- Enhanced Search Box -->
+<div class="mb-4">
+    <form action="{{ url_for('search') }}" method="GET">
+        <div class="position-relative">
+            <input type="text" name="q" class="form-control search-box" placeholder="Search trends..." value="{{ request.args.get('q', '') }}">
+            <i class="fas fa-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
+        </div>
+    </form>
+</div>
+
+<!-- Quick Trends -->
+<div class="trending-card glass-effect rounded-3 mb-4">
+    <h6 class="fw-bold gradient-text mb-3">
+        <i class="fas fa-bolt me-2"></i>Quick Trends
+    </h6>
+    <div class="d-flex flex-wrap gap-2">
+        {% for hashtag in hashtags[:5] %}
+        <a href="{{ url_for('hashtag', tag=hashtag.tag) }}" class="badge bg-primary bg-opacity-25 text-primary text-decoration-none rounded-pill">
+            #{{ hashtag.tag }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Who to Follow -->
+<div class="suggestions-card glass-effect rounded-3">
+    <h6 class="fw-bold gradient-text mb-3">
+        <i class="fas fa-user-plus me-2"></i>Who to Follow
+    </h6>
+    {% if suggestions %}
+        {% for user in suggestions %}
+        <div class="suggestion-item d-flex align-items-center mb-3 p-2 rounded-3 hover-lift">
+            <div class="position-relative">
+                <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+                     class="avatar-sm me-2" 
+                     onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
+                {% if user.is_online %}
+                <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-dark" 
+                      style="width: 8px; height: 8px;"></span>
+                {% endif %}
+            </div>
+            <div class="flex-grow-1">
+                <div class="fw-bold small">{{ user.username }}</div>
+                <div class="text-muted x-small">@{{ user.username }}</div>
+            </div>
+            <button class="btn btn-outline-primary btn-sm rounded-pill follow-btn px-3" data-user-id="{{ user.id }}">
+                Follow
+            </button>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted small">No suggestions available</p>
+    {% endif %}
+    <a href="{{ url_for('search') }}" class="text-primary text-decoration-none small fw-semibold">Show more</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openImageModal(imageUrl) {
+    const modalImage = document.getElementById('modalImage');
+    modalImage.src = '/static/uploads/posts/' + imageUrl;
+    const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+    imageModal.show();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effects to trending items
+    document.querySelectorAll('.trending-item, .post-card').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-4px)';
+            this.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+        });
+    });
+
+    // Like functionality for trending posts
+    document.querySelectorAll('.like-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+            const postId = this.getAttribute('data-post-id');
+            const heartIcon = this.querySelector('i');
+            
+            try {
+                const response = await fetch(`/post/${postId}/like`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'liked') {
+                    heartIcon.classList.remove('far');
+                    heartIcon.classList.add('fas', 'text-danger');
+                    this.classList.add('liked');
+                    
+                    // Heart animation
+                    this.style.transform = 'scale(1.2)';
+                    setTimeout(() => this.style.transform = 'scale(1)', 300);
+                } else {
+                    heartIcon.classList.remove('fas', 'text-danger');
+                    heartIcon.classList.add('far');
+                    this.classList.remove('liked');
+                }
+                
+                // Update like count in the stats
+                const likeCountElement = this.closest('.post-card').querySelector('.fa-heart').parentElement.nextElementSibling;
+                if (likeCountElement) {
+                    likeCountElement.textContent = data.count;
+                }
+                
+            } catch (error) {
+                console.error('Error liking post:', error);
+            }
+        });
+    });
+
+    // Follow functionality
+    document.querySelectorAll('.follow-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+            const userId = this.getAttribute('data-user-id');
+            const originalText = this.innerHTML;
+            
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            this.disabled = true;
+            
+            try {
+                const response = await fetch(`/follow/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'followed') {
+                    this.innerHTML = 'Following';
+                    this.classList.remove('btn-outline-primary');
+                    this.classList.add('btn-primary');
+                } else {
+                    this.innerHTML = 'Follow';
+                    this.classList.remove('btn-primary');
+                    this.classList.add('btn-outline-primary');
+                }
+                
+            } catch (error) {
+                console.error('Error following user:', error);
+                this.innerHTML = originalText;
+            } finally {
+                this.disabled = false;
+            }
+        });
+    });
+
+    // Add staggered animation delay
+    document.querySelectorAll('.fade-in').forEach((element, index) => {
+        element.style.animationDelay = `${index * 0.1}s`;
+    });
+});
+</script>
+
+<style>
+.trending-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(29, 155, 240, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.trending-item, .post-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--border-light);
+}
+
+.trending-item:hover, .post-card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.bg-gradient {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color)) !important;
+}
+
+.progress {
+    background: var(--border-light);
+    border-radius: 2px;
+}
+
+.progress-bar {
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+
+.post-image-preview {
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.post-image-preview:hover {
+    transform: scale(1.02);
+}
+
+.badge.bg-primary.bg-opacity-25 {
+    background: rgba(29, 155, 240, 0.1) !important;
+    border: 1px solid rgba(29, 155, 240, 0.3);
+    padding: 6px 12px;
+    font-weight: 500;
+}
+
+/* Animation for trending items */
+.fade-in {
+    animation: fadeInUp 0.6s ease-out both;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .trending-icon {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .trending-icon i {
+        font-size: 1.5rem !important;
+    }
+    
+    .glass-effect {
+        padding: 20px !important;
+    }
+    
+    .post-stats .gap-4 {
+        gap: 1rem !important;
+    }
+}
+
+/* Custom scrollbar for the trending page */
+.trending-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.trending-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.trending-content::-webkit-scrollbar-thumb {
+    background: var(--border-light);
+    border-radius: 3px;
+}
+
+.trending-content::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+</style>
+{% endblock %}

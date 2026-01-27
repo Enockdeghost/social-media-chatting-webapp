@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile {% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <!-- Header -->
+        <div class="d-flex align-items-center py-3 border-bottom border-secondary">
+            <a href="{{ url_for('profile', username=current_user.username) }}" class="btn action-btn me-3">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <h5 class="fw-bold mb-0">Edit Profile</h5>
+            </div>
+        </div>
+
+        <!-- Edit Form -->
+        <div class="p-4">
+            <form method="POST" action="{{ url_for('edit_profile') }}" enctype="multipart/form-data" id="profileForm">
+                <!-- Cover Photo -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Cover Photo</label>
+                    <div class="cover-photo-container position-relative rounded-3 overflow-hidden" 
+                         style="height: 200px; background: var(--card-color); cursor: pointer;"
+                         onclick="document.getElementById('coverInput').click()">
+                        
+                        <!-- Current Cover Photo (if exists) -->
+                        {% if current_user.cover_picture and current_user.cover_picture != 'default_cover.jpg' %}
+                        <img src="{{ url_for('static', filename='uploads/covers/' + current_user.cover_picture) }}" 
+                             class="w-100 h-100 object-fit-cover" 
+                             id="coverPreview"
+                             onerror="this.style.display='none'">
+                        {% else %}
+                        <div class="w-100 h-100 d-flex align-items-center justify-content-center" id="coverPlaceholder">
+                            <div class="text-center">
+                                <i class="fas fa-camera fa-2x text-light mb-2"></i>
+                                <div class="text-light">Add cover photo</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Upload Overlay -->
+                        <div class="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-flex align-items-center justify-content-center"
+                             style="opacity: 0; transition: opacity 0.3s ease;"
+                             onmouseover="this.style.opacity='1'" 
+                             onmouseout="this.style.opacity='0'">
+                            <div class="text-center text-white">
+                                <i class="fas fa-camera fa-lg mb-1"></i>
+                                <div class="small">Change cover photo</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Remove Cover Button (only if cover exists) -->
+                        {% if current_user.cover_picture and current_user.cover_picture != 'default_cover.jpg' %}
+                        <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2" 
+                                onclick="removeCoverPhoto(event)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                    <input type="file" name="cover_picture" id="coverInput" class="d-none" accept="image/*">
+                    <div class="form-text text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Recommended size: 1500x500 pixels. Max 5MB.
+                    </div>
+                </div>
+
+                <!-- Profile Picture -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Profile Picture</label>
+                    <div class="d-flex align-items-center">
+                        <div class="position-relative me-4">
+                            <img src="{{ url_for('static', filename='uploads/profiles/' + current_user.profile_picture) }}" 
+                                 class="avatar border border-secondary" 
+                                 style="width: 100px; height: 100px;"
+                                 id="profilePreview"
+                                 onerror="this.src='https://ui-avatars.com/api/?name={{ current_user.username }}&background=1d9bf0&color=fff'">
+                            
+                            <!-- Profile Picture Upload Trigger -->
+                            <div class="position-absolute bottom-0 end-0 bg-primary rounded-circle p-2" 
+                                 style="cursor: pointer; width: 36px; height: 36px;"
+                                 onclick="document.getElementById('profileInput').click()">
+                                <i class="fas fa-camera text-white"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-grow-1">
+                            <input type="file" name="profile_picture" id="profileInput" 
+                                   class="form-control bg-dark text-light border-secondary d-none" 
+                                   accept="image/*">
+                            <div class="form-text text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Recommended size: 400x400 pixels. Max 2MB.
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" 
+                                    onclick="document.getElementById('profileInput').click()">
+                                <i class="fas fa-upload me-1"></i>Choose File
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bio -->
+                <div class="mb-4">
+                    <label for="bio" class="form-label fw-bold">Bio</label>
+                    <textarea name="bio" id="bio" class="form-control bg-dark text-light border-secondary" 
+                              rows="4" placeholder="Tell the world about yourself...">{{ current_user.bio or '' }}</textarea>
+                    <div class="form-text text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        You can use hashtags and @mentions in your bio. Maximum 160 characters.
+                        <span id="bioCounter" class="float-end">0/160</span>
+                    </div>
+                </div>
+
+                <!-- Additional Fields (Optional) -->
+                <div class="mb-4">
+                    <label for="location" class="form-label fw-bold">Location</label>
+                    <input type="text" name="location" id="location" 
+                           class="form-control bg-dark text-light border-secondary" 
+                           placeholder="Where are you from?"
+                           value="{{ current_user.location or '' }}">
+                </div>
+
+                <div class="mb-4">
+                    <label for="website" class="form-label fw-bold">Website</label>
+                    <input type="url" name="website" id="website" 
+                           class="form-control bg-dark text-light border-secondary" 
+                           placeholder="https://example.com"
+                           value="{{ current_user.website or '' }}">
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary">
+                    <a href="{{ url_for('profile', username=current_user.username) }}" 
+                       class="btn btn-outline-secondary rounded-pill px-4">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4" id="submitBtn">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Cover Photo Handling
+document.getElementById('coverInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        // Validate file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Cover photo must be less than 5MB');
+            this.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Hide placeholder and show preview
+            const placeholder = document.getElementById('coverPlaceholder');
+            if (placeholder) placeholder.style.display = 'none';
+            
+            // Create or update preview image
+            let preview = document.getElementById('coverPreview');
+            if (!preview) {
+                preview = document.createElement('img');
+                preview.id = 'coverPreview';
+                preview.className = 'w-100 h-100 object-fit-cover';
+                document.querySelector('.cover-photo-container').prepend(preview);
+            }
+            preview.src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+    }
+});
+
+// Profile Picture Handling
+document.getElementById('profileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        // Validate file size (2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            alert('Profile picture must be less than 2MB');
+            this.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('profilePreview').src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+    }
+});
+
+// Remove Cover Photo
+function removeCoverPhoto(event) {
+    event.stopPropagation(); // Prevent triggering the file input
+    
+    if (confirm('Are you sure you want to remove your cover photo?')) {
+        // Hide preview and show placeholder
+        const preview = document.getElementById('coverPreview');
+        if (preview) preview.style.display = 'none';
+        
+        const placeholder = document.getElementById('coverPlaceholder');
+        if (placeholder) placeholder.style.display = 'flex';
+        
+        // Clear file input
+        document.getElementById('coverInput').value = '';
+        
+        // You might want to send a request to remove the cover photo from server
+        // For now, we'll just clear the client-side preview
+    }
+}
+
+// Bio Character Counter
+document.getElementById('bio').addEventListener('input', function() {
+    const maxLength = 160;
+    const currentLength = this.value.length;
+    const counter = document.getElementById('bioCounter');
+    
+    counter.textContent = `${currentLength}/${maxLength}`;
+    
+    if (currentLength > maxLength) {
+        counter.classList.add('text-danger');
+    } else {
+        counter.classList.remove('text-danger');
+    }
+});
+
+// Initialize bio counter
+document.addEventListener('DOMContentLoaded', function() {
+    const bio = document.getElementById('bio');
+    const counter = document.getElementById('bioCounter');
+    counter.textContent = `${bio.value.length}/160`;
+});
+
+// Form Submission Handling
+document.getElementById('profileForm').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('submitBtn');
+    const originalText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+    submitBtn.disabled = true;
+    
+    // Re-enable after 5 seconds (safety net)
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 5000);
+});
+
+// Drag and Drop for Cover Photo
+const coverContainer = document.querySelector('.cover-photo-container');
+
+coverContainer.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    this.style.border = '2px dashed var(--primary-color)';
+    this.style.backgroundColor = 'rgba(29, 155, 240, 0.1)';
+});
+
+coverContainer.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    this.style.border = '';
+    this.style.backgroundColor = '';
+});
+
+coverContainer.addEventListener('drop', function(e) {
+    e.preventDefault();
+    this.style.border = '';
+    this.style.backgroundColor = '';
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        const file = files[0];
+        if (file.type.startsWith('image/')) {
+            document.getElementById('coverInput').files = files;
+            // Trigger change event
+            const event = new Event('change');
+            document.getElementById('coverInput').dispatchEvent(event);
+        } else {
+            alert('Please drop an image file');
+        }
+    }
+});
+</script>
+
+<style>
+.cover-photo-container {
+    border: 2px dashed var(--border-light);
+    transition: all 0.3s ease;
+}
+
+.cover-photo-container:hover {
+    border-color: var(--primary-color);
+    background: rgba(29, 155, 240, 0.05);
+}
+
+.object-fit-cover {
+    object-fit: cover;
+}
+
+.avatar {
+    transition: transform 0.3s ease;
+}
+
+.avatar:hover {
+    transform: scale(1.05);
+}
+
+/* Custom file input styling */
+.form-control[type="file"] {
+    padding: 8px;
+}
+
+.form-control[type="file"]::file-selector-button {
+    background: var(--primary-color);
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    margin-right: 12px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.form-control[type="file"]::file-selector-button:hover {
+    background: var(--primary-hover);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Chatter{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold mb-1">Admin Dashboard</h1>
+            <p class="text-muted mb-0">Welcome to the administration panel</p>
+        </div>
+        <div class="dropdown">
+            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-cog me-2"></i>Admin Actions
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark">
+                <li><a class="dropdown-item" href="{{ url_for('admin_users') }}">
+                    <i class="fas fa-users me-2"></i>Manage Users
+                </a></li>
+                <li><a class="dropdown-item" href="{{ url_for('admin_posts') }}">
+                    <i class="fas fa-file-alt me-2"></i>Manage Posts
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#">
+                    <i class="fas fa-database me-2"></i>Database Stats
+                </a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-5">
+        <div class="col-md-3 mb-4">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-muted mb-2">Total Users</h6>
+                            <h3 class="fw-bold text-primary">{{ total_users }}</h3>
+                            <small class="text-muted">Registered accounts</small>
+                        </div>
+                        <div class="ps-3">
+                            <i class="fas fa-users fa-2x text-primary opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-muted mb-2">Total Posts</h6>
+                            <h3 class="fw-bold text-info">{{ total_posts }}</h3>
+                            <small class="text-muted">All time posts</small>
+                        </div>
+                        <div class="ps-3">
+                            <i class="fas fa-file-alt fa-2x text-info opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-muted mb-2">Total Likes</h6>
+                            <h3 class="fw-bold text-danger">{{ total_likes }}</h3>
+                            <small class="text-muted">Post engagements</small>
+                        </div>
+                        <div class="ps-3">
+                            <i class="fas fa-heart fa-2x text-danger opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-muted mb-2">Total Comments</h6>
+                            <h3 class="fw-bold text-success">{{ total_comments }}</h3>
+                            <small class="text-muted">User interactions</small>
+                        </div>
+                        <div class="ps-3">
+                            <i class="fas fa-comments fa-2x text-success opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Users -->
+        <div class="col-lg-6 mb-4">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-header border-secondary">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>Recent Users
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_users %}
+                    <div class="list-group list-group-flush">
+                        {% for user in recent_users %}
+                        <div class="list-group-item bg-dark border-secondary d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+                                     class="rounded-circle me-3" width="40" height="40"
+                                     onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
+                                <div>
+                                    <h6 class="mb-0">{{ user.username }}</h6>
+                                    <small class="text-muted">Joined {{ user.created_at.strftime('%b %d, %Y') }}</small>
+                                </div>
+                            </div>
+                            <div>
+                                {% if user.is_admin %}
+                                <span class="badge bg-warning text-dark">Admin</span>
+                                {% else %}
+                                <span class="badge bg-secondary">User</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">No users found</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer border-secondary">
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary btn-sm">View All Users</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Posts -->
+        <div class="col-lg-6 mb-4">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-header border-secondary">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-alt me-2"></i>Recent Posts
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_posts %}
+                    <div class="list-group list-group-flush">
+                        {% for post in recent_posts %}
+                        <div class="list-group-item bg-dark border-secondary">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ url_for('static', filename='uploads/profiles/' + post.author.profile_picture) }}" 
+                                         class="rounded-circle me-2" width="32" height="32"
+                                         onerror="this.src='https://ui-avatars.com/api/?name={{ post.author.username }}&background=1d9bf0&color=fff'">
+                                    <small class="fw-bold">{{ post.author.username }}</small>
+                                </div>
+                                <small class="text-muted">{{ post.created_at.strftime('%b %d, %H:%M') }}</small>
+                            </div>
+                            <p class="mb-2 small text-truncate">{{ post.content[:100] }}{% if post.content|length > 100 %}...{% endif %}</p>
+                            <div class="d-flex gap-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-heart text-danger me-1"></i>{{ post.like_count() }}
+                                </small>
+                                <small class="text-muted">
+                                    <i class="fas fa-comment text-primary me-1"></i>{{ post.comment_count() }}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">No posts found</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer border-secondary">
+                    <a href="{{ url_for('admin_posts') }}" class="btn btn-outline-primary btn-sm">View All Posts</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header border-secondary">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary w-100 h-100 py-3">
+                                <i class="fas fa-users fa-2x mb-2"></i>
+                                <div>Manage Users</div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin_posts') }}" class="btn btn-outline-info w-100 h-100 py-3">
+                                <i class="fas fa-file-alt fa-2x mb-2"></i>
+                                <div>Manage Posts</div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-warning w-100 h-100 py-3">
+                                <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                                <div>View Analytics</div>
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-danger w-100 h-100 py-3">
+                                <i class="fas fa-cogs fa-2x mb-2"></i>
+                                <div>System Settings</div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

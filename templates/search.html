@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Search {% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Search Header -->
+        <div class="sticky-top bg-dark pt-3 pb-2 border-bottom border-secondary">
+            <div class="px-3">
+                <form action="{{ url_for('search') }}" method="GET">
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-muted">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" name="q" class="form-control bg-dark text-light border-secondary search-box" 
+                               placeholder="Search Twatter" value="{{ query }}" autofocus>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Search Tabs -->
+            <nav class="nav nav-tabs border-0 mt-3" role="tablist">
+                <a class="nav-link {% if not query.startswith('#') %}active{% endif %} border-0 text-light" 
+                   href="{{ url_for('search', q=query) if query else '#' }}">
+                    Top
+                </a>
+                <a class="nav-link {% if query.startswith('#') %}active{% endif %} border-0 text-light" 
+                   href="{{ url_for('search', q='#' + query[1:]) if query.startswith('#') else '#' }}">
+                    Latest
+                </a>
+                <a class="nav-link border-0 text-light" href="#">People</a>
+                <a class="nav-link border-0 text-light" href="#">Media</a>
+            </nav>
+        </div>
+
+        <!-- Search Results -->
+        <div class="tab-content">
+            <!-- Users Results -->
+            {% if users and not query.startswith('#') %}
+            <div class="tab-pane fade show active">
+                <h6 class="fw-bold px-3 py-3 mb-0 bg-dark">People</h6>
+                {% for user in users %}
+                <div class="post-card">
+                    <div class="d-flex align-items-center">
+                        <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+                             class="avatar me-3" onerror="this.src='https://via.placeholder.com/48'">
+                        
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">{{ user.username }}</div>
+                            <div class="text-muted">@{{ user.username }}</div>
+                            {% if user.bio %}
+                            <div class="mt-1 small">{{ user.bio }}</div>
+                            {% endif %}
+                        </div>
+
+                        {% if user.id != current_user.id %}
+                        <button class="btn {% if current_user.is_following(user) %}btn-outline-light{% else %}btn-primary{% endif %} rounded-pill px-4 follow-btn" 
+                                data-user-id="{{ user.id }}">
+                            {% if current_user.is_following(user) %}Following{% else %}Follow{% endif %}
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Hashtag Posts Results -->
+            {% if posts and query.startswith('#') %}
+            <div class="tab-pane fade show active">
+                <h6 class="fw-bold px-3 py-3 mb-0 bg-dark">Posts with {{ query }}</h6>
+                {% for post in posts %}
+                <div class="post-card">
+                    <div class="d-flex">
+                        <img src="{{ url_for('static', filename='uploads/profiles/' + post.author.profile_picture) }}" 
+                             class="avatar me-3" onerror="this.src='https://via.placeholder.com/48'">
+                        
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <div>
+                                    <span class="fw-bold">{{ post.author.username }}</span>
+                                    <span class="text-muted ms-2">@{{ post.author.username }}</span>
+                                    <span class="text-muted ms-2">·</span>
+                                    <span class="text-muted">{{ post.created_at.strftime('%b %d') }}</span>
+                                </div>
+                            </div>
+
+                            <div class="post-content mb-3">
+                                {{ post.content | process_content | safe }}
+                            </div>
+
+                            {% if post.image %}
+                            <div class="post-image mb-3">
+                                <img src="{{ url_for('static', filename='uploads/posts/' + post.image) }}" 
+                                     class="img-fluid rounded-3" style="max-height: 400px; width: auto;">
+                            </div>
+                            {% endif %}
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <button class="btn action-btn">
+                                    <i class="far fa-comment"></i>
+                                    <span class="ms-1">{{ post.comment_count() }}</span>
+                                </button>
+
+                                <button class="btn action-btn like-btn {% if post.likes.filter_by(user_id=current_user.id).first() %}liked{% endif %}" 
+                                        data-post-id="{{ post.id }}">
+                                    <i class="{% if post.likes.filter_by(user_id=current_user.id).first() %}fas{% else %}far{% endif %} fa-heart"></i>
+                                    <span class="ms-1 like-count">{{ post.like_count() }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- No Results -->
+            {% if not users and not posts and query %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No results for "{{ query }}"</h5>
+                <p class="text-muted">Try searching for something else</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% for user in users %}
+<div class="post-card">
+    <div class="d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center">
+            <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+                 class="avatar me-3" onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
+            <div>
+                <div class="fw-bold">
+                    {{ user.username }}
+                    {% if user.is_admin %}
+                    <i class="fas fa-check-circle verified-badge" title="Verified Admin"></i>
+                    {% endif %}
+                </div>
+                <div class="text-muted">@{{ user.username }}</div>
+                {% if user.bio %}
+                <div class="text-muted small mt-1">{{ user.bio[:100] }}{% if user.bio|length > 100 %}...{% endif %}</div>
+                {% endif %}
+            </div>
+        </div>
+        <div>
+            {% if user.id != current_user.id %}
+            <button class="btn btn-outline-primary btn-sm rounded-pill follow-btn" data-user-id="{{ user.id }}">
+                {% if current_user.is_following(user) %}Following{% else %}Follow{% endif %}
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

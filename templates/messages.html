@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}Messages {% endblock %}
+
+{% block content %}
+<div class="row h-100">
+    <div class="col-12">
+        <!-- Header -->
+        <div class="sticky-top bg-dark pt-3 pb-2 border-bottom border-secondary">
+            <div class="d-flex justify-content-between align-items-center px-3">
+                <h5 class="fw-bold mb-0">Messages</h5>
+                <div>
+                    <!-- Message Search Button -->
+                    <button class="btn action-btn" data-bs-toggle="modal" data-bs-target="#searchModal">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="btn action-btn">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="px-3 mt-2">
+                <input type="text" id="messageSearch" class="form-control bg-dark text-white border-secondary" 
+                       placeholder="Search conversations...">
+            </div>
+        </div>
+
+        <!-- Online Users Quick Access -->
+        <div class="px-3 py-2 border-bottom border-secondary">
+            <div class="d-flex align-items-center mb-2">
+                <small class="text-muted me-2">Online now</small>
+                <span class="online-dot"></span>
+            </div>
+            <div class="d-flex overflow-auto" id="onlineUsers">
+                <!-- Online users will be loaded here via JavaScript -->
+            </div>
+        </div>
+
+        <!-- Conversations List -->
+        <div class="conversations-list">
+            {% for conv in conversations %}
+            <a href="{{ url_for('conversation', user_id=conv.user.id) }}" class="text-decoration-none conversation-item">
+                <div class="post-card">
+                    <div class="d-flex align-items-center">
+                        <div class="position-relative">
+                            <img src="{{ url_for('static', filename='uploads/profiles/' + conv.user.profile_picture) }}" 
+                                 class="avatar me-3" onerror="this.src='https://via.placeholder.com/48'">
+                            {% if conv.user.is_online %}
+                            <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-dark" 
+                                  style="width: 12px; height: 12px;"></span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="fw-bold">{{ conv.user.username }}</div>
+                                {% if conv.last_message %}
+                                <div class="text-muted small">
+                                    {{ conv.last_message.created_at|time_ago }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            {% if conv.last_message %}
+                            <div class="text-muted text-truncate" style="max-width: 300px;">
+                                {% if conv.last_message.sender_id == current_user.id %}
+                                You: {{ conv.last_message.content }}
+                                {% else %}
+                                {{ conv.last_message.content }}
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <div class="text-muted">Start a conversation</div>
+                            {% endif %}
+                        </div>
+
+                        {% if conv.unread_count > 0 %}
+                        <span class="ms-3 bg-primary text-white rounded-pill px-2 py-1 small">
+                            {{ conv.unread_count }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No messages yet</h5>
+                <p class="text-muted">Start a conversation with someone!</p>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#searchModal">
+                    Start Chat
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Search Modal -->
+ {% for conv in conversations %}
+<a href="{{ url_for('conversation', user_id=conv.user.id) }}" class="text-decoration-none conversation-item">
+    <div class="post-card">
+        <div class="d-flex align-items-center">
+            <div class="position-relative">
+                <img src="{{ url_for('static', filename='uploads/profiles/' + conv.user.profile_picture) }}" 
+                     class="avatar me-3" onerror="this.src='https://ui-avatars.com/api/?name={{ conv.user.username }}&background=1d9bf0&color=fff'">
+                {% if conv.user.is_online %}
+                <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-dark" 
+                      style="width: 12px; height: 12px;"></span>
+                {% endif %}
+            </div>
+            
+            <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="fw-bold">
+                        {{ conv.user.username }}
+                        {% if conv.user.is_admin %}
+                        <i class="fas fa-check-circle verified-badge" title="Verified Admin"></i>
+                        {% endif %}
+                    </div>
+                    {% if conv.last_message %}
+                    <div class="text-muted small">
+                        {{ conv.last_message.created_at|time_ago }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if conv.last_message %}
+                <div class="text-muted text-truncate" style="max-width: 300px;">
+                    {% if conv.last_message.sender_id == current_user.id %}
+                    You: {{ conv.last_message.content }}
+                    {% else %}
+                    {{ conv.last_message.content }}
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="text-muted">Start a conversation</div>
+                {% endif %}
+            </div>
+
+            {% if conv.unread_count > 0 %}
+            <span class="ms-3 bg-primary text-white rounded-pill px-2 py-1 small">
+                {{ conv.unread_count }}
+            </span>
+            {% endif %}
+        </div>
+    </div>
+</a>
+{% endfor %}
+<div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" id="searchModalLabel">Search Users to Message</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="userSearchInput" class="form-control bg-dark text-white border-secondary mb-3" 
+                       placeholder="Type username to search...">
+                <div id="searchResults">
+                    <!-- Search results will appear here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Message search functionality
+document.getElementById('messageSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const conversationItems = document.querySelectorAll('.conversation-item');
+    
+    conversationItems.forEach(item => {
+        const username = item.querySelector('.fw-bold').textContent.toLowerCase();
+        const lastMessage = item.querySelector('.text-muted').textContent.toLowerCase();
+        
+        if (username.includes(searchTerm) || lastMessage.includes(searchTerm)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+});
+
+// User search for new conversations
+document.getElementById('userSearchInput').addEventListener('input', function(e) {
+    const searchTerm = e.target.value;
+    
+    if (searchTerm.length < 2) {
+        document.getElementById('searchResults').innerHTML = '';
+        return;
+    }
+    
+    fetch(`/messages/search?q=${encodeURIComponent(searchTerm)}`)
+        .then(response => response.json())
+        .then(data => {
+            const resultsContainer = document.getElementById('searchResults');
+            resultsContainer.innerHTML = '';
+            
+            if (data.users.length === 0) {
+                resultsContainer.innerHTML = '<p class="text-muted text-center">No users found</p>';
+                return;
+            }
+            
+            data.users.forEach(user => {
+                const userElement = document.createElement('div');
+                userElement.className = 'd-flex align-items-center p-2 border-bottom border-secondary user-result';
+                userElement.innerHTML = `
+                    <img src="${user.profile_picture ? '/static/uploads/profiles/' + user.profile_picture : 'https://via.placeholder.com/40'}" 
+                         class="avatar me-3" onerror="this.src='https://via.placeholder.com/40'">
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">${user.username}</div>
+                        <small class="text-muted">${user.is_online ? 'Online' : 'Offline'}</small>
+                    </div>
+                    <button class="btn btn-primary btn-sm start-chat" data-user-id="${user.id}">
+                        Message
+                    </button>
+                `;
+                resultsContainer.appendChild(userElement);
+            });
+            
+            // Add event listeners to message buttons
+            document.querySelectorAll('.start-chat').forEach(button => {
+                button.addEventListener('click', function() {
+                    const userId = this.getAttribute('data-user-id');
+                    window.location.href = `/messages/${userId}`;
+                });
+            });
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+        });
+});
+
+// Load online users
+function loadOnlineUsers() {
+    fetch('/messages/search?q=')
+        .then(response => response.json())
+        .then(data => {
+            const onlineUsersContainer = document.getElementById('onlineUsers');
+            const onlineUsers = data.users.filter(user => user.is_online).slice(0, 10);
+            
+            if (onlineUsers.length === 0) {
+                onlineUsersContainer.innerHTML = '<small class="text-muted">No one online</small>';
+                return;
+            }
+            
+            onlineUsersContainer.innerHTML = '';
+            onlineUsers.forEach(user => {
+                const userElement = document.createElement('div');
+                userElement.className = 'text-center mx-2';
+                userElement.innerHTML = `
+                    <div class="position-relative d-inline-block">
+                        <img src="${user.profile_picture ? '/static/uploads/profiles/' + user.profile_picture : 'https://via.placeholder.com/40'}" 
+                             class="avatar-sm rounded-circle" onerror="this.src='https://via.placeholder.com/40'"
+                             style="width: 40px; height: 40px;">
+                        <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-dark" 
+                              style="width: 10px; height: 10px;"></span>
+                    </div>
+                    <small class="d-block mt-1">${user.username.length > 8 ? user.username.substring(0, 8) + '...' : user.username}</small>
+                `;
+                userElement.addEventListener('click', () => {
+                    window.location.href = `/messages/${user.id}`;
+                });
+                userElement.style.cursor = 'pointer';
+                onlineUsersContainer.appendChild(userElement);
+            });
+        });
+}
+
+// Auto-refresh conversations (simple polling)
+function refreshConversations() {
+    // This would typically make an API call to get updated conversation list
+    // For now, we'll just reload the online users
+    loadOnlineUsers();
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    loadOnlineUsers();
+    // Refresh every 30 seconds
+    setInterval(refreshConversations, 30000);
+});
+</script>
+
+<style>
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+}
+
+.online-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #28a745;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.user-result:hover {
+    background-color: #1a1d20;
+    cursor: pointer;
+}
+
+#onlineUsers {
+    min-height: 60px;
+}
+
+#onlineUsers::-webkit-scrollbar {
+    display: none;
+}
+
+#onlineUsers {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+</style>
+{% endblock %}

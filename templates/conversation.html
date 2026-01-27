@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}Chat with {{ user.username }}  chatter{% endblock %}
+
+{% block content %}
+<div class="row h-100">
+    <div class="col-12 d-flex flex-column" style="height: calc(100vh - 60px);">
+        <!-- Chat Header -->
+        <div class="sticky-top bg-dark pt-3 pb-2 border-bottom border-secondary">
+            <div class="d-flex align-items-center px-3">
+                <a href="{{ url_for('messages') }}" class="btn action-btn me-3">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+                     class="avatar-sm me-2" onerror="this.src='https://via.placeholder.com/32'">
+                <div class="flex-grow-1">
+                    <h6 class="fw-bold mb-0">{{ user.username }}</h6>
+                    <div class="text-muted small">
+                        {% if user.is_online %}
+                        <span class="text-success">● Online</span>
+                        {% else %}
+                        <span>Last seen {{ user.last_seen|time_ago }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Container -->
+        <div id="messagesContainer" class="flex-grow-1 p-3" style="overflow-y: auto;">
+            {% for message in messages %}
+            <div class="d-flex mb-3 {% if message.sender_id == current_user.id %}justify-content-end{% else %}justify-content-start{% endif %}">
+                {% if message.sender_id != current_user.id %}
+                <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+                     class="avatar-sm me-2" onerror="this.src='https://via.placeholder.com/32'">
+                {% endif %}
+                
+                <div class="{% if message.sender_id == current_user.id %}text-end{% endif %}">
+                    <div class="message-bubble bg-{% if message.sender_id == current_user.id %}primary{% else %}secondary{% endif %} rounded-3 p-3" 
+                         style="max-width: 400px; word-wrap: break-word;">
+                        {{ message.content }}
+                    </div>
+                    <div class="text-muted small mt-1">
+                        {{ message.created_at.strftime('%H:%M') }}
+                        {% if message.sender_id == current_user.id %}
+                            {% if message.is_read %}
+                            <i class="fas fa-check-double text-info ms-1" title="Read"></i>
+                            {% else %}
+                            <i class="fas fa-check text-muted ms-1" title="Sent"></i>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if message.sender_id == current_user.id %}
+                <img src="{{ url_for('static', filename='uploads/profiles/' + current_user.profile_picture) }}" 
+                     class="avatar-sm ms-2" onerror="this.src='https://via.placeholder.com/32'">
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-comment-dots fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No messages yet</h5>
+                <p class="text-muted">Send a message to start the conversation!</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Message Input -->
+        <div class="border-top border-secondary p-3 bg-dark">
+            <form id="messageForm" method="POST">
+                <div class="input-group">
+                    <input type="text" id="messageInput" name="content" 
+                           class="form-control bg-dark text-light border-secondary" 
+                           placeholder="Type a message..." required
+                           maxlength="1000">
+                    <button type="submit" class="btn btn-primary" id="sendButton">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Typing indicator -->
+            <div id="typingIndicator" class="text-muted small mt-2" style="display: none;">
+                <i class="fas fa-pencil-alt me-1"></i>
+                {{ user.username }} is typing...
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Chat Header -->
+<div class="sticky-top bg-dark pt-4 pb-3 border-bottom border-secondary">
+    <div class="d-flex align-items-center px-3">
+        <a href="{{ url_for('messages') }}" class="btn action-btn me-3">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+             class="avatar-sm me-2" onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
+        <div class="flex-grow-1">
+            <h6 class="fw-bold mb-0">
+                {{ user.username }}
+                {% if user.is_admin %}
+                <i class="fas fa-check-circle verified-badge" title="Verified Admin"></i>
+                {% endif %}
+            </h6>
+            <div class="text-muted small">
+                {% if user.is_online %}
+                <span class="text-success">● Online</span>
+                {% else %}
+                <span>Last seen {{ user.last_seen|time_ago }}</span>
+                {% endif %}
+                {% if user.is_admin %}
+                <span class="badge bg-primary ms-2">Admin</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-scroll to bottom of messages
+function scrollToBottom() {
+    const messagesContainer = document.getElementById('messagesContainer');
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Format message time
+function formatTime(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+    });
+}
+
+// Add a new message to the chat
+function addMessage(message) {
+    const messagesContainer = document.getElementById('messagesContainer');
+    const emptyState = messagesContainer.querySelector('.text-center');
+    
+    // Remove empty state if it exists
+    if (emptyState) {
+        emptyState.remove();
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `d-flex mb-3 ${message.sender_id === {{ current_user.id }} ? 'justify-content-end' : 'justify-content-start'}`;
+    
+    const isCurrentUser = message.sender_id === {{ current_user.id }};
+    
+    messageDiv.innerHTML = `
+        ${!isCurrentUser ? `
+            <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+                 class="avatar-sm me-2" onerror="this.src='https://via.placeholder.com/32'">
+        ` : ''}
+        
+        <div class="${isCurrentUser ? 'text-end' : ''}">
+            <div class="message-bubble bg-${isCurrentUser ? 'primary' : 'secondary'} rounded-3 p-3" 
+                 style="max-width: 400px; word-wrap: break-word;">
+                ${message.content}
+            </div>
+            <div class="text-muted small mt-1">
+                ${formatTime(message.created_at)}
+                ${isCurrentUser ? `
+                    ${message.is_read ? 
+                        '<i class="fas fa-check-double text-info ms-1" title="Read"></i>' : 
+                        '<i class="fas fa-check text-muted ms-1" title="Sent"></i>'
+                    }
+                ` : ''}
+            </div>
+        </div>
+
+        ${isCurrentUser ? `
+            <img src="{{ url_for('static', filename='uploads/profiles/' + current_user.profile_picture) }}" 
+                 class="avatar-sm ms-2" onerror="this.src='https://via.placeholder.com/32'">
+        ` : ''}
+    `;
+    
+    messagesContainer.appendChild(messageDiv);
+    scrollToBottom();
+}
+
+// Send message using AJAX
+document.getElementById('messageForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const messageInput = document.getElementById('messageInput');
+    const content = messageInput.value.trim();
+    
+    if (!content) return;
+    
+    const sendButton = document.getElementById('sendButton');
+    sendButton.disabled = true;
+    
+    try {
+        const response = await fetch('/api/messages/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                receiver_id: {{ user.id }},
+                content: content
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            addMessage(data.message);
+            messageInput.value = '';
+        } else {
+            alert('Failed to send message: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error sending message:', error);
+        alert('Error sending message. Please try again.');
+    } finally {
+        sendButton.disabled = false;
+        messageInput.focus();
+    }
+});
+
+// Poll for new messages
+let lastMessageId = {{ messages[-1].id if messages else 0 }};
+
+async function checkNewMessages() {
+    try {
+        const response = await fetch('/api/messages/{{ user.id }}');
+        const data = await response.json();
+        
+        if (data.messages && data.messages.length > 0) {
+            const newMessages = data.messages.filter(msg => msg.id > lastMessageId);
+            
+            newMessages.forEach(message => {
+                addMessage(message);
+                lastMessageId = Math.max(lastMessageId, message.id);
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching new messages:', error);
+    }
+}
+
+// Typing indicator
+let typingTimer;
+const messageInput = document.getElementById('messageInput');
+const typingIndicator = document.getElementById('typingIndicator');
+
+messageInput.addEventListener('input', function() {
+    // In a real app, you'd send a "typing" event to the server
+    // For now, we'll just simulate it locally
+    clearTimeout(typingTimer);
+    typingIndicator.style.display = 'block';
+    
+    typingTimer = setTimeout(() => {
+        typingIndicator.style.display = 'none';
+    }, 1000);
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    scrollToBottom();
+    
+    // Check for new messages every 3 seconds
+    setInterval(checkNewMessages, 3000);
+    
+    // Focus on message input
+    messageInput.focus();
+});
+
+// Handle Enter key for sending (but allow Shift+Enter for new line)
+messageInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        document.getElementById('messageForm').dispatchEvent(new Event('submit'));
+    }
+});
+
+// Auto-resize textarea (if we change to textarea later)
+function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = (textarea.scrollHeight) + 'px';
+}
+</script>
+
+<style>
+.message-bubble {
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+}
+
+#messagesContainer {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+#messagesContainer::-webkit-scrollbar {
+    width: 6px;
+}
+
+#messagesContainer::-webkit-scrollbar-track {
+    background: #1a1d20;
+}
+
+#messagesContainer::-webkit-scrollbar-thumb {
+    background: #495057;
+    border-radius: 3px;
+}
+
+#messagesContainer::-webkit-scrollbar-thumb:hover {
+    background: #6c757d;
+}
+
+/* Smooth transitions for new messages */
+.d-flex.mb-3 {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}

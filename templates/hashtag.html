@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+
+{% block title %}#{{ tag }} - hashtag{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 col-md-8 col-lg-6 mx-auto">
+        <!-- Enhanced Header -->
+        <div class="sticky-top bg-dark pt-4 pb-3 border-bottom border-secondary hashtag-header">
+            <div class="container-fluid">
+                <div class="d-flex align-items-center mb-3">
+                    <a href="{{ url_for('feed') }}" class="btn action-btn me-3">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center">
+                            <div class="hashtag-icon me-3">
+                                <i class="fas fa-hashtag fa-2x text-primary"></i>
+                            </div>
+                            <div>
+                                <h2 class="fw-bold mb-0">#{{ tag }}</h2>
+                                <p class="text-muted mb-0">
+                                    <span class="fw-semibold">{{ posts|length }}</span>
+                                    {{ 'post' if posts|length == 1 else 'posts' }}
+                                    {% if hashtag %}
+                                    · Used {{ hashtag.count }} times
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="dropdown">
+                        <button class="btn action-btn dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-dark">
+                            <li><a class="dropdown-item" href="#">
+                                <i class="fas fa-share me-2"></i>Share hashtag
+                            </a></li>
+                            <li><a class="dropdown-item" href="#">
+                                <i class="fas fa-bell me-2"></i>Get notifications
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#">
+                                <i class="fas fa-flag me-2"></i>Report hashtag
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Trending Status -->
+                {% if hashtag and hashtag.count > 10 %}
+                <div class="trending-badge">
+                    <span class="badge bg-primary">
+                        <i class="fas fa-fire me-1"></i>
+                        Trending
+                    </span>
+                    <small class="text-muted ms-2">Popular in your network</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Posts Container -->
+        <div class="posts-container">
+            {% for post in posts %}
+            <div class="post-card enhanced-post">
+                <!-- Post Header -->
+                <div class="post-header">
+                    <div class="d-flex align-items-center">
+                        <div class="position-relative">
+                            <img src="{{ url_for('static', filename='uploads/profiles/' + post.author.profile_picture) }}" 
+                                 class="avatar me-3" onerror="this.src='https://via.placeholder.com/48'">
+                            {% if post.author.is_online %}
+                            <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-dark online-dot"></span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center">
+                                <span class="fw-bold">{{ post.author.username }}</span>
+                                <span class="text-muted mx-1">·</span>
+                                <span class="text-muted">{{ post.created_at|time_ago }}</span>
+                            </div>
+                            <div class="text-muted small">@{{ post.author.username }}</div>
+                        </div>
+
+                        <div class="dropdown">
+                            <button class="btn action-btn dropdown-toggle-no-arrow" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-dark">
+                                <li><a class="dropdown-item" href="#">
+                                    <i class="far fa-bookmark me-2"></i>Save post
+                                </a></li>
+                                <li><a class="dropdown-item" href="#">
+                                    <i class="fas fa-link me-2"></i>Copy link
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#">
+                                    <i class="fas fa-flag me-2"></i>Report post
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Post Content -->
+                <div class="post-content mt-3">
+                    <div class="post-text mb-3">
+                        {{ post.content | process_content | safe }}
+                    </div>
+
+                    {% if post.image %}
+                    <div class="post-image mb-3">
+                        <img src="{{ url_for('static', filename='uploads/posts/' + post.image) }}" 
+                             class="img-fluid rounded-3 post-image-preview" 
+                             data-bs-toggle="modal" 
+                             data-bs-target="#imageModal{{ post.id }}">
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Post Stats -->
+                <div class="post-stats mb-2">
+                    <span class="text-muted small me-3">
+                        <i class="far fa-comment me-1"></i>{{ post.comment_count() }}
+                    </span>
+                    <span class="text-muted small me-3">
+                        <i class="far fa-heart me-1"></i>{{ post.like_count() }}
+                    </span>
+                    <span class="text-muted small">
+                        <i class="far fa-eye me-1"></i>{{ post.like_count() + 42 }} <!-- Example view count -->
+                    </span>
+                </div>
+
+                <!-- Post Actions -->
+                <div class="post-actions border-top border-secondary pt-2">
+                    <div class="d-flex justify-content-around">
+                        <button class="btn action-btn comment-btn" data-post-id="{{ post.id }}">
+                            <i class="far fa-comment"></i>
+                        </button>
+
+                        <button class="btn action-btn">
+                            <i class="fas fa-retweet"></i>
+                        </button>
+
+                        <button class="btn action-btn like-btn {% if post.likes.filter_by(user_id=current_user.id).first() %}liked{% endif %}" 
+                                data-post-id="{{ post.id }}">
+                            <i class="{% if post.likes.filter_by(user_id=current_user.id).first() %}fas text-danger{% else %}far{% endif %} fa-heart"></i>
+                            <span class="ms-1 like-count">{{ post.like_count() }}</span>
+                        </button>
+
+                        <button class="btn action-btn">
+                            <i class="far fa-share-square"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Comments Preview -->
+                {% if post.comments.count() > 0 %}
+                <div class="comments-preview mt-3">
+                    {% for comment in post.comments.limit(2) %}
+                    <div class="comment-item d-flex align-items-start mb-2">
+                        <img src="{{ url_for('static', filename='uploads/profiles/' + comment.author.profile_picture) }}" 
+                             class="avatar-sm me-2" onerror="this.src='https://via.placeholder.com/32'">
+                        <div class="flex-grow-1">
+                            <div class="bg-secondary rounded-3 p-2">
+                                <span class="fw-bold small">{{ comment.author.username }}</span>
+                                <span class="small">{{ comment.content }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% if post.comments.count() > 2 %}
+                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="text-primary small text-decoration-none">
+                        View all {{ post.comments.count() }} comments
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Image Modal -->
+            {% if post.image %}
+            <div class="modal fade" id="imageModal{{ post.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content bg-dark">
+                        <div class="modal-header border-0">
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <img src="{{ url_for('static', filename='uploads/posts/' + post.image) }}" 
+                                 class="img-fluid" style="max-height: 80vh;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-5 empty-state">
+                <div class="empty-icon mb-4">
+                    <i class="fas fa-hashtag fa-4x text-muted"></i>
+                </div>
+                <h4 class="text-muted mb-3">No posts with #{{ tag }} yet</h4>
+                <p class="text-muted mb-4">Be the first to use this hashtag and start the conversation!</p>
+                <a href="{{ url_for('feed') }}" class="btn btn-primary">
+                    <i class="fas fa-pen me-2"></i>Create a post
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Load More Button -->
+        {% if posts|length >= 10 %}
+        <div class="text-center py-4">
+            <button class="btn btn-outline-primary" id="loadMore">
+                <i class="fas fa-sync me-2"></i>Load more posts
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Like functionality
+document.querySelectorAll('.like-btn').forEach(button => {
+    button.addEventListener('click', async function() {
+        const postId = this.getAttribute('data-post-id');
+        const heartIcon = this.querySelector('i');
+        const likeCount = this.querySelector('.like-count');
+        
+        try {
+            const response = await fetch(`/post/${postId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'liked') {
+                heartIcon.classList.remove('far');
+                heartIcon.classList.add('fas', 'text-danger');
+                this.classList.add('liked');
+            } else {
+                heartIcon.classList.remove('fas', 'text-danger');
+                heartIcon.classList.add('far');
+                this.classList.remove('liked');
+            }
+            
+            likeCount.textContent = data.count;
+            
+        } catch (error) {
+            console.error('Error liking post:', error);
+        }
+    });
+});
+
+// Smooth animations for post cards
+document.addEventListener('DOMContentLoaded', function() {
+    const postCards = document.querySelectorAll('.enhanced-post');
+    
+    postCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('fade-in');
+    });
+});
+
+// Load more functionality (placeholder)
+document.getElementById('loadMore')?.addEventListener('click', function() {
+    this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
+    this.disabled = true;
+    
+    // Simulate loading
+    setTimeout(() => {
+        alert('This would load more posts in a real implementation');
+        this.innerHTML = '<i class="fas fa-sync me-2"></i>Load more posts';
+        this.disabled = false;
+    }, 1000);
+});
+
+// Image preview enhancement
+document.querySelectorAll('.post-image-preview').forEach(img => {
+    img.addEventListener('mouseenter', function() {
+        this.style.transform = 'scale(1.02)';
+        this.style.transition = 'transform 0.3s ease';
+    });
+    
+    img.addEventListener('mouseleave', function() {
+        this.style.transform = 'scale(1)';
+    });
+});
+</script>
+
+<style>
+.hashtag-header {
+    background: linear-gradient(135deg, var(--bs-dark) 0%, #1a1d20 100%);
+    backdrop-filter: blur(10px);
+}
+
+.hashtag-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(var(--bs-primary-rgb), 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.enhanced-post {
+    border-radius: 16px;
+    margin-bottom: 16px;
+    transition: all 0.3s ease;
+    border: 1px solid #2d3035;
+    background: var(--bs-dark);
+}
+
+.enhanced-post:hover {
+    border-color: #495057;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.post-header {
+    padding: 16px 20px 0;
+}
+
+.post-content {
+    padding: 0 20px;
+}
+
+.post-actions {
+    padding: 0 20px 12px;
+}
+
+.post-stats {
+    padding: 0 20px;
+}
+
+.post-text {
+    font-size: 1.1rem;
+    line-height: 1.5;
+    color: var(--bs-light);
+}
+
+.post-image {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.post-image-preview {
+    cursor: zoom-in;
+    transition: transform 0.3s ease;
+    max-height: 500px;
+    width: 100%;
+    object-fit: cover;
+}
+
+.online-dot {
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--bs-dark);
+}
+
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+}
+
+.comment-item .bg-secondary {
+    background-color: #2d3035 !important;
+}
+
+.empty-state {
+    padding: 60px 20px;
+}
+
+.empty-icon {
+    opacity: 0.7;
+}
+
+.dropdown-toggle-no-arrow::after {
+    display: none !important;
+}
+
+.trending-badge {
+    padding: 8px 0;
+    border-top: 1px solid #2d3035;
+    margin-top: 12px;
+}
+
+.liked {
+    color: #dc3545 !important;
+}
+
+/* Animation for post loading */
+.fade-in {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Custom scrollbar for the page */
+.posts-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.posts-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.posts-container::-webkit-scrollbar-thumb {
+    background: #495057;
+    border-radius: 3px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .hashtag-icon {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .hashtag-icon i {
+        font-size: 1.5rem !important;
+    }
+    
+    h2 {
+        font-size: 1.5rem;
+    }
+    
+    .post-text {
+        font-size: 1rem;
+    }
+}
+
+/* Enhanced action buttons */
+.action-btn {
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.action-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.like-btn:hover {
+    color: #dc3545 !important;
+}
+
+.comment-btn:hover {
+    color: #0dcaf0 !important;
+}
+</style>
+{% endblock %}
