@@ -35,6 +35,7 @@
             font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
             line-height: 1.5;
             font-weight: 400;
+            padding-top: 64px; /* Space for fixed navbar */
         }
         
         /* Main Content - Full width */
@@ -43,7 +44,7 @@
             background: var(--background-color);
         }
         
-        /* Enhanced Navigation */
+        /* Enhanced Navigation - FIXED POSITION */
         .nav-link {
             color: var(--text-primary) !important;
             border-radius: 50px;
@@ -287,14 +288,17 @@
             color: #ff6b7a;
         }
         
-        /* Top Navigation Bar */
+        /* Top Navigation Bar - FIXED AT TOP */
         .top-nav {
             background: var(--background-color);
             border-bottom: 1px solid var(--border-color);
             padding: 12px 0;
-            position: sticky;
+            position: fixed;
             top: 0;
-            z-index: 1000;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+            height: 64px;
         }
         
         /* Mobile Bottom Navigation */
@@ -306,7 +310,7 @@
             background: var(--background-color);
             border-top: 1px solid var(--border-light);
             padding: 12px 16px;
-            z-index: 1000;
+            z-index: 9998;
             display: none;
         }
         
@@ -348,7 +352,8 @@
         .fade-in {
             animation: fadeIn 0.5s ease-in;
         }
-                /* Add to your existing CSS */
+        
+        /* Add to your existing CSS */
         .verified-badge {
             color: #1d9bf0;
             font-size: 0.9em;
@@ -364,6 +369,50 @@
             border-radius: 10px;
             margin-left: 5px;
         }
+        
+        /* Toast Container */
+        .toast-container {
+            z-index: 9999;
+        }
+        
+        .toast {
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Pin Badge */
+        .pin-badge {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            font-size: 0.7em;
+            padding: 3px 8px;
+            border-radius: 8px;
+            margin-left: 5px;
+        }
+        
+        /* Bookmark button */
+        .bookmark-btn.bookmarked {
+            color: var(--primary-color);
+        }
+        
+        .bookmark-btn:hover {
+            color: var(--primary-color);
+            background-color: rgba(29, 155, 240, 0.1);
+        }
+        
+        /* Image preview styling */
+        #image-preview {
+            max-width: 300px;
+            position: relative;
+        }
+        
+        #preview-image {
+            max-width: 100%;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+        }
+        
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -376,11 +425,36 @@
         .hover-lift:hover {
             transform: translateY(-2px);
         }
-
+        
+        /* Fixed sidebar for desktop */
+        .fixed-sidebar {
+            position: fixed;
+            top: 80px;
+            width: 280px;
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+            z-index: 100;
+        }
+        
+        /* Main content area */
+        .main-feed {
+            margin-left: 280px;
+            padding: 20px;
+        }
+        
         /* Responsive Design */
         @media (max-width: 768px) {
             .mobile-bottom-nav {
                 display: flex;
+            }
+            
+            .fixed-sidebar {
+                display: none;
+            }
+            
+            .main-feed {
+                margin-left: 0;
+                padding: 15px;
             }
 
             .post-card {
@@ -395,12 +469,40 @@
             .btn-primary {
                 padding: 10px 20px;
             }
+            
+            body {
+                padding-top: 64px;
+                padding-bottom: 70px; /* Space for mobile bottom nav */
+            }
+            
+            .top-nav {
+                height: 64px;
+            }
         }
 
         @media (max-width: 480px) {
             .post-card {
                 padding: 12px 8px;
             }
+            
+            .main-feed {
+                padding: 10px;
+            }
+            
+            body {
+                padding-bottom: 60px;
+            }
+        }
+        
+        /* Ensure content is visible above navbar */
+        .container-fluid {
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Fix for dropdowns appearing under navbar */
+        .dropdown-menu {
+            z-index: 10000 !important;
         }
     </style>
 </head>
@@ -432,10 +534,15 @@
                                 <span>Explore</span>
                             </a>
                             
+                            <a class="nav-link {% if request.endpoint == 'lists' %}active{% endif %}" href="{{ url_for('lists') }}">
+                                <i class="fas fa-list fa-lg me-2"></i>
+                                <span>Lists</span>
+                            </a>
+                            
                             <a class="nav-link {% if request.endpoint == 'notifications' %}active{% endif %}" href="{{ url_for('notifications') }}">
                                 <i class="fas fa-bell fa-lg me-2"></i>
                                 <span>Notifications</span>
-                                {% if current_user.is_authenticated and current_user.notifications.filter_by(is_read=False).count() > 0 %}
+                                {% if current_user.get_unread_notification_count() > 0 %}
                                     <span class="notification-dot"></span>
                                 {% endif %}
                             </a>
@@ -443,7 +550,7 @@
                             <a class="nav-link {% if request.endpoint == 'messages' %}active{% endif %}" href="{{ url_for('messages') }}">
                                 <i class="fas fa-envelope fa-lg me-2"></i>
                                 <span>Messages</span>
-                                {% if current_user.is_authenticated and current_user.get_unread_message_count() > 0 %}
+                                {% if current_user.get_unread_message_count() > 0 %}
                                     <span class="badge bg-primary rounded-pill ms-1">{{ current_user.get_unread_message_count() }}</span>
                                 {% endif %}
                             </a>
@@ -465,6 +572,12 @@
                             <ul class="dropdown-menu dropdown-menu-dark">
                                 <li><a class="dropdown-item" href="{{ url_for('profile', username=current_user.username) }}">
                                     <i class="fas fa-user me-2"></i>Profile
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('bookmarks') }}">
+                                    <i class="fas fa-bookmark me-2"></i>Bookmarks
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('pinned_posts', username=current_user.username) }}">
+                                    <i class="fas fa-thumbtack me-2"></i>Pinned Posts
                                 </a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('edit_profile') }}">
                                     <i class="fas fa-edit me-2"></i>Edit Profile
@@ -494,8 +607,7 @@
     </nav>
 
     <!-- Main Content -->
-     
-    <div class="main-content" style="padding-top: 80px;">
+    <div class="main-content">
         <div class="container-fluid">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -526,13 +638,13 @@
             <i class="fas fa-search"></i>
             <span>Explore</span>
         </a>
+        <a href="{{ url_for('lists') }}" class="mobile-nav-item {% if request.endpoint == 'lists' %}active{% endif %}">
+            <i class="fas fa-list"></i>
+            <span>Lists</span>
+        </a>
         <a href="{{ url_for('notifications') }}" class="mobile-nav-item {% if request.endpoint == 'notifications' %}active{% endif %}">
             <i class="fas fa-bell"></i>
             <span>Alerts</span>
-        </a>
-        <a href="{{ url_for('messages') }}" class="mobile-nav-item {% if request.endpoint == 'messages' %}active{% endif %}">
-            <i class="fas fa-envelope"></i>
-            <span>Chats</span>
         </a>
         <a href="{{ url_for('profile', username=current_user.username) }}" class="mobile-nav-item {% if request.endpoint == 'profile' %}active{% endif %}">
             <i class="fas fa-user"></i>
@@ -541,12 +653,33 @@
     </div>
     {% endif %}
 
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     
     <script>
         $(document).ready(function() {
             console.log('Chatter - Clean Interface Loaded');
+            
+            // Ensure content starts below fixed navbar
+            function adjustContentPadding() {
+                const navbarHeight = $('.top-nav').outerHeight();
+                $('body').css('padding-top', navbarHeight + 'px');
+                
+                // Adjust mobile bottom nav padding
+                if ($(window).width() <= 768) {
+                    const mobileNavHeight = $('.mobile-bottom-nav').outerHeight();
+                    $('body').css('padding-bottom', mobileNavHeight + 'px');
+                } else {
+                    $('body').css('padding-bottom', '0');
+                }
+            }
+            
+            // Adjust on load and resize
+            adjustContentPadding();
+            $(window).resize(adjustContentPadding);
             
             // Auto-expand textarea
             $(document).on('input', '.post-textarea', function() {
@@ -598,6 +731,7 @@
                     },
                     error: function(xhr, status, error) {
                         console.error('Like error:', error);
+                        showToast('An error occurred while liking the post', 'danger');
                     },
                     complete: function() {
                         $btn.prop('disabled', false);
@@ -623,13 +757,16 @@
                     success: function(data) {
                         if (data.status === 'followed') {
                             $btn.text('Following').removeClass('btn-outline-primary').addClass('btn-primary');
+                            showToast('You are now following this user', 'success');
                         } else {
                             $btn.text('Follow').removeClass('btn-primary').addClass('btn-outline-primary');
+                            showToast('You unfollowed this user', 'info');
                         }
                     },
                     error: function(xhr, status, error) {
                         console.error('Follow error:', error);
                         $btn.html(originalText);
+                        showToast('An error occurred while following the user', 'danger');
                     },
                     complete: function() {
                         $btn.prop('disabled', false);
@@ -637,9 +774,377 @@
                 });
             });
 
+            // Bookmark functionality
+            $(document).on('click', '.bookmark-btn', function(e) {
+                e.preventDefault();
+                
+                const postId = $(this).data('post-id');
+                const $btn = $(this);
+                const $icon = $btn.find('i');
+                
+                // Add loading state
+                $btn.prop('disabled', true);
+                
+                $.ajax({
+                    url: `/post/${postId}/bookmark`,
+                    type: 'POST',
+                    success: function(data) {
+                        if (data.status === 'bookmarked') {
+                            $btn.addClass('bookmarked');
+                            $icon.removeClass('far').addClass('fas');
+                            showToast('Post bookmarked!', 'success');
+                        } else {
+                            $btn.removeClass('bookmarked');
+                            $icon.removeClass('fas').addClass('far');
+                            showToast('Bookmark removed', 'info');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Bookmark error:', error);
+                        showToast('An error occurred while bookmarking the post', 'danger');
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false);
+                    }
+                });
+            });
+
+            // Pin/Unpin functionality
+            $(document).on('click', '.pin-post-btn', function(e) {
+                e.preventDefault();
+                
+                const postId = $(this).data('post-id');
+                const isPinned = $(this).text().includes('Unpin');
+                
+                if (isPinned && !confirm('Unpin this post from your profile?')) return;
+                
+                $.ajax({
+                    url: `/post/${postId}/pin`,
+                    type: 'POST',
+                    success: function(data) {
+                        if (data.status === 'pinned') {
+                            showToast('Post pinned to your profile!', 'success');
+                        } else {
+                            showToast('Post unpinned from your profile', 'info');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Pin error:', error);
+                        showToast('An error occurred while pinning the post', 'danger');
+                    }
+                });
+            });
+
+            // Block/Unblock functionality
+            $(document).on('click', '.block-btn', function(e) {
+                e.preventDefault();
+                
+                const userId = $(this).data('user-id');
+                const isUnblock = $(this).text().includes('Unblock');
+                
+                const action = isUnblock ? 'unblock' : 'block';
+                if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} this user?`)) return;
+                
+                $.ajax({
+                    url: `/block/${userId}`,
+                    type: 'POST',
+                    success: function(data) {
+                        if (data.status === 'blocked') {
+                            showToast('User blocked successfully', 'success');
+                        } else {
+                            showToast('User unblocked successfully', 'info');
+                        }
+                        // Refresh the page to reflect changes
+                        setTimeout(() => location.reload(), 1000);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Block error:', error);
+                        showToast('An error occurred while blocking the user', 'danger');
+                    }
+                });
+            });
+
             // Add fade-in animation to all post cards
             $('.post-card').addClass('fade-in');
+            
+            // Initialize tooltips
+            $('[data-bs-toggle="tooltip"]').tooltip();
+            
+            // Fix dropdown positioning
+            $(document).on('show.bs.dropdown', function(e) {
+                const $dropdown = $(e.target).find('.dropdown-menu');
+                const windowHeight = $(window).height();
+                const dropdownHeight = $dropdown.outerHeight();
+                const offsetTop = $(e.target).offset().top;
+                
+                // If dropdown would go off screen, position it above
+                if (offsetTop + dropdownHeight > windowHeight - 20) {
+                    $dropdown.addClass('dropdown-menu-up');
+                }
+            });
+            
+            // Smooth scrolling for anchor links
+            $(document).on('click', 'a[href^="#"]', function(e) {
+                if (this.hash !== '') {
+                    e.preventDefault();
+                    const hash = this.hash;
+                    $('html, body').animate({
+                        scrollTop: $(hash).offset().top - 80
+                    }, 800);
+                }
+            });
         });
+        
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toastId = 'toast-' + Date.now();
+            const typeColors = {
+                success: '#00ba7c',
+                danger: '#f4212e',
+                warning: '#ffd400',
+                info: '#1d9bf0'
+            };
+            
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-white border-0 fade-in" 
+                     role="alert" style="background: ${typeColors[type] || typeColors.info}; border: 1px solid var(--border-light);">
+                    <div class="d-flex">
+                        <div class="toast-body d-flex align-items-center">
+                            <i class="fas fa-${getToastIcon(type)} me-2"></i>
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+                document.body.appendChild(toastContainer);
+            }
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+            toast.show();
+            
+            toastElement.addEventListener('hidden.bs.toast', function() {
+                this.remove();
+            });
+        }
+        
+        function getToastIcon(type) {
+            const icons = {
+                success: 'check-circle',
+                danger: 'exclamation-circle',
+                warning: 'exclamation-triangle',
+                info: 'info-circle'
+            };
+            return icons[type] || 'info-circle';
+        }
+        
+        // Image preview function
+        function previewImage(event) {
+            const input = event.target;
+            const preview = document.getElementById('preview-image');
+            const previewContainer = document.getElementById('image-preview');
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    previewContainer.classList.remove('d-none');
+                }
+                
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        function removeImage() {
+            document.getElementById('image-input').value = '';
+            document.getElementById('image-preview').classList.add('d-none');
+        }
+        
+        // Character counter for any textarea
+        function setupCharacterCounter(textareaId, counterId) {
+            const textarea = document.getElementById(textareaId);
+            const counter = document.getElementById(counterId);
+            
+            if (textarea && counter) {
+                textarea.addEventListener('input', function() {
+                    const maxLength = this.maxLength || 280;
+                    const currentLength = this.value.length;
+                    counter.textContent = `${currentLength}/${maxLength}`;
+                    
+                    if (currentLength > maxLength) {
+                        counter.style.color = '#f4212e';
+                    } else {
+                        counter.style.color = 'var(--text-muted)';
+                    }
+                });
+            }
+        }
+        
+        // Copy to clipboard function
+        function copyToClipboard(text, successMessage = 'Copied to clipboard!') {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(successMessage, 'success');
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                showToast('Failed to copy', 'danger');
+            });
+        }
+        
+        // Confirm action with modal
+        function confirmAction(message, confirmCallback, cancelCallback = null) {
+            if (confirm(message)) {
+                confirmCallback();
+            } else if (cancelCallback) {
+                cancelCallback();
+            }
+        }
+        
+        // Format date to relative time
+        function formatRelativeTime(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffSec = Math.floor(diffMs / 1000);
+            const diffMin = Math.floor(diffSec / 60);
+            const diffHour = Math.floor(diffMin / 60);
+            const diffDay = Math.floor(diffHour / 24);
+            
+            if (diffSec < 60) return 'Just now';
+            if (diffMin < 60) return `${diffMin}m`;
+            if (diffHour < 24) return `${diffHour}h`;
+            if (diffDay < 7) return `${diffDay}d`;
+            if (diffDay < 30) return `${Math.floor(diffDay / 7)}w`;
+            if (diffDay < 365) return `${Math.floor(diffDay / 30)}mo`;
+            return `${Math.floor(diffDay / 365)}y`;
+        }
+        
+        // Update all relative timestamps on the page
+        function updateRelativeTimes() {
+            document.querySelectorAll('.relative-time').forEach(element => {
+                const dateString = element.dataset.time;
+                if (dateString) {
+                    element.textContent = formatRelativeTime(dateString);
+                }
+            });
+        }
+        
+        // Update timestamps every minute
+        setInterval(updateRelativeTimes, 60000);
+        
+        // Initialize on page load
+        $(document).ready(function() {
+            updateRelativeTimes();
+        });
+        
+        // Auto-refresh notifications count
+        function refreshNotifications() {
+            if (window.location.pathname !== '/notifications') {
+                $.ajax({
+                    url: '/notifications/count',
+                    type: 'GET',
+                    success: function(data) {
+                        if (data.count > 0) {
+                            $('.notification-dot').show();
+                        } else {
+                            $('.notification-dot').hide();
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Refresh notifications every 30 seconds
+        setInterval(refreshNotifications, 30000);
+        
+        // Mark notification as read
+        function markNotificationRead(notificationId) {
+            $.ajax({
+                url: `/notifications/read/${notificationId}`,
+                type: 'POST',
+                success: function() {
+                    $(`#notification-${notificationId}`).remove();
+                }
+            });
+        }
+        
+        // Load more posts (infinite scroll)
+        let isLoading = false;
+        let currentPage = 1;
+        
+        function loadMorePosts() {
+            if (isLoading) return;
+            
+            const container = document.querySelector('.posts-container');
+            if (!container) return;
+            
+            const rect = container.getBoundingClientRect();
+            if (rect.bottom > window.innerHeight + 100) return;
+            
+            isLoading = true;
+            currentPage++;
+            
+            $.ajax({
+                url: window.location.pathname + `?page=${currentPage}`,
+                type: 'GET',
+                success: function(data) {
+                    // Append new posts to container
+                    $(container).append(data.postsHtml);
+                    isLoading = false;
+                },
+                error: function() {
+                    isLoading = false;
+                }
+            });
+        }
+        
+        // Set up infinite scroll
+        $(window).on('scroll', loadMorePosts);
+        
+        // Initialize all character counters
+        $(document).ready(function() {
+            $('textarea').each(function() {
+                const textareaId = this.id;
+                const counterId = textareaId + '-counter';
+                if (document.getElementById(counterId)) {
+                    setupCharacterCounter(textareaId, counterId);
+                }
+            });
+        });
+        
+        // Fix for navbar overlapping content
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // Back to top button
+        $(window).scroll(function() {
+            if ($(this).scrollTop() > 300) {
+                $('#back-to-top').fadeIn();
+            } else {
+                $('#back-to-top').fadeOut();
+            }
+        });
+        
+        // Create back to top button if not exists
+        if (!$('#back-to-top').length) {
+            $('body').append(`
+                <button id="back-to-top" class="btn btn-primary position-fixed bottom-3 end-3 rounded-circle shadow-lg" 
+                        style="width: 50px; height: 50px; display: none; z-index: 9990;"
+                        onclick="scrollToTop()">
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+            `);
+        }
     </script>
 
     {% block scripts %}{% endblock %}

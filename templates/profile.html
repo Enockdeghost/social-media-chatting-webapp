@@ -1,155 +1,310 @@
 {% extends "base.html" %}
 
-{% block title %}{{ user.username }} - Chatter{% endblock %}
+{% block title %}{{ user.username }} - Profile - Chatter{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <!-- Profile Header -->
-         
+<div class="container-fluid">
+    <!-- Profile Header -->
+    <div class="glass-effect rounded-3 mb-4" style="border: 1px solid var(--border-light);">
+        <!-- Cover Photo -->
         <div class="position-relative">
-            <!-- Cover Photo -->
-            <div class="bg-secondary" style="height: 200px;"></div>
+            <div class="profile-cover" style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px 12px 0 0;"></div>
             
-            <!-- Profile Info -->
-            <div class="px-4 pb-4">
-                <div class="d-flex justify-content-between align-items-start">
-                    <!-- Profile Picture -->
-                    <div class="position-relative">
-                        <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
-                             class="avatar border-4 border-dark rounded-circle" 
-                             style="width: 120px; height: 120px; margin-top: -60px; border-width: 4px !important;"
-                             onerror="this.src='https://via.placeholder.com/120'">
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="mt-3">
-                        {% if user.id == current_user.id %}
-                        <a href="{{ url_for('edit_profile') }}" class="btn btn-outline-light rounded-pill px-4">
-                            Edit profile
-                        </a>
-                        {% else %}
-                        <button class="btn {% if current_user.is_following(user) %}btn-outline-light{% else %}btn-primary{% endif %} rounded-pill px-4 follow-btn" 
-                                data-user-id="{{ user.id }}">
-                            {% if current_user.is_following(user) %}Following{% else %}Follow{% endif %}
-                        </button>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- User Info -->
-                <div class="mt-3">
-                    <h4 class="fw-bold mb-1">{{ user.username }}</h4>
-                    <p class="text-muted mb-3">@{{ user.username }}</p>
+            <!-- Profile Picture -->
+            <div class="position-absolute" style="bottom: -60px; left: 20px;">
+                <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+                     class="rounded-circle border-4 border-dark" 
+                     style="width: 120px; height: 120px; object-fit: cover; border: 4px solid var(--background-color);"
+                     onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
+            </div>
+            
+            <!-- Edit Profile Button (for own profile) -->
+            {% if current_user.id == user.id %}
+            <div class="position-absolute" style="bottom: -50px; right: 20px;">
+                <a href="{{ url_for('edit_profile') }}" class="btn btn-outline-light">
+                    <i class="fas fa-edit me-2"></i>Edit Profile
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Profile Info -->
+        <div class="p-4" style="margin-top: 60px;">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2 class="fw-bold mb-1">{{ user.username }}</h2>
+                    {% if user.is_verified %}
+                    <span class="verified-badge me-1"><i class="fas fa-check-circle"></i> Verified</span>
+                    {% endif %}
+                    {% if user.is_admin %}
+                    <span class="admin-badge">Admin</span>
+                    {% endif %}
+                    
+                    <p class="text-muted mb-2">@{{ user.username }}</p>
                     
                     {% if user.bio %}
                     <p class="mb-3">{{ user.bio }}</p>
                     {% endif %}
-
-                    <div class="d-flex text-muted">
-                        <div class="me-4">
-                            <span class="fw-bold text-light">{{ user.followed.count() }}</span>
-                            <span class="ms-1">Following</span>
-                        </div>
-                        <div>
-                            <span class="fw-bold text-light">{{ user.followers.count() }}</span>
-                            <span class="ms-1">Followers</span>
-                        </div>
-                        <div class="ms-4">
-                            <span class="fw-bold text-light">{{ total_likes }}</span>
-                            <span class="ms-1">Likes</span>
-                        </div>
+                    
+                    {% if user.location %}
+                    <p class="text-muted mb-1">
+                        <i class="fas fa-map-marker-alt me-2"></i>{{ user.location }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if user.website %}
+                    <p class="text-muted mb-1">
+                        <i class="fas fa-link me-2"></i>
+                        <a href="{{ user.website }}" target="_blank" class="text-decoration-none" style="color: var(--primary-color);">
+                            {{ user.website|truncate(30) }}
+                        </a>
+                    </p>
+                    {% endif %}
+                    
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-calendar me-2"></i>
+                        Joined {{ user.created_at.strftime('%B %Y') }}
+                    </p>
+                </div>
+                
+                <!-- Follow/Message/More buttons -->
+                <div class="d-flex gap-2">
+                    {% if current_user.id != user.id %}
+                        {% if current_user.has_blocked(user) %}
+                        <button class="btn btn-outline-danger unblock-btn" data-user-id="{{ user.id }}">
+                            <i class="fas fa-ban me-2"></i>Unblock
+                        </button>
+                        {% else %}
+                        <button class="btn {% if current_user.is_following(user) %}btn-primary{% else %}btn-outline-primary{% endif %} follow-btn" 
+                                data-user-id="{{ user.id }}">
+                            {% if current_user.is_following(user) %}
+                                <i class="fas fa-user-check me-2"></i>Following
+                            {% else %}
+                                <i class="fas fa-user-plus me-2"></i>Follow
+                            {% endif %}
+                        </button>
+                        
+                        <a href="{{ url_for('conversation', user_id=user.id) }}" class="btn btn-outline-light">
+                            <i class="fas fa-envelope"></i>
+                        </a>
+                        {% endif %}
+                    {% endif %}
+                    
+                    <!-- More options dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-dark">
+                            {% if current_user.id != user.id %}
+                            <li>
+                                <button class="dropdown-item block-btn" data-user-id="{{ user.id }}">
+                                    <i class="fas fa-ban me-2"></i>
+                                    {% if current_user.has_blocked(user) %}Unblock User{% else %}Block User{% endif %}
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item report-btn" data-user-id="{{ user.id }}">
+                                    <i class="fas fa-flag me-2"></i>Report User
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('profile_followers', username=user.username) }}">
+                                    <i class="fas fa-users me-2"></i>View Followers
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('profile_following', username=user.username) }}">
+                                    <i class="fas fa-user-friends me-2"></i>View Following
+                                </a>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
+            
+            <!-- Stats -->
+            <div class="d-flex gap-4 mt-4">
+                <a href="{{ url_for('profile_following', username=user.username) }}" class="text-decoration-none">
+                    <span class="fw-bold">{{ total_following }}</span>
+                    <span class="text-muted">Following</span>
+                </a>
+                <a href="{{ url_for('profile_followers', username=user.username) }}" class="text-decoration-none">
+                    <span class="fw-bold">{{ total_followers }}</span>
+                    <span class="text-muted">Followers</span>
+                </a>
+                <a href="#" class="text-decoration-none">
+                    <span class="fw-bold">{{ total_likes }}</span>
+                    <span class="text-muted">Likes</span>
+                </a>
+            </div>
         </div>
-
-        <!-- Posts Tabs -->
-        <div class="border-top border-secondary">
-            <nav>
-                <div class="nav nav-tabs border-0" id="nav-tab" role="tablist">
-                    <button class="nav-link active border-0 text-light py-3" data-bs-toggle="tab" data-bs-target="#posts" type="button">
-                        Posts
-                    </button>
-                    <button class="nav-link border-0 text-light py-3" data-bs-toggle="tab" data-bs-target="#replies" type="button">
-                        Replies
-                    </button>
-                    <button class="nav-link border-0 text-light py-3" data-bs-toggle="tab" data-bs-target="#media" type="button">
-                        Media
-                    </button>
-                    <button class="nav-link border-0 text-light py-3" data-bs-toggle="tab" data-bs-target="#likes" type="button">
-                        Likes
-                    </button>
+    </div>
+    
+    <!-- Pinned Post (if exists) -->
+    {% if pinned_post %}
+    <div class="glass-effect rounded-3 mb-4" style="border: 2px solid var(--primary-color); position: relative;">
+        <div class="position-absolute" style="top: 10px; right: 10px;">
+            <span class="badge" style="background: var(--primary-color);">
+                <i class="fas fa-thumbtack me-1"></i>Pinned
+            </span>
+        </div>
+        <div class="p-3">
+            {% include 'components/post_card.html' %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Profile Tabs -->
+    <nav class="mb-4">
+        <div class="nav nav-tabs" id="profileTabs" role="tablist">
+            <button class="nav-link active" id="posts-tab" data-bs-toggle="tab" data-bs-target="#posts" type="button">
+                <i class="fas fa-comment me-2"></i>Posts
+            </button>
+            <button class="nav-link" id="replies-tab" data-bs-toggle="tab" data-bs-target="#replies" type="button">
+                <i class="fas fa-comments me-2"></i>Replies
+            </button>
+            <button class="nav-link" id="media-tab" data-bs-toggle="tab" data-bs-target="#media" type="button">
+                <i class="fas fa-image me-2"></i>Media
+            </button>
+            <button class="nav-link" id="likes-tab" data-bs-toggle="tab" data-bs-target="#likes" type="button">
+                <i class="fas fa-heart me-2"></i>Likes
+            </button>
+        </div>
+    </nav>
+    
+    <!-- Tab Content -->
+    <div class="tab-content" id="profileTabContent">
+        <!-- Posts Tab -->
+        <div class="tab-pane fade show active" id="posts">
+            {% if posts %}
+                {% for post in posts %}
+                    {% include 'components/post_card.html' %}
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No posts yet</h5>
+                    <p class="text-muted">When {{ user.username }} posts, you'll see it here.</p>
                 </div>
-            </nav>
-
-            <div class="tab-content">
-                <div class="tab-pane fade show active" id="posts">
-                    {% for post in posts %}
-                    <div class="post-card">
-                        <div class="d-flex">
-                            <img src="{{ url_for('static', filename='uploads/profiles/' + post.author.profile_picture) }}" 
-                                 class="avatar me-3" onerror="this.src='https://via.placeholder.com/48'">
-                            
-                            <div class="flex-grow-1">
-                                <div class="d-flex justify-content-between align-items-start mb-1">
-                                    <div>
-                                        <span class="fw-bold">{{ post.author.username }}</span>
-                                        <span class="text-muted ms-2">@{{ post.author.username }}</span>
-                                        <span class="text-muted ms-2">·</span>
-                                        <span class="text-muted">{{ post.created_at.strftime('%b %d') }}</span>
-                                    </div>
-                                </div>
-
-                                <div class="post-content mb-3">
-                                    {{ post.content | process_content | safe }}
-                                </div>
-
-                                {% if post.image %}
-                                <div class="post-image mb-3">
-                                    <img src="{{ url_for('static', filename='uploads/posts/' + post.image) }}" 
-                                         class="img-fluid rounded-3" style="max-height: 400px; width: auto;">
-                                </div>
-                                {% endif %}
-
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <button class="btn action-btn">
-                                        <i class="far fa-comment"></i>
-                                        <span class="ms-1">{{ post.comment_count() }}</span>
-                                    </button>
-
-                                    <button class="btn action-btn">
-                                        <i class="fas fa-retweet"></i>
-                                        <span class="ms-1">0</span>
-                                    </button>
-
-                                    <button class="btn action-btn like-btn {% if post.likes.filter_by(user_id=current_user.id).first() %}liked{% endif %}" 
-                                            data-post-id="{{ post.id }}">
-                                        <i class="{% if post.likes.filter_by(user_id=current_user.id).first() %}fas{% else %}far{% endif %} fa-heart"></i>
-                                        <span class="ms-1 like-count">{{ post.like_count() }}</span>
-                                    </button>
-
-                                    <button class="btn action-btn">
-                                        <i class="far fa-share-square"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-feather-alt fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">No posts yet</h5>
-                        {% if user.id == current_user.id %}
-                        <p class="text-muted">When you post, they'll show up here.</p>
-                        {% else %}
-                        <p class="text-muted">When @{{ user.username }} posts, they'll show up here.</p>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
+            {% endif %}
+        </div>
+        
+        <!-- Other tabs (simplified for now) -->
+        <div class="tab-pane fade" id="replies">
+            <div class="text-center py-5">
+                <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No replies yet</h5>
+            </div>
+        </div>
+        
+        <div class="tab-pane fade" id="media">
+            <div class="row g-2">
+                {% for post in posts if post.image %}
+                <div class="col-md-4">
+                    <img src="{{ url_for('static', filename='uploads/posts/' + post.image) }}" 
+                         class="img-fluid rounded-3" style="aspect-ratio: 1; object-fit: cover; cursor: pointer;"
+                         onclick="window.location.href='{{ url_for('view_post', post_id=post.id) }}'">
                 </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="tab-pane fade" id="likes">
+            <div class="text-center py-5">
+                <i class="fas fa-heart fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No likes yet</h5>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    // Follow/Unfollow functionality
+    document.querySelectorAll('.follow-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const userId = this.dataset.userId;
+            const originalText = this.innerHTML;
+            
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
+            
+            try {
+                const response = await fetch(`/follow/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'followed') {
+                    this.classList.remove('btn-outline-primary');
+                    this.classList.add('btn-primary');
+                    this.innerHTML = '<i class="fas fa-user-check me-2"></i>Following';
+                } else {
+                    this.classList.remove('btn-primary');
+                    this.classList.add('btn-outline-primary');
+                    this.innerHTML = '<i class="fas fa-user-plus me-2"></i>Follow';
+                }
+                
+                // Show toast notification
+                showToast(data.message || 'Action completed', 'success');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                this.innerHTML = originalText;
+                showToast('An error occurred', 'danger');
+            } finally {
+                this.disabled = false;
+            }
+        });
+    });
+    
+    // Block/Unblock functionality
+    document.querySelectorAll('.block-btn, .unblock-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const userId = this.dataset.userId;
+            const isUnblock = this.classList.contains('unblock-btn');
+            
+            if (!confirm(isUnblock ? 'Unblock this user?' : 'Block this user?')) return;
+            
+            const originalText = this.innerHTML;
+            this.disabled = true;
+            
+            try {
+                const response = await fetch(`/block/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'blocked') {
+                    this.classList.add('btn-danger');
+                    this.classList.remove('btn-outline-danger');
+                    this.innerHTML = '<i class="fas fa-ban me-2"></i>Unblock';
+                    showToast('User blocked', 'success');
+                } else {
+                    this.classList.remove('btn-danger');
+                    this.classList.add('btn-outline-danger');
+                    this.innerHTML = '<i class="fas fa-ban me-2"></i>Block';
+                    showToast('User unblocked', 'success');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                this.innerHTML = originalText;
+                showToast('An error occurred', 'danger');
+            } finally {
+                this.disabled = false;
+            }
+        });
+    });
+</script>
 {% endblock %}

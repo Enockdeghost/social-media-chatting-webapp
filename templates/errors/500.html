@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}500 - Internal Server Error - Chatter{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center py-5">
+            <div class="error-container">
+                <div class="error-icon mb-4">
+                    <i class="fas fa-bug fa-4x" style="color: #ff6b7a;"></i>
+                </div>
+                
+                <h1 class="display-1 fw-bold mb-3" style="color: #ff6b7a;">500</h1>
+                
+                <h2 class="h3 mb-4">Internal Server Error</h2>
+                
+                <p class="lead text-muted mb-4">
+                    Something went wrong on our end. Our team has been notified and is working to fix the issue.
+                </p>
+                
+                <div class="alert alert-danger mb-4" style="background: rgba(244, 33, 46, 0.1); border-left-color: #f4212e;">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <div>
+                            <strong>Technical Details:</strong>
+                            <ul class="mb-0 mt-1" style="text-align: left;">
+                                <li>Error ID: {{ error_id if error_id else 'Unknown' }}</li>
+                                <li>Time: {{ now.strftime('%Y-%m-%d %H:%M:%S') if now else 'Unknown' }}</li>
+                                {% if config.DEBUG and error %}
+                                <li>Error: {{ error }}</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
+                    <a href="{{ url_for('feed') }}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>Go to Home
+                    </a>
+                    
+                    <button onclick="window.location.reload()" class="btn btn-outline-light">
+                        <i class="fas fa-redo me-2"></i>Try Again
+                    </button>
+                    
+                    <button onclick="window.history.back()" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Go Back
+                    </button>
+                </div>
+                
+                <!-- Status Updates -->
+                <div class="mt-5">
+                    <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
+                        <i class="fas fa-wifi text-success"></i>
+                        <span class="small">Service Status: <span class="text-success">Operational</span></span>
+                    </div>
+                    <a href="#" class="btn btn-sm btn-outline-light">
+                        <i class="fas fa-server me-1"></i>View Status Page
+                    </a>
+                </div>
+                
+                <!-- Troubleshooting Tips -->
+                <div class="mt-5 p-3 glass-effect rounded-3" style="border: 1px solid var(--border-light); max-width: 500px; margin: 0 auto;">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fas fa-lightbulb me-2 text-warning"></i>Troubleshooting Tips
+                    </h6>
+                    <ul class="list-unstyled text-start mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Clear your browser cache and cookies
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Try using a different browser
+                        </li>
+                        <li>
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Check your internet connection
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Debug Info (only show in development) -->
+            {% if config.DEBUG %}
+            <div class="mt-5 p-3 glass-effect rounded-3" style="border: 1px solid var(--border-light);">
+                <h6 class="fw-bold mb-2">Debug Information:</h6>
+                <div class="text-start">
+                    <pre style="color: var(--text-muted); font-size: 12px; overflow-x: auto;">
+URL: {{ request.url }}
+Method: {{ request.method }}
+User Agent: {{ request.user_agent }}
+Referrer: {{ request.referrer }}
+Timestamp: {{ now.strftime('%Y-%m-%d %H:%M:%S.%f') if now else '' }}
+
+{% if error %}
+Traceback:
+{{ error }}
+{% endif %}
+                    </pre>
+                </div>
+                
+                <button class="btn btn-sm btn-outline-light" onclick="copyDebugInfo()">
+                    <i class="fas fa-copy me-1"></i>Copy Debug Info
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .error-container {
+        padding: 40px;
+        background: var(--card-color);
+        border-radius: 20px;
+        border: 1px solid var(--border-light);
+    }
+    
+    .error-icon {
+        animation: wobble 1s ease-in-out infinite alternate;
+    }
+    
+    @keyframes wobble {
+        0% { transform: rotate(-5deg); }
+        100% { transform: rotate(5deg); }
+    }
+</style>
+
+<script>
+    function copyDebugInfo() {
+        const debugInfo = document.querySelector('pre').textContent;
+        navigator.clipboard.writeText(debugInfo).then(() => {
+            showToast('Debug information copied to clipboard!', 'success');
+        }).catch(err => {
+            showToast('Failed to copy: ' + err, 'danger');
+        });
+    }
+    
+    // Auto-refresh after 30 seconds if still on error page
+    setTimeout(() => {
+        if (window.location.pathname.includes('/errors/')) {
+            showToast('Attempting to refresh the page...', 'info');
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        }
+    }, 30000);
+</script>
+{% endblock %}

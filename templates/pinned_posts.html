@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.username }}'s Pinned Posts - Chatter{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-6 mx-auto">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold mb-1">{{ title }}</h2>
+                    <p class="text-muted mb-0">{{ posts|length }} pinned posts</p>
+                </div>
+                <a href="{{ url_for('profile', username=user.username) }}" class="btn btn-outline-light">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Profile
+                </a>
+            </div>
+            
+            <!-- Pinned Posts List -->
+            {% if posts %}
+                {% for post in posts %}
+                <div class="glass-effect rounded-3 mb-3" style="border: 2px solid var(--primary-color); position: relative;">
+                    <div class="position-absolute" style="top: 10px; right: 10px;">
+                        <span class="badge" style="background: var(--primary-color);">
+                            <i class="fas fa-thumbtack me-1"></i>Pinned
+                        </span>
+                    </div>
+                    <div class="p-3">
+                        {% include 'components/post_card.html' %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <!-- Empty State -->
+                <div class="text-center py-5">
+                    <i class="fas fa-thumbtack fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No pinned posts</h5>
+                    <p class="text-muted">
+                        {% if current_user.id == user.id %}
+                        Pin important posts to your profile by clicking the three dots menu on any of your posts.
+                        {% else %}
+                        {{ user.username }} hasn't pinned any posts yet.
+                        {% endif %}
+                    </p>
+                    {% if current_user.id == user.id %}
+                    <a href="{{ url_for('feed') }}" class="btn btn-primary mt-2">
+                        <i class="fas fa-home me-2"></i>Browse Your Posts
+                    </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

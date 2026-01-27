@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Help & Support - Chatter{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Page Header -->
+            <div class="text-center mb-5">
+                <h1 class="fw-bold mb-3">Help & Support</h1>
+                <p class="lead text-muted">Get help with Chatter features and troubleshooting</p>
+            </div>
+            
+            <!-- Search Help -->
+            <div class="mb-5">
+                <div class="input-group input-group-lg">
+                    <input type="text" class="form-control search-box" placeholder="Search for help...">
+                    <button class="btn btn-primary" type="button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- FAQ Sections -->
+            <div class="accordion mb-5" id="helpAccordion">
+                <!-- Getting Started -->
+                <div class="accordion-item glass-effect" style="border: 1px solid var(--border-light);">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#gettingStarted">
+                            <i class="fas fa-rocket me-3"></i>
+                            <span class="fw-bold">Getting Started</span>
+                        </button>
+                    </h2>
+                    <div id="gettingStarted" class="accordion-collapse collapse show">
+                        <div class="accordion-body">
+                            <h5>How do I create an account?</h5>
+                            <p class="text-muted">Click the "Sign Up" button in the top right corner and follow the registration process.</p>
+                            
+                            <h5>How do I post content?</h5>
+                            <p class="text-muted">Use the post composer on the home page to create posts with text, images, or hashtags.</p>
+                            
+                            <h5>How do I follow other users?</h5>
+                            <p class="text-muted">Visit their profile and click the "Follow" button, or find them through search.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Lists Feature -->
+                <div class="accordion-item glass-effect mt-3" style="border: 1px solid var(--border-light);">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#listsHelp">
+                            <i class="fas fa-list me-3"></i>
+                            <span class="fw-bold">Lists Feature</span>
+                        </button>
+                    </h2>
+                    <div id="listsHelp" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <h5>What are Lists?</h5>
+                            <p class="text-muted">Lists allow you to organize users into groups. You can create public or private lists and subscribe to other users' lists.</p>
+                            
+                            <h5>How do I create a List?</h5>
+                            <p class="text-muted">Go to the "Lists" page and click "Create List". Give it a name, description, and choose privacy settings.</p>
+                            
+                            <h5>How do I add users to a List?</h5>
+                            <p class="text-muted">On your list page, use the "Manage Members" tab to search for and add users.</p>
+                            
+                            <h5>What's the difference between public and private lists?</h5>
+                            <p class="text-muted">Public lists can be discovered and subscribed to by other users. Private lists are only visible to you and subscribers you approve.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Post Pinning -->
+                <div class="accordion-item glass-effect mt-3" style="border: 1px solid var(--border-light);">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#pinningHelp">
+                            <i class="fas fa-thumbtack me-3"></i>
+                            <span class="fw-bold">Post Pinning</span>
+                        </button>
+                    </h2>
+                    <div id="pinningHelp" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <h5>How do I pin a post to my profile?</h5>
+                            <p class="text-muted">Click the three dots menu on any of your posts and select "Pin to Profile". You can only pin one post at a time.</p>
+                            
+                            <h5>How do I unpin a post?</h5>
+                            <p class="text-muted">Click the three dots menu on your pinned post and select "Unpin Post".</p>
+                            
+                            <h5>Can I pin someone else's post?</h5>
+                            <p class="text-muted">No, you can only pin your own posts to your profile.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bookmarks -->
+                <div class="accordion-item glass-effect mt-3" style="border: 1px solid var(--border-light);">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#bookmarksHelp">
+                            <i class="fas fa-bookmark me-3"></i>
+                            <span class="fw-bold">Bookmarks</span>
+                        </button>
+                    </h2>
+                    <div id="bookmarksHelp" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <h5>How do I bookmark a post?</h5>
+                            <p class="text-muted">Click the bookmark icon on any post to save it to your bookmarks.</p>
+                            
+                            <h5>Where can I find my bookmarked posts?</h5>
+                            <p class="text-muted">Go to your profile dropdown menu and select "Bookmarks", or visit the Bookmarks page directly.</p>
+                            
+                            <h5>How do I remove a bookmark?</h5>
+                            <p class="text-muted">Click the bookmark icon again on the post, or remove it from your Bookmarks page.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Support -->
+            <div class="glass-effect rounded-3 p-4 mb-5" style="border: 1px solid var(--border-light);">
+                <h3 class="fw-bold mb-4">Still need help?</h3>
+                <p class="text-muted mb-4">Our support team is here to help you with any issues or questions.</p>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="p-3 rounded-3 hover-lift" style="background: var(--card-hover);">
+                            <i class="fas fa-envelope fa-2x mb-3" style="color: var(--primary-color);"></i>
+                            <h5>Email Support</h5>
+                            <p class="text-muted small">support@chatter.com</p>
+                            <button class="btn btn-sm btn-outline-light">Send Email</button>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="p-3 rounded-3 hover-lift" style="background: var(--card-hover);">
+                            <i class="fas fa-comments fa-2x mb-3" style="color: var(--primary-color);"></i>
+                            <h5>Community Forum</h5>
+                            <p class="text-muted small">Get help from other users</p>
+                            <button class="btn btn-sm btn-outline-light">Visit Forum</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Accordion functionality
+    document.querySelectorAll('.accordion-button').forEach(button => {
+        button.addEventListener('click', function() {
+            this.querySelector('i').classList.toggle('fa-chevron-down');
+            this.querySelector('i').classList.toggle('fa-chevron-up');
+        });
+    });
+    
+    // Add chevron icons to accordion buttons
+    document.querySelectorAll('.accordion-button').forEach(button => {
+        const icon = button.querySelector('i');
+        if (icon) {
+            const chevron = document.createElement('i');
+            chevron.className = 'fas fa-chevron-down ms-auto';
+            button.appendChild(chevron);
+        }
+    });
+</script>
+{% endblock %}

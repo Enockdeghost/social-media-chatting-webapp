@@ -1,147 +1,268 @@
 {% extends "base.html" %}
 
-{% block title %}Home {% endblock %}
+{% block title %}Home - Chatter{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <!-- Header -->
-        <div class="sticky-top bg-dark pt-3 pb-2 border-bottom border-secondary">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="fw-bold mb-0">Home</h5>
-                <button class="btn action-btn">
-                    <i class="fas fa-star"></i>
-                </button>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Left Sidebar - Desktop -->
+        <div class="col-md-3 d-none d-md-block">
+            <div class="sticky-top" style="top: 80px;">
+                <!-- User Profile Card -->
+                <div class="trending-card mb-3">
+                    <div class="d-flex align-items-center">
+                        <img src="{{ url_for('static', filename='uploads/profiles/' + current_user.profile_picture) }}" 
+                             class="avatar me-3" 
+                             onerror="this.src='https://ui-avatars.com/api/?name={{ current_user.username }}&background=1d9bf0&color=fff'">
+                        <div>
+                            <h6 class="mb-0 fw-bold">@{{ current_user.username }}</h6>
+                            <small class="text-muted">{{ current_user.followers.count() }} followers</small>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{{ url_for('bookmarks') }}" class="action-btn w-100 justify-content-center">
+                            <i class="fas fa-bookmark me-2"></i> Bookmarks
+                        </a>
+                        <a href="{{ url_for('lists') }}" class="action-btn w-100 justify-content-center mt-2">
+                            <i class="fas fa-list me-2"></i> Lists
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="trending-card mb-3">
+                    <h6 class="fw-bold mb-3">Quick Links</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <a href="{{ url_for('profile', username=current_user.username) }}" class="text-decoration-none d-flex align-items-center py-2 px-3 rounded-3 hover-lift" 
+                               style="color: var(--text-primary); background: var(--card-hover);">
+                                <i class="fas fa-user-circle me-3"></i> My Profile
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{{ url_for('pinned_posts', username=current_user.username) }}" class="text-decoration-none d-flex align-items-center py-2 px-3 rounded-3 hover-lift" 
+                               style="color: var(--text-primary); background: var(--card-hover);">
+                                <i class="fas fa-thumbtack me-3"></i> Pinned Posts
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{{ url_for('trending') }}" class="text-decoration-none d-flex align-items-center py-2 px-3 rounded-3 hover-lift" 
+                               style="color: var(--text-primary); background: var(--card-hover);">
+                                <i class="fas fa-chart-line me-3"></i> Trending
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('profile_followers', username=current_user.username) }}" class="text-decoration-none d-flex align-items-center py-2 px-3 rounded-3 hover-lift" 
+                               style="color: var(--text-primary); background: var(--card-hover);">
+                                <i class="fas fa-users me-3"></i> Followers
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
 
-        <!-- Create Post -->
-        <div class="post-card">
-            <div class="d-flex">
-                <img src="{{ url_for('static', filename='uploads/profiles/' + current_user.profile_picture) }}" 
-                     class="avatar me-3" onerror="this.src='https://via.placeholder.com/48'">
-                <div class="flex-grow-1">
-                    <form method="POST" action="{{ url_for('create_post') }}" enctype="multipart/form-data">
-                        <textarea name="content" class="form-control border-0 bg-dark text-light post-textarea mb-3" 
-                                  placeholder="What's happening?" rows="3"></textarea>
-                        
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="d-flex">
-                                <label class="action-btn me-2" title="Add photo">
-                                    <i class="fas fa-image text-primary"></i>
-                                    <input type="file" name="image" class="d-none" accept="image/*">
-                                </label>
-                                <button class="action-btn me-2" title="Add GIF">
-                                    <i class="fas fa-film text-primary"></i>
-                                </button>
-                                <button class="action-btn me-2" title="Add emoji">
-                                    <i class="fas fa-smile text-primary"></i>
-                                </button>
-                            </div>
-                            
-                            <div class="d-flex align-items-center">
-                                <span class="text-muted small char-counter me-3">0/280</span>
-                                <button type="submit" class="btn btn-primary rounded-pill px-4">Post</button>
+        <!-- Main Feed -->
+        <div class="col-12 col-md-6">
+            <!-- Create Post Card -->
+            <div class="glass-effect rounded-3 mb-3" style="border: 1px solid var(--border-light);">
+                <div class="p-3">
+                    <form method="POST" action="{{ url_for('create_post') }}" enctype="multipart/form-data" id="post-form">
+                        <div class="d-flex align-items-start">
+                            <img src="{{ url_for('static', filename='uploads/profiles/' + current_user.profile_picture) }}" 
+                                 class="avatar me-3" 
+                                 onerror="this.src='https://ui-avatars.com/api/?name={{ current_user.username }}&background=1d9bf0&color=fff'">
+                            <div class="flex-grow-1">
+                                <textarea name="content" class="form-control mb-2 post-textarea" 
+                                          placeholder="What's happening?" 
+                                          rows="3" 
+                                          maxlength="280"></textarea>
+                                
+                                <!-- Image Preview -->
+                                <div id="image-preview" class="mb-2 d-none">
+                                    <div class="position-relative" style="max-width: 300px;">
+                                        <img id="preview-image" class="img-fluid rounded-3">
+                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
+                                                onclick="removeImage()">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Post Actions -->
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label class="action-btn" style="cursor: pointer;">
+                                            <i class="fas fa-image"></i>
+                                            <input type="file" name="image" id="image-input" accept="image/*" class="d-none" onchange="previewImage(event)">
+                                        </label>
+                                        <button type="button" class="action-btn" data-bs-toggle="tooltip" title="Add GIF">
+                                            <i class="fas fa-film"></i>
+                                        </button>
+                                        <button type="button" class="action-btn" data-bs-toggle="tooltip" title="Add Poll">
+                                            <i class="fas fa-chart-pie"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="text-muted small char-counter">0/280</span>
+                                        <button type="submit" class="btn btn-primary px-4">
+                                            <i class="fas fa-paper-plane me-2"></i>Post
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </form>
                 </div>
             </div>
+
+            <!-- Posts Feed -->
+            {% if posts.items %}
+                {% for post in posts.items %}
+                    {% include 'components/post_card.html' %}
+                {% endfor %}
+                
+                <!-- Pagination -->
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if posts.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('feed', page=posts.prev_num) }}" style="background: var(--card-color); color: var(--text-primary);">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in posts.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=3) %}
+                            {% if page_num %}
+                                <li class="page-item {% if page_num == posts.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('feed', page=page_num) }}" 
+                                       style="{% if page_num == posts.page %}background: var(--primary-color); border-color: var(--primary-color);{% else %}background: var(--card-color); color: var(--text-primary);{% endif %}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if posts.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('feed', page=posts.next_num) }}" style="background: var(--card-color); color: var(--text-primary);">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% else %}
+                <!-- Empty State -->
+                <div class="text-center py-5">
+                    <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No posts yet</h5>
+                    <p class="text-muted">Start by posting something or following other users!</p>
+                </div>
+            {% endif %}
         </div>
 
-        <!-- Posts Feed -->
-        {% for post in posts.items %}
-        <div class="post-card" id="post-{{ post.id }}">
-            <div class="d-flex">
-                <img src="{{ url_for('static', filename='uploads/profiles/' + post.author.profile_picture) }}" 
-                     class="avatar me-3" onerror="this.src='https://via.placeholder.com/48'">
-                
-                <div class="flex-grow-1">
-                    <div class="d-flex justify-content-between align-items-start mb-1">
-                        <div>
-                            <span class="fw-bold">{{ post.author.username }}</span>
-                            <span class="text-muted ms-2">@{{ post.author.username }}</span>
-                            <span class="text-muted ms-2">·</span>
-                            <span class="text-muted">{{ post.created_at.strftime('%b %d') }}</span>
+        <!-- Right Sidebar -->
+        <div class="col-md-3 d-none d-md-block">
+            <div class="sticky-top" style="top: 80px;">
+                <!-- Search -->
+                <div class="mb-3">
+                    <form action="{{ url_for('search') }}" method="GET">
+                        <div class="input-group">
+                            <input type="text" class="form-control search-box" name="q" placeholder="Search Chatter" value="{{ query }}">
+                            <button class="btn" type="submit" style="background: var(--card-color); color: var(--text-primary); border: 1px solid var(--border-light);">
+                                <i class="fas fa-search"></i>
+                            </button>
                         </div>
-                        <button class="btn action-btn">
-                            <i class="fas fa-ellipsis-h"></i>
+                    </form>
+                </div>
+
+                <!-- Trending -->
+                <div class="trending-card mb-3">
+                    <h6 class="fw-bold mb-3">Trending Now</h6>
+                    {% for hashtag in trending %}
+                    <div class="mb-2">
+                        <a href="{{ url_for('hashtag', tag=hashtag.tag) }}" class="text-decoration-none d-flex justify-content-between align-items-center p-2 rounded-3 hover-lift" 
+                           style="color: var(--text-primary); background: var(--card-hover);">
+                            <div>
+                                <small class="text-muted">#{{ hashtag.tag }}</small>
+                                <br>
+                                <small>{{ hashtag.count }} posts</small>
+                            </div>
+                            <i class="fas fa-chevron-right text-muted"></i>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Who to follow -->
+                <div class="trending-card">
+                    <h6 class="fw-bold mb-3">Who to follow</h6>
+                    {% for user in suggestions %}
+                    <div class="d-flex align-items-center justify-content-between mb-3 p-2 rounded-3 hover-lift" style="background: var(--card-hover);">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+                                 class="avatar-sm me-2"
+                                 onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
+                            <div>
+                                <h6 class="mb-0 small fw-bold">{{ user.username }}</h6>
+                                {% if user.is_verified %}
+                                <i class="fas fa-check-circle verified-badge"></i>
+                                {% endif %}
+                                <small class="text-muted">{{ user.followers.count() }} followers</small>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm {% if current_user.is_following(user) %}btn-primary{% else %}btn-outline-primary{% endif %} follow-btn" 
+                                data-user-id="{{ user.id }}">
+                            {% if current_user.is_following(user) %}Following{% else %}Follow{% endif %}
                         </button>
                     </div>
-
-                    <div class="post-content mb-3">
-                        {{ post.content | process_content | safe }}
-                    </div>
-
-                    {% if post.image %}
-                    <div class="post-image mb-3">
-                        <img src="{{ url_for('static', filename='uploads/posts/' + post.image) }}" 
-                             class="img-fluid rounded-3" style="max-height: 400px; width: auto;">
-                    </div>
-                    {% endif %}
-
-                    <div class="d-flex justify-content-between align-items-center">
-                        <button class="btn action-btn comment-btn" title="Comment">
-                            <i class="far fa-comment"></i>
-                            <span class="ms-1">{{ post.comment_count() }}</span>
-                        </button>
-
-                        <button class="btn action-btn retweet-btn" title="Retweet">
-                            <i class="fas fa-retweet"></i>
-                            <span class="ms-1">0</span>
-                        </button>
-
-                        <button class="btn action-btn like-btn {% if post.likes.filter_by(user_id=current_user.id).first() %}liked{% endif %}" 
-                                data-post-id="{{ post.id }}" title="Like">
-                            <i class="{% if post.likes.filter_by(user_id=current_user.id).first() %}fas{% else %}far{% endif %} fa-heart"></i>
-                            <span class="ms-1 like-count">{{ post.like_count() }}</span>
-                        </button>
-
-                        <button class="btn action-btn share-btn" title="Share">
-                            <i class="far fa-share-square"></i>
-                        </button>
-                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
-        {% else %}
-        <div class="text-center py-5">
-            <i class="fas fa-feather-alt fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">No posts yet</h5>
-            <p class="text-muted">Follow some users to see their posts here!</p>
-        </div>
-        {% endfor %}
-
-        <!-- Pagination -->
-        {% if posts.pages > 1 %}
-        <nav class="my-4">
-            <ul class="pagination justify-content-center">
-                {% if posts.has_prev %}
-                <li class="page-item">
-                    <a class="page-link bg-dark border-secondary text-light" href="{{ url_for('feed', page=posts.prev_num) }}">Previous</a>
-                </li>
-                {% endif %}
-
-                {% for page_num in posts.iter_pages() %}
-                    {% if page_num %}
-                        <li class="page-item {% if page_num == posts.page %}active{% endif %}">
-                            <a class="page-link bg-dark border-secondary text-light" href="{{ url_for('feed', page=page_num) }}">{{ page_num }}</a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link bg-dark border-secondary">...</span>
-                        </li>
-                    {% endif %}
-                {% endfor %}
-
-                {% if posts.has_next %}
-                <li class="page-item">
-                    <a class="page-link bg-dark border-secondary text-light" href="{{ url_for('feed', page=posts.next_num) }}">Next</a>
-                </li>
-                {% endif %}
-            </ul>
-        </nav>
-        {% endif %}
     </div>
 </div>
+
+<script>
+    function previewImage(event) {
+        const input = event.target;
+        const preview = document.getElementById('preview-image');
+        const previewContainer = document.getElementById('image-preview');
+        
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                previewContainer.classList.remove('d-none');
+            }
+            
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+    
+    function removeImage() {
+        document.getElementById('image-input').value = '';
+        document.getElementById('image-preview').classList.add('d-none');
+    }
+    
+    // Character counter
+    document.querySelector('.post-textarea').addEventListener('input', function() {
+        const counter = document.querySelector('.char-counter');
+        counter.textContent = `${this.value.length}/280`;
+        
+        if (this.value.length > 280) {
+            counter.style.color = '#f4212e';
+        } else {
+            counter.style.color = 'var(--text-muted)';
+        }
+    });
+</script>
 {% endblock %}
