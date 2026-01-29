@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Status Feed - Chatter{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 col-md-8 offset-md-2">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">Status Updates</h4>
+                <a href="{{ url_for('create_status') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create Status
+                </a>
+            </div>
+
+            {% if statuses_by_user %}
+                {% for user_id, status_list in statuses_by_user.items() %}
+                    {% set user = status_list[0].user %}
+                    <div class="status-user-card mb-4 glass-effect rounded-3">
+                        <div class="p-3">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="profile-with-status me-3">
+                                    {% if has_active_status(user.id) %}
+                                    <div class="status-ring"></div>
+                                    {% endif %}
+                                    <img src="{{ get_user_avatar_url(user) }}" 
+                                         class="profile-img-with-ring avatar"
+                                         alt="{{ user.username }}">
+                                </div>
+                                <div>
+                                    <h5 class="mb-0">{{ user.username }}</h5>
+                                    <small class="text-muted">{{ status_list|length }} status{{ 'es' if status_list|length != 1 else '' }}</small>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-2">
+                                {% for status in status_list %}
+                                <div class="col-4">
+                                    <a href="{{ url_for('view_status', status_id=status.id) }}" 
+                                       class="status-thumbnail-link">
+                                        <div class="status-thumbnail position-relative rounded-3 overflow-hidden">
+                                            {% if status.media_type == 'text' %}
+                                            <div class="status-text-thumbnail d-flex align-items-center justify-content-center"
+                                                 style="background: {{ status.background_color }}; color: {{ status.text_color }}; font-size: {{ status.font_size }}px; height: 150px;">
+                                                {{ status.text[:50] }}{% if status.text|length > 50 %}...{% endif %}
+                                            </div>
+                                            {% elif status.media_type == 'image' %}
+                                            <img src="{{ url_for('static', filename='uploads/statuses/' + status.media_url) }}" 
+                                                 class="img-fluid" 
+                                                 style="height: 150px; width: 100%; object-fit: cover;"
+                                                 onerror="this.src='https://via.placeholder.com/300x150/333/fff?text=Image'">
+                                            {% elif status.media_type == 'video' %}
+                                            <div class="video-thumbnail d-flex align-items-center justify-content-center"
+                                                 style="background: #000; height: 150px;">
+                                                <i class="fas fa-play-circle fa-3x text-white"></i>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            {% if status.id in viewed_status_ids %}
+                                            <div class="position-absolute top-0 end-0 m-2">
+                                                <span class="badge bg-secondary">Viewed</span>
+                                            </div>
+                                            {% else %}
+                                            <div class="position-absolute top-0 end-0 m-2">
+                                                <span class="badge bg-primary">New</span>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </a>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-user-friends fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No status updates</h5>
+                    <p class="text-muted">When people you follow post status updates, they'll appear here</p>
+                    <a href="{{ url_for('create_status') }}" class="btn btn-primary mt-2">
+                        <i class="fas fa-plus me-2"></i>Create Your First Status
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.status-thumbnail-link {
+    display: block;
+    text-decoration: none;
+    transition: transform 0.3s ease;
+}
+
+.status-thumbnail-link:hover {
+    transform: scale(1.05);
+}
+
+.status-text-thumbnail {
+    padding: 10px;
+    text-align: center;
+    word-break: break-word;
+}
+
+.video-thumbnail {
+    position: relative;
+}
+
+.status-user-card {
+    border: 1px solid var(--border-light);
+    background: var(--card-color);
+}
+</style>
+{% endblock %}

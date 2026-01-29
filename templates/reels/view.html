@@ -1,0 +1,477 @@
+{% extends "base.html" %}
+
+{% block title %}Reel - {{ reel.user.username }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Left Sidebar -->
+        <div class="col-lg-3 d-none d-lg-block">
+            {% include 'sidebar.html' %}
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-lg-6 col-md-12">
+            <!-- Reel Player -->
+            <div class="card glass-effect fade-in mb-4">
+                <div class="reel-thumbnail" style="border-radius: 16px 16px 0 0;">
+                    <video id="mainReelVideo" controls class="w-100" style="max-height: 600px;">
+                        <source src="{{ url_for('static', filename='uploads/reels/' + reel.video_url) }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                <div class="card-body">
+                    <!-- User Info & Actions -->
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="profile-with-status me-3">
+                                {% if has_active_status(reel.user_id) %}
+                                <div class="status-ring"></div>
+                                {% endif %}
+                                <img src="{{ get_user_avatar_url(reel.user) }}" 
+                                     class="profile-img-with-ring avatar"
+                                     onerror="this.src='https://ui-avatars.com/api/?name={{ reel.user.username }}&background=1d9bf0&color=fff'">
+                            </div>
+                            <div>
+                                <h5 class="mb-0">{{ reel.user.username }}</h5>
+                                <small class="text-muted">{{ reel.created_at|time_ago }}</small>
+                            </div>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-dark">
+                                {% if reel.user_id == current_user.id %}
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="deleteReel({{ reel.id }})">
+                                    <i class="fas fa-trash me-2"></i>Delete
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% endif %}
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="shareReel({{ reel.id }})">
+                                    <i class="fas fa-share me-2"></i>Share
+                                </a></li>
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="copyLink({{ reel.id }})">
+                                    <i class="fas fa-link me-2"></i>Copy Link
+                                </a></li>
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="reportReel({{ reel.id }})">
+                                    <i class="fas fa-flag me-2"></i>Report
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Caption -->
+                    <div class="mb-4">
+                        <p class="mb-2">{{ reel.caption or '' }}</p>
+                        <div class="d-flex align-items-center text-muted">
+                            {% if reel.music %}
+                            <i class="fas fa-music me-2"></i>
+                            <small>{{ reel.music }}</small>
+                            {% endif %}
+                            {% if reel.location %}
+                            <i class="fas fa-map-marker-alt ms-3 me-2"></i>
+                            <small>{{ reel.location }}</small>
+                            {% endif %}
+                            <span class="ms-auto">
+                                <small>{{ reel.duration or 15 }}s</small>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats & Actions -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="d-flex gap-4">
+                            <button class="action-btn like-btn {% if is_liked %}liked{% endif %}" 
+                                    data-post-id="{{ reel.id }}" onclick="likeReelAjax({{ reel.id }})">
+                                <i class="{% if is_liked %}fas{% else %}far{% endif %} fa-heart"></i>
+                                <span class="like-count">{{ reel.likes_count or 0 }}</span>
+                            </button>
+                            <a href="#comments-section" class="action-btn">
+                                <i class="far fa-comment"></i>
+                                <span class="comment-count">{{ reel.comments_count or 0 }}</span>
+                            </a>
+                            <button class="action-btn" onclick="shareReel({{ reel.id }})">
+                                <i class="fas fa-share"></i>
+                                <span class="share-count">{{ reel.shares_count or 0 }}</span>
+                            </button>
+                        </div>
+                        <div>
+                            <button class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i>{{ reel.views_count or 0 }} views
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Comments Section -->
+                    <div id="comments-section" class="mb-4">
+                        <h6 class="mb-3">Comments</h6>
+                        
+                        <!-- Add Comment -->
+                        <div class="d-flex mb-4">
+                            <img src="{{ get_user_avatar_url(current_user) }}" 
+                                 class="avatar-sm me-3"
+                                 onerror="this.src='https://ui-avatars.com/api/?name={{ current_user.username }}&background=1d9bf0&color=fff'">
+                            <div class="flex-grow-1">
+                                <form id="commentForm" onsubmit="addReelComment(event, {{ reel.id }})">
+                                    <textarea class="form-control mb-2" placeholder="Add a comment..." rows="2" 
+                                              id="comment-content" maxlength="500"></textarea>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted" id="comment-counter">0/500</small>
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-paper-plane me-1"></i> Post
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- Comments List -->
+                        <div id="comments-list">
+                            {% if comments %}
+                                {% for comment in comments %}
+                                <div class="d-flex mb-3" id="comment-{{ comment.id }}">
+                                    <img src="{{ get_user_avatar_url(comment.author) }}" 
+                                         class="avatar-sm me-3"
+                                         onerror="this.src='https://ui-avatars.com/api/?name={{ comment.author.username }}&background=1d9bf0&color=fff'">
+                                    <div class="flex-grow-1">
+                                        <div class="bg-dark rounded-3 p-3">
+                                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                                <div>
+                                                    <h6 class="mb-0">{{ comment.author.username }}</h6>
+                                                    <small class="text-muted">{{ comment.created_at|time_ago }}</small>
+                                                </div>
+                                                {% if comment.author.id == current_user.id or current_user.is_admin %}
+                                                <button class="btn btn-sm btn-link text-danger p-0" 
+                                                        onclick="deleteReelComment({{ comment.id }}, {{ reel.id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                            <p class="mb-0">{{ comment.content }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="far fa-comments fa-2x text-muted mb-3"></i>
+                                    <p class="text-muted">No comments yet. Be the first to comment!</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Sidebar -->
+        <div class="col-lg-3 d-none d-lg-block">
+            <!-- Suggested Reels -->
+            {% if suggested_reels and suggested_reels|length > 0 %}
+            <div class="card glass-effect mb-3">
+                <div class="card-header bg-transparent border-bottom">
+                    <h6 class="mb-0">More Reels</h6>
+                </div>
+                <div class="card-body">
+                    {% for suggested in suggested_reels %}
+                    <a href="{{ url_for('view_reel', reel_id=suggested.id) }}" class="text-decoration-none text-reset d-block mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="position-relative me-3">
+                                <img src="{{ url_for('static', filename='uploads/reel_thumbnails/' + suggested.thumbnail_url) if suggested.thumbnail_url else url_for('static', filename='images/reel_placeholder.jpg') }}" 
+                                     class="rounded" width="60" height="106"
+                                     onerror="this.src='https://via.placeholder.com/60x106/16181c/ffffff?text=REEL'">
+                                <span class="position-absolute bottom-0 start-0 bg-dark bg-opacity-75 text-white px-1">
+                                    <i class="fas fa-play fa-xs"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <small class="d-block text-truncate" style="max-width: 150px;">
+                                    {{ suggested.caption|default('Reel', true)|truncate(30) }}
+                                </small>
+                                <small class="text-muted">@{{ suggested.user.username }}</small>
+                                <div class="small text-muted">
+                                    <i class="fas fa-eye"></i> {{ suggested.views_count or 0 }}
+                                    <i class="fas fa-heart ms-2"></i> {{ suggested.likes_count or 0 }}
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Reel Info -->
+            <div class="card glass-effect">
+                <div class="card-body">
+                    <h6 class="mb-3">About This Reel</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2 d-flex align-items-center">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                                <i class="fas fa-clock text-primary"></i>
+                            </div>
+                            <div>
+                                <small class="fw-bold d-block">Duration</small>
+                                <small class="text-muted">{{ reel.duration or 15 }} seconds</small>
+                            </div>
+                        </li>
+                        <li class="mb-2 d-flex align-items-center">
+                            <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                                <i class="fas fa-calendar text-success"></i>
+                            </div>
+                            <div>
+                                <small class="fw-bold d-block">Uploaded</small>
+                                <small class="text-muted">{{ reel.created_at|format_datetime }}</small>
+                            </div>
+                        </li>
+                        <li class="mb-2 d-flex align-items-center">
+                            <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-3">
+                                <i class="fas fa-eye text-warning"></i>
+                            </div>
+                            <div>
+                                <small class="fw-bold d-block">Views</small>
+                                <small class="text-muted">{{ reel.views_count or 0 }} views</small>
+                            </div>
+                        </li>
+                        <li class="d-flex align-items-center">
+                            <div class="bg-accent bg-opacity-10 rounded-circle p-2 me-3">
+                                <i class="fas fa-heart text-accent"></i>
+                            </div>
+                            <div>
+                                <small class="fw-bold d-block">Engagement</small>
+                                <small class="text-muted">{{ reel.likes_count or 0 }} likes • {{ reel.comments_count or 0 }} comments</small>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Initialize character counter
+        setupCharacterCounter('comment-content', 'comment-counter');
+        
+        // Auto-play video when in viewport
+        const video = $('#mainReelVideo')[0];
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        video.play().catch(e => {
+                            // Auto-play was prevented
+                            console.log('Auto-play prevented:', e);
+                        });
+                    } else {
+                        video.pause();
+                    }
+                });
+            },
+            { threshold: 0.5 }
+        );
+        
+        observer.observe(video);
+        
+        // Mark reel as viewed
+        fetch("{{ url_for('mark_reel_viewed_api', reel_id=reel.id) }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+    });
+    
+    // Like reel function
+    function likeReelAjax(reelId) {
+        const $btn = $(`.like-btn[data-post-id="${reelId}"]`);
+        const $icon = $btn.find('i');
+        const $count = $btn.find('.like-count');
+        
+        $btn.prop('disabled', true);
+        
+        $.ajax({
+            url: `/reel/${reelId}/like`,
+            type: 'POST',
+            success: function(data) {
+                if (data.status === 'liked') {
+                    $btn.addClass('liked');
+                    $icon.removeClass('far').addClass('fas');
+                    showToast('Liked reel', 'success');
+                } else {
+                    $btn.removeClass('liked');
+                    $icon.removeClass('fas').addClass('far');
+                    showToast('Removed like', 'info');
+                }
+                $count.text(data.likes_count);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error liking reel:', error);
+                showToast('Failed to like reel', 'danger');
+            },
+            complete: function() {
+                $btn.prop('disabled', false);
+            }
+        });
+    }
+    
+    // Add comment function
+    function addReelComment(event, reelId) {
+        event.preventDefault();
+        
+        const content = $('#comment-content').val().trim();
+        if (!content) {
+            showToast('Please enter a comment', 'warning');
+            return;
+        }
+        
+        $.ajax({
+            url: `/reel/${reelId}/comment`,
+            type: 'POST',
+            data: { content: content },
+            success: function(data) {
+                if (data.success) {
+                    // Add new comment to list
+                    const comment = data.comment;
+                    const commentHtml = `
+                        <div class="d-flex mb-3" id="comment-${comment.id}">
+                            <img src="${comment.user.profile_picture ? '/static/uploads/profiles/' + comment.user.profile_picture : 'https://ui-avatars.com/api/?name=' + comment.user.username + '&background=1d9bf0&color=fff'}" 
+                                 class="avatar-sm me-3"
+                                 onerror="this.src='https://ui-avatars.com/api/?name=${comment.user.username}&background=1d9bf0&color=fff'">
+                            <div class="flex-grow-1">
+                                <div class="bg-dark rounded-3 p-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <div>
+                                            <h6 class="mb-0">${comment.user.username}</h6>
+                                            <small class="text-muted">Just now</small>
+                                        </div>
+                                        <button class="btn btn-sm btn-link text-danger p-0" 
+                                                onclick="deleteReelComment(${comment.id}, ${reelId})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                    <p class="mb-0">${comment.content}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    if ($('#comments-list').children().length === 1 && $('#comments-list').children().hasClass('text-center')) {
+                        $('#comments-list').html(commentHtml);
+                    } else {
+                        $('#comments-list').prepend(commentHtml);
+                    }
+                    
+                    // Update comment count
+                    $('.comment-count').text(data.comments_count);
+                    
+                    // Clear form
+                    $('#comment-content').val('');
+                    $('#comment-counter').text('0/500');
+                    
+                    showToast('Comment posted', 'success');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error posting comment:', error);
+                showToast('Failed to post comment', 'danger');
+            }
+        });
+    }
+    
+    // Delete comment function
+    function deleteReelComment(commentId, reelId) {
+        if (!confirm('Delete this comment?')) return;
+        
+        $.ajax({
+            url: `/api/reel/${reelId}/comment/${commentId}`,
+            type: 'DELETE',
+            success: function(data) {
+                if (data.success) {
+                    $(`#comment-${commentId}`).remove();
+                    $('.comment-count').text(data.comments_count);
+                    showToast('Comment deleted', 'success');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error deleting comment:', error);
+                showToast('Failed to delete comment', 'danger');
+            }
+        });
+    }
+    
+    // Share reel function
+    function shareReel(reelId) {
+        const shareUrl = `${window.location.origin}/reel/${reelId}`;
+        $.ajax({
+            url: `/reel/${reelId}/share`,
+            type: 'POST',
+            success: function(data) {
+                if (data.success) {
+                    $('.share-count').text(data.shares_count);
+                    copyToClipboard(shareUrl, 'Reel link copied to clipboard!');
+                }
+            }
+        });
+    }
+    
+    // Copy link function
+    function copyLink(reelId) {
+        const shareUrl = `${window.location.origin}/reel/${reelId}`;
+        copyToClipboard(shareUrl, 'Reel link copied to clipboard!');
+    }
+    
+    // Delete reel function
+    function deleteReel(reelId) {
+        if (!confirm('Are you sure you want to delete this reel? This action cannot be undone.')) return;
+        
+        $.ajax({
+            url: `/reel/${reelId}/delete`,
+            type: 'POST',
+            success: function(data) {
+                if (data.success) {
+                    showToast('Reel deleted successfully', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/reels';
+                    }, 1500);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error deleting reel:', error);
+                showToast('Failed to delete reel', 'danger');
+            }
+        });
+    }
+    
+    // Report reel function
+    function reportReel(reelId) {
+        const reason = prompt('Please enter the reason for reporting this reel:');
+        if (reason && reason.trim()) {
+            $.ajax({
+                url: '/api/report',
+                type: 'POST',
+                data: {
+                    reported_id: {{ reel.user.id }},
+                    post_id: reelId,
+                    reason: reason.trim()
+                },
+                success: function(data) {
+                    if (data.success) {
+                        showToast('Report submitted successfully', 'success');
+                    } else {
+                        showToast(data.error || 'Failed to submit report', 'danger');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error reporting reel:', error);
+                    showToast('Failed to submit report', 'danger');
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

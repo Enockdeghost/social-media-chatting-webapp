@@ -1,0 +1,248 @@
+<!-- User Card Component -->
+<div class="glass-effect rounded-3 p-3 hover-lift" style="border: 1px solid var(--border-light); height: 100%;">
+    <div class="d-flex align-items-start">
+        <!-- User Avatar -->
+        <a href="{{ url_for('profile', username=user.username) }}" class="text-decoration-none me-3">
+            <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+                 class="avatar"
+                 onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
+        </a>
+        
+        <!-- User Info -->
+        <div class="flex-grow-1">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h5 class="fw-bold mb-1">
+                        <a href="{{ url_for('profile', username=user.username) }}" class="text-decoration-none">
+                            {{ user.username }}
+                        </a>
+                    </h5>
+                    
+                    <!-- Verification & Admin Badges -->
+                    <div class="d-flex align-items-center mb-2">
+                        {% if user.is_verified %}
+                        <span class="verified-badge me-1">
+                            <i class="fas fa-check-circle"></i>
+                        </span>
+                        {% endif %}
+                        
+                        {% if user.is_admin %}
+                        <span class="admin-badge">Admin</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- User Bio -->
+                    {% if user.bio %}
+                    <p class="text-muted small mb-2">{{ user.bio|truncate(80) }}</p>
+                    {% endif %}
+                    
+                    <!-- User Stats -->
+                    <div class="d-flex align-items-center gap-3">
+                        <small class="text-muted">
+                            <i class="fas fa-users me-1"></i>
+                            {{ user.followers.count() }} followers
+                        </small>
+                        <small class="text-muted">
+                            <i class="fas fa-user-friends me-1"></i>
+                            {{ user.followed.count() }} following
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Follow Button -->
+                {% if current_user.id != user.id %}
+                <button class="btn btn-sm {% if current_user.is_following(user) %}btn-primary{% else %}btn-outline-primary{% endif %} follow-btn" 
+                        data-user-id="{{ user.id }}">
+                    {% if current_user.is_following(user) %}
+                        <i class="fas fa-user-check me-1"></i> Following
+                    {% else %}
+                        <i class="fas fa-user-plus me-1"></i> Follow
+                    {% endif %}
+                </button>
+                {% endif %}
+            </div>
+            
+            <!-- Mutual Connections -->
+            {% set mutual_followers = current_user.get_mutual_followers(user) %}
+            {% if mutual_followers %}
+            <div class="mt-3 pt-3 border-top" style="border-color: var(--border-light) !important;">
+                <small class="text-muted mb-2 d-block">
+                    <i class="fas fa-users me-1"></i>
+                    {{ mutual_followers|length }} mutual follower{% if mutual_followers|length != 1 %}s{% endif %}
+                </small>
+                
+                <div class="d-flex align-items-center">
+                    {% for mutual in mutual_followers[:3] %}
+                    <a href="{{ url_for('profile', username=mutual.username) }}" 
+                       class="text-decoration-none me-2" 
+                       data-bs-toggle="tooltip" 
+                       title="@{{ mutual.username }}">
+                        <img src="{{ url_for('static', filename='uploads/profiles/' + mutual.profile_picture) }}" 
+                             class="avatar-sm"
+                             onerror="this.src='https://ui-avatars.com/api/?name={{ mutual.username }}&background=1d9bf0&color=fff'">
+                    </a>
+                    {% endfor %}
+                    
+                    {% if mutual_followers|length > 3 %}
+                    <small class="text-muted ms-2">
+                        +{{ mutual_followers|length - 3 }} more
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Last Seen Status -->
+            <div class="mt-2">
+                <small class="text-muted">
+                    {% if user.is_online %}
+                    <span class="text-success">
+                        <i class="fas fa-circle"></i> Online now
+                    </span>
+                    {% else %}
+                    <span>
+                        <i class="far fa-clock me-1"></i>
+                        Last seen {{ user.last_seen|time_ago }}
+                    </span>
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="mt-3 d-flex gap-2">
+        <a href="{{ url_for('conversation', user_id=user.id) }}" class="btn btn-sm btn-outline-light flex-grow-1">
+            <i class="fas fa-envelope me-1"></i> Message
+        </a>
+        
+        <div class="dropdown">
+            <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-ellipsis-h"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark">
+                <li>
+                    <a class="dropdown-item" href="#" onclick="addToList('{{ user.id }}')">
+                        <i class="fas fa-list me-2"></i> Add to List
+                    </a>
+                </li>
+                <li>
+                    <button class="dropdown-item {% if current_user.has_blocked(user) %}text-warning{% else %}text-danger{% endif %} block-btn" 
+                            data-user-id="{{ user.id }}">
+                        <i class="fas fa-ban me-2"></i>
+                        {% if current_user.has_blocked(user) %}Unblock User{% else %}Block User{% endif %}
+                    </button>
+                </li>
+                <li>
+                    <button class="dropdown-item text-danger report-btn" 
+                            data-user-id="{{ user.id }}"
+                            data-username="{{ user.username }}">
+                        <i class="fas fa-flag me-2"></i> Report User
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Add to List functionality
+    function addToList(userId) {
+        // Fetch user's lists
+        $.ajax({
+            url: '/api/user/lists',
+            type: 'GET',
+            success: function(lists) {
+                if (lists.length === 0) {
+                    showToast('Create a list first to add users', 'info');
+                    return;
+                }
+                
+                // Create modal for list selection
+                const modalHtml = `
+                    <div class="modal fade" id="addToListModal" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content" style="background: var(--card-color); border: 1px solid var(--border-light);">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Add to List</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="text-muted mb-3">Select a list to add this user to:</p>
+                                    <div id="list-options">
+                                        ${lists.map(list => `
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="radio" name="listSelect" id="list-${list.id}" value="${list.id}">
+                                                <label class="form-check-label d-flex justify-content-between" for="list-${list.id}">
+                                                    <div>
+                                                        <strong>${list.name}</strong>
+                                                        <br>
+                                                        <small class="text-muted">${list.description || 'No description'}</small>
+                                                    </div>
+                                                    <small class="text-muted">${list.member_count} members</small>
+                                                </label>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn btn-primary" onclick="addUserToList('${userId}')">Add to List</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Remove existing modal if any
+                $('#addToListModal').remove();
+                
+                // Add modal to body
+                $('body').append(modalHtml);
+                
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('addToListModal'));
+                modal.show();
+            },
+            error: function() {
+                showToast('Failed to load your lists', 'danger');
+            }
+        });
+    }
+    
+    function addUserToList(userId) {
+        const selectedList = $('input[name="listSelect"]:checked').val();
+        
+        if (!selectedList) {
+            showToast('Please select a list', 'warning');
+            return;
+        }
+        
+        $.ajax({
+            url: `/lists/${selectedList}/add_member`,
+            type: 'POST',
+            data: { username: getUsernameFromCard(userId) },
+            success: function(data) {
+                if (data.success) {
+                    showToast('User added to list!', 'success');
+                    $('#addToListModal').modal('hide');
+                } else {
+                    showToast(data.error, 'danger');
+                }
+            },
+            error: function() {
+                showToast('Failed to add user to list', 'danger');
+            }
+        });
+    }
+    
+    function getUsernameFromCard(userId) {
+        // Extract username from the user card
+        const card = document.querySelector(`[data-user-id="${userId}"]`).closest('.user-card');
+        if (card) {
+            const usernameElement = card.querySelector('.username');
+            return usernameElement ? usernameElement.textContent.trim() : '';
+        }
+        return '';
+    }
+</script>

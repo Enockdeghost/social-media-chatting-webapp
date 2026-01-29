@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Status - {{ status.user.username }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid status-viewer-container" style="min-height: 100vh; background: #000;">
+    <div class="status-view mx-auto">
+        <!-- Progress Bar -->
+        <div class="status-progress-bar">
+            <div class="status-progress" id="statusProgress"></div>
+        </div>
+        
+        <!-- Controls -->
+        <div class="status-viewer-controls">
+            <div class="d-flex align-items-center">
+                <div class="profile-with-status me-2">
+                    <div class="status-ring"></div>
+                    <img src="{{ get_user_avatar_url(status.user) }}" 
+                         class="profile-img-with-ring avatar-sm"
+                         onerror="this.src='https://ui-avatars.com/api/?name={{ status.user.username }}&background=1d9bf0&color=fff'">
+                </div>
+                <div>
+                    <div class="text-white fw-bold">{{ status.user.username }}</div>
+                    <div class="text-white-50 small">{{ status.created_at|time_ago }}</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                {% if status.user_id == current_user.id %}
+                <a href="{{ url_for('status_viewers', status_id=status.id) }}" class="text-white text-decoration-none me-2" title="Viewers">
+                    <i class="fas fa-eye me-1"></i>{{ status.views_count }}
+                </a>
+                {% endif %}
+                <a href="javascript:void(0)" class="status-close-btn" onclick="window.history.back()">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Status Content -->
+        <div class="status-content">
+            {% if status.media_type == 'text' %}
+            <div class="status-text-content" 
+                 style="color: {{ status.text_color or '#ffffff' }}; 
+                        background: {{ status.background_color or '#000000' }}; 
+                        font-size: {{ status.font_size or 24 }}px;">
+                {{ status.text or '' }}
+            </div>
+            {% elif status.media_type == 'image' %}
+            <div class="status-media-content">
+                <img src="{{ url_for('static', filename='uploads/statuses/' + status.media_url) }}" 
+                     alt="Status image"
+                     class="img-fluid">
+            </div>
+            {% elif status.media_type == 'video' %}
+            <div class="status-media-content">
+                <video src="{{ url_for('static', filename='uploads/statuses/' + status.media_url) }}" 
+                       autoplay loop muted controls
+                       class="w-100 h-100">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Next/Previous Statuses -->
+        {% if next_statuses and next_statuses|length > 0 %}
+        <div class="position-absolute bottom-3 start-3 end-3">
+            <div class="d-flex justify-content-center gap-2">
+                {% for next_status in next_statuses %}
+                <a href="{{ url_for('view_status', status_id=next_status.id) }}" 
+                   class="btn btn-sm btn-outline-light rounded-pill">
+                    {% if loop.index == 1 %}
+                    Next
+                    {% else %}
+                    {{ loop.index }}
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Auto-advance after 10 seconds
+        let progress = 0;
+        const duration = 10000; // 10 seconds
+        
+        const progressTimer = setInterval(function() {
+            progress += 100 / (duration / 100);
+            $('#statusProgress').css('width', progress + '%');
+            
+            if (progress >= 100) {
+                clearInterval(progressTimer);
+                // If there are next statuses, go to the first one
+                {% if next_statuses and next_statuses|length > 0 %}
+                window.location.href = "{{ url_for('view_status', status_id=next_statuses[0].id) }}";
+                {% else %}
+                window.history.back();
+                {% endif %}
+            }
+        }, 100);
+        
+        // Mark status as viewed
+        fetch("{{ url_for('mark_status_viewed_api', status_id=status.id) }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        // Keyboard navigation
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape') {
+                window.history.back();
+            }
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                {% if next_statuses and next_statuses|length > 0 %}
+                window.location.href = "{{ url_for('view_status', status_id=next_statuses[0].id) }}";
+                {% endif %}
+            }
+            if (e.key === 'ArrowLeft') {
+                window.history.back();
+            }
+        });
+        
+        // Touch navigation
+        let touchStartX = 0;
+        $(document).on('touchstart', function(e) {
+            touchStartX = e.touches[0].clientX;
+        });
+        
+        $(document).on('touchend', function(e) {
+            const touchEndX = e.changedTouches[0].clientX;
+            const diff = touchEndX - touchStartX;
+            
+            // Swipe right to go back
+            if (diff > 100) {
+                window.history.back();
+            }
+            // Swipe left for next status
+            else if (diff < -100) {
+                {% if next_statuses and next_statuses|length > 0 %}
+                window.location.href = "{{ url_for('view_status', status_id=next_statuses[0].id) }}";
+                {% endif %}
+            }
+        });
+        
+        // Double tap to like (placeholder)
+        let lastTap = 0;
+        $(document).on('touchstart', '.status-content', function(e) {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 300 && tapLength > 0) {
+                showToast('❤️ Liked status', 'success');
+                e.preventDefault();
+            }
+            lastTap = currentTime;
+        });
+        
+        // Click to pause/continue progress
+        $(document).on('click', '.status-content', function() {
+            if (progressTimer) {
+                clearInterval(progressTimer);
+            } else {
+                progressTimer = setInterval(function() {
+                    progress += 100 / (duration / 100);
+                    $('#statusProgress').css('width', progress + '%');
+                    
+                    if (progress >= 100) {
+                        clearInterval(progressTimer);
+                        {% if next_statuses and next_statuses|length > 0 %}
+                        window.location.href = "{{ url_for('view_status', status_id=next_statuses[0].id) }}";
+                        {% else %}
+                        window.history.back();
+                        {% endif %}
+                    }
+                }, 100);
+            }
+        });
+    });
+</script>
+{% endblock %}

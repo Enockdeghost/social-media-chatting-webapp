@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.username }}'s Following - Chatter{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-6 mx-auto">
+            <!-- Page Header -->
+            <div class="d-flex align-items-center mb-4">
+                <a href="{{ url_for('profile', username=user.username) }}" class="text-decoration-none me-3">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h2 class="fw-bold mb-1">{{ user.username }}</h2>
+                    <p class="text-muted mb-0">Following</p>
+                </div>
+            </div>
+            
+            <!-- Following List -->
+            <div class="glass-effect rounded-3" style="border: 1px solid var(--border-light);">
+                <div class="p-3">
+                    {% if following %}
+                        <div class="list-group">
+                            {% for follow in following %}
+                            <div class="list-group-item border-0">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <a href="{{ url_for('profile', username=follow.username) }}" class="text-decoration-none me-3">
+                                            <img src="{{ url_for('static', filename='uploads/profiles/' + follow.profile_picture) }}" 
+                                                 class="avatar-sm"
+                                                 onerror="this.src='https://ui-avatars.com/api/?name={{ follow.username }}&background=1d9bf0&color=fff'">
+                                        </a>
+                                        <div>
+                                            <a href="{{ url_for('profile', username=follow.username) }}" class="text-decoration-none fw-bold">
+                                                {{ follow.username }}
+                                            </a>
+                                            <br>
+                                            <small class="text-muted">{{ follow.followers.count() }} followers</small>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if current_user.id != follow.id %}
+                                    <button class="btn btn-sm {% if current_user.is_following(follow) %}btn-primary{% else %}btn-outline-primary{% endif %} follow-btn" 
+                                            data-user-id="{{ follow.id }}">
+                                        {% if current_user.is_following(follow) %}Following{% else %}Follow{% endif %}
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-user-friends fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Not following anyone</h5>
+                            <p class="text-muted">When {{ user.username }} follows people, they'll appear here.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

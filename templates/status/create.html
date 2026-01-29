@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Create Status{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card glass-effect fade-in">
+                <div class="card-header bg-transparent border-bottom">
+                    <h4 class="mb-0"><i class="fas fa-circle me-2"></i>Create Status</h4>
+                    <small class="text-muted">Status disappears after 24 hours</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('create_status') }}" enctype="multipart/form-data">
+                        <!-- Status Type Selection -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Choose Status Type</label>
+                            <div class="d-flex gap-3 mb-3">
+                                <button type="button" class="btn btn-outline-primary flex-fill status-type-btn active" data-type="text">
+                                    <i class="fas fa-font fa-lg mb-2"></i><br>
+                                    Text
+                                </button>
+                                <button type="button" class="btn btn-outline-primary flex-fill status-type-btn" data-type="image">
+                                    <i class="fas fa-image fa-lg mb-2"></i><br>
+                                    Photo
+                                </button>
+                                <button type="button" class="btn btn-outline-primary flex-fill status-type-btn" data-type="video">
+                                    <i class="fas fa-video fa-lg mb-2"></i><br>
+                                    Video
+                                </button>
+                            </div>
+                            <input type="hidden" name="media_type" id="media_type" value="text">
+                        </div>
+
+                        <!-- Text Status Section -->
+                        <div id="text-status-section">
+                            <div class="mb-3">
+                                <label for="text" class="form-label">Status Text</label>
+                                <textarea name="text" id="text" class="form-control post-textarea" 
+                                          placeholder="What's on your mind?" rows="4" maxlength="500"></textarea>
+                                <div class="text-end mt-1">
+                                    <span class="text-muted small" id="text-counter">0/500</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Text Customization -->
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label for="background_color" class="form-label">Background Color</label>
+                                    <input type="color" name="background_color" id="background_color" 
+                                           class="form-control form-control-color" value="#000000" 
+                                           title="Choose background color">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="text_color" class="form-label">Text Color</label>
+                                    <input type="color" name="text_color" id="text_color" 
+                                           class="form-control form-control-color" value="#ffffff" 
+                                           title="Choose text color">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="font_size" class="form-label">Font Size</label>
+                                <select name="font_size" id="font_size" class="form-select">
+                                    <option value="18">Small</option>
+                                    <option value="24" selected>Medium</option>
+                                    <option value="32">Large</option>
+                                    <option value="40">Extra Large</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Preview -->
+                            <div class="card mb-4" style="background: #000000; color: #ffffff; font-size: 24px;">
+                                <div class="card-body text-center" id="text-preview">
+                                    Your text will appear here
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Media Status Section (Hidden by default) -->
+                        <div id="media-status-section" class="d-none">
+                            <div class="mb-4">
+                                <label for="media" class="form-label">Upload Photo or Video</label>
+                                <input type="file" name="media" id="media" class="form-control" 
+                                       accept="image/*,video/*">
+                                <div class="form-text">Max file size: 16MB. Supported: JPG, PNG, GIF, MP4, MOV</div>
+                            </div>
+                            
+                            <div id="media-preview" class="text-center d-none">
+                                <div class="position-relative d-inline-block">
+                                    <img id="preview-image" class="img-fluid rounded" style="max-height: 300px;">
+                                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" 
+                                            onclick="removeMediaPreview()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Caption for media -->
+                            <div class="mb-3">
+                                <label for="media_caption" class="form-label">Caption (Optional)</label>
+                                <textarea name="media_caption" id="media_caption" class="form-control" 
+                                          placeholder="Add a caption..." rows="2" maxlength="200"></textarea>
+                                <div class="text-end mt-1">
+                                    <span class="text-muted small" id="caption-counter">0/200</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('feed') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus-circle me-1"></i> Create Status
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+          
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Initialize character counters
+        setupCharacterCounter('text', 'text-counter');
+        setupCharacterCounter('media_caption', 'caption-counter');
+        
+        // Update text preview
+        $('#text').on('input', function() {
+            const text = $(this).val() || 'Your text will appear here';
+            const bgColor = $('#background_color').val();
+            const textColor = $('#text_color').val();
+            const fontSize = $('#font_size').val() + 'px';
+            
+            $('#text-preview').css({
+                'background-color': bgColor,
+                'color': textColor,
+                'font-size': fontSize
+            }).text(text);
+        });
+        
+        // Update preview when colors/font change
+        $('#background_color, #text_color, #font_size').on('change input', function() {
+            $('#text').trigger('input');
+        });
+        
+        // Status type buttons
+        $('.status-type-btn').click(function() {
+            const type = $(this).data('type');
+            
+            // Update active button
+            $('.status-type-btn').removeClass('active').addClass('btn-outline-primary');
+            $(this).addClass('active').removeClass('btn-outline-primary');
+            
+            // Update hidden input
+            $('#media_type').val(type);
+            
+            // Show/hide sections
+            if (type === 'text') {
+                $('#text-status-section').removeClass('d-none');
+                $('#media-status-section').addClass('d-none');
+                $('#media').val('');
+                $('#media-preview').addClass('d-none');
+            } else {
+                $('#text-status-section').addClass('d-none');
+                $('#media-status-section').removeClass('d-none');
+                $('#text').val('');
+            }
+        });
+        
+        // Media preview
+        $('#media').change(function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#preview-image').attr('src', e.target.result);
+                    $('#media-preview').removeClass('d-none');
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Trigger initial preview
+        $('#text').trigger('input');
+    });
+    
+    function removeMediaPreview() {
+        $('#media').val('');
+        $('#media-preview').addClass('d-none');
+        $('#preview-image').attr('src', '');
+    }
+</script>
+{% endblock %}

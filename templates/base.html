@@ -21,6 +21,7 @@
             --text-muted: #8b98a5;
             --border-color: #2f3336;
             --border-light: #38444d;
+            --status-gradient: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
         }
         
         * {
@@ -35,7 +36,7 @@
             font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
             line-height: 1.5;
             font-weight: 400;
-            padding-top: 64px; /* Space for fixed navbar */
+            padding-top: 64px;
         }
         
         /* Main Content - Full width */
@@ -472,7 +473,7 @@
             
             body {
                 padding-top: 64px;
-                padding-bottom: 70px; /* Space for mobile bottom nav */
+                padding-bottom: 70px;
             }
             
             .top-nav {
@@ -504,6 +505,636 @@
         .dropdown-menu {
             z-index: 10000 !important;
         }
+        
+        /* ============ REELS & STATUS STYLES ============ */
+        
+        /* Status Rings */
+        .profile-with-status {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .status-ring {
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border-radius: 50%;
+            background: var(--status-gradient);
+            z-index: 1;
+            animation: pulse-ring 2s infinite;
+        }
+        
+        .status-ring::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            background: var(--background-color);
+            border-radius: 50%;
+            z-index: 2;
+        }
+        
+        .profile-img-with-ring {
+            position: relative;
+            z-index: 3;
+            border-radius: 50%;
+        }
+        
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.95);
+                opacity: 0.7;
+            }
+            50% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0.95);
+                opacity: 0.7;
+            }
+        }
+        
+        /* Status Stories Bar */
+        .status-stories-bar {
+            display: flex;
+            overflow-x: auto;
+            padding: 15px 10px;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: var(--card-color);
+            border-radius: 20px;
+            border: 1px solid var(--border-light);
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        
+        .status-stories-bar::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .status-story {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-width: 70px;
+            position: relative;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        
+        .status-story-circle {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            padding: 3px;
+            margin-bottom: 8px;
+            transition: transform 0.3s ease;
+        }
+        
+        .status-story-circle:hover {
+            transform: scale(1.05);
+        }
+        
+        .status-unseen {
+            background: var(--status-gradient);
+        }
+        
+        .status-seen {
+            background: var(--border-light);
+        }
+        
+        .status-story-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--card-color);
+        }
+        
+        .status-story-add {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 2px dashed var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+        
+        .status-story-add:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background: rgba(29, 155, 240, 0.1);
+        }
+        
+        .status-story-username {
+            font-size: 12px;
+            font-weight: 500;
+            max-width: 70px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .status-count-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--primary-color);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+            z-index: 4;
+        }
+        
+        /* Reels Styles */
+        .reels-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .reel-card {
+            background: var(--card-color);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-light);
+        }
+        
+        .reel-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+            box-shadow: 0 10px 30px rgba(29, 155, 240, 0.2);
+        }
+        
+        .reel-thumbnail {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 9/16;
+            overflow: hidden;
+            background: #000;
+        }
+        
+        .reel-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        
+        .reel-card:hover .reel-thumbnail img {
+            transform: scale(1.05);
+        }
+        
+        .reel-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .reel-stats {
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .reel-info {
+            padding: 15px;
+        }
+        
+        .reel-user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .reel-caption {
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .reel-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        /* Status Viewer */
+        .status-viewer-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #000;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .status-view {
+            max-width: 400px;
+            max-height: 800px;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: var(--background-color);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .status-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .status-text-content {
+            padding: 30px;
+            font-size: 24px;
+            font-weight: 500;
+            text-align: center;
+            word-break: break-word;
+        }
+        
+        .status-media-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .status-media-content img,
+        .status-media-content video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .status-viewer-controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+        
+        .status-close-btn {
+            background: rgba(0,0,0,0.5);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .status-close-btn:hover {
+            background: rgba(0,0,0,0.8);
+        }
+        
+        .status-progress-bar {
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            right: 20px;
+            height: 3px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .status-progress {
+            height: 100%;
+            background: white;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        
+        /* Reel Player */
+        .reel-player-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #000;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .reel-player {
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            max-height: 800px;
+            position: relative;
+            background: #000;
+        }
+        
+        .reel-player video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .reel-player-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .reel-control-btn {
+            background: rgba(0,0,0,0.5);
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .reel-control-btn:hover {
+            background: rgba(0,0,0,0.8);
+            transform: scale(1.1);
+        }
+        
+        .reel-like-btn.liked {
+            color: var(--accent-color);
+        }
+        
+        .reel-info-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 80px;
+            color: white;
+        }
+        
+        .reel-username {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .reel-caption-overlay {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .reel-music-info {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            color: rgba(255,255,255,0.8);
+        }
+        
+        /* Status Indicators */
+        .has-status-indicator {
+            position: relative;
+        }
+        
+        .has-status-indicator::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            background: var(--status-gradient);
+            border-radius: 50%;
+            border: 2px solid var(--background-color);
+            z-index: 10;
+        }
+        
+        /* View More Button */
+        .view-more-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 10px 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .view-more-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            color: white;
+        }
+        
+        /* Bottom Right Corner Widget */
+        .bottom-right-widget {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            z-index: 9990;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 15px;
+        }
+        
+        .widget-btn {
+            background: var(--primary-color);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 4px 15px rgba(29, 155, 240, 0.3);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .widget-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(29, 155, 240, 0.4);
+        }
+        
+        .widget-btn.create-status {
+            background: var(--status-gradient);
+        }
+        
+        .widget-btn.create-reel {
+            background: var(--accent-color);
+        }
+        
+        .followers-status-widget {
+            background: var(--card-color);
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 300px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        
+        .followers-status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items-center;
+            margin-bottom: 15px;
+        }
+        
+        .followers-status-title {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .followers-status-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .follower-status-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 12px;
+            transition: background 0.3s ease;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        
+        .follower-status-item:hover {
+            background: var(--card-hover);
+        }
+        
+        .follower-status-avatar {
+            position: relative;
+        }
+        
+        .follower-status-indicator {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 10px;
+            height: 10px;
+            background: var(--status-gradient);
+            border-radius: 50%;
+            border: 2px solid var(--card-color);
+        }
+        
+        /* Animation for new status */
+        @keyframes newStatusPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .new-status {
+            animation: newStatusPulse 2s infinite;
+        }
+        
+        /* Media Queries for Reels and Status */
+        @media (max-width: 768px) {
+            .status-stories-bar {
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+                margin: 0 -15px 20px;
+                padding: 15px;
+            }
+            
+            .reels-container {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 15px;
+            }
+            
+            .bottom-right-widget {
+                bottom: 80px;
+                right: 15px;
+            }
+            
+            .followers-status-widget {
+                max-width: 280px;
+                right: 15px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .status-story-circle {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .status-story-avatar {
+                width: 54px;
+                height: 54px;
+            }
+            
+            .reels-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .widget-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+            }
+        }
+        
     </style>
 </head>
 <body>
@@ -529,6 +1160,16 @@
                                 <span>Home</span>
                             </a>
                             
+                            <a class="nav-link {% if request.endpoint == 'reels_feed' %}active{% endif %}" href="{{ url_for('reels_feed') }}">
+                                <i class="fas fa-film fa-lg me-2"></i>
+                                <span>Reels</span>
+                            </a>
+                            
+                            <a class="nav-link {% if request.endpoint == 'status_feed' %}active{% endif %}" href="{{ url_for('status_feed') }}">
+                                <i class="fas fa-circle fa-lg me-2"></i>
+                                <span>Status</span>
+                            </a>
+                            
                             <a class="nav-link {% if request.endpoint == 'search' %}active{% endif %}" href="{{ url_for('search') }}">
                                 <i class="fas fa-search fa-lg me-2"></i>
                                 <span>Explore</span>
@@ -541,7 +1182,7 @@
                             
                             <a class="nav-link {% if request.endpoint == 'notifications' %}active{% endif %}" href="{{ url_for('notifications') }}">
                                 <i class="fas fa-bell fa-lg me-2"></i>
-                                <span>Notifications</span>
+                                <span>Alerts</span>
                                 {% if current_user.get_unread_notification_count() > 0 %}
                                     <span class="notification-dot"></span>
                                 {% endif %}
@@ -560,18 +1201,28 @@
                         <!-- User Menu -->
                         {% if current_user.is_authenticated %}
                         <div class="dropdown">
-                            <button class="btn d-flex align-items-center text-decoration-none p-2 rounded-3" 
+                            <button class="btn d-flex align-items-center text-decoration-none p-2 rounded-3 {% if current_user and has_active_status(current_user.id) %}has-status-indicator{% endif %}" 
                                     style="background: var(--card-color); border: 1px solid var(--border-light); color: var(--text-primary);"
                                     type="button" data-bs-toggle="dropdown">
-                                <img src="{{ url_for('static', filename='uploads/profiles/' + current_user.profile_picture) }}" 
-                                     class="avatar-sm me-2" 
-                                     onerror="this.src='https://ui-avatars.com/api/?name={{ current_user.username }}&background=1d9bf0&color=fff'">
+                                <div class="profile-with-status">
+                                    {% if current_user and has_active_status(current_user.id) %}
+                                    <div class="status-ring"></div>
+                                    {% endif %}
+                                    <img src="{{ get_user_avatar_url(current_user) }}" 
+                                         class="profile-img-with-ring avatar-sm me-2">
+                                </div>
                                 <span class="fw-bold small">{{ current_user.username }}</span>
                                 <i class="fas fa-chevron-down text-muted ms-2"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-dark">
                                 <li><a class="dropdown-item" href="{{ url_for('profile', username=current_user.username) }}">
                                     <i class="fas fa-user me-2"></i>Profile
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('create_status') }}">
+                                    <i class="fas fa-plus-circle me-2"></i>Create Status
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('upload_reel') }}">
+                                    <i class="fas fa-video me-2"></i>Upload Reel
                                 </a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('bookmarks') }}">
                                     <i class="fas fa-bookmark me-2"></i>Bookmarks
@@ -638,28 +1289,148 @@
             <i class="fas fa-search"></i>
             <span>Explore</span>
         </a>
+        <a href="{{ url_for('notifications') }}" class="mobile-nav-item {% if request.endpoint == 'notifications' %}active{% endif %}">
+            <i class="fas fa-bell"></i>
+            <span>Alerts</span>
+            {% if current_user.get_unread_notification_count() > 0 %}
+            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-primary border border-light rounded-circle">
+                <span class="visually-hidden">New alerts</span>
+            </span>
+            {% endif %}
+        </a>
+        <a href="{{ url_for('messages') }}" class="mobile-nav-item {% if request.endpoint == 'messages' %}active{% endif %}">
+            <i class="fas fa-envelope"></i>
+            <span>Messages</span>
+            {% if current_user.get_unread_message_count() > 0 %}
+            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-primary border border-light rounded-circle">
+                <span class="visually-hidden">New messages</span>
+            </span>
+            {% endif %}
+        </a>
         <a href="{{ url_for('lists') }}" class="mobile-nav-item {% if request.endpoint == 'lists' %}active{% endif %}">
             <i class="fas fa-list"></i>
             <span>Lists</span>
         </a>
-        <a href="{{ url_for('notifications') }}" class="mobile-nav-item {% if request.endpoint == 'notifications' %}active{% endif %}">
-            <i class="fas fa-bell"></i>
-            <span>Alerts</span>
-        </a>
-        <a href="{{ url_for('profile', username=current_user.username) }}" class="mobile-nav-item {% if request.endpoint == 'profile' %}active{% endif %}">
-            <i class="fas fa-user"></i>
-            <span>Profile</span>
-        </a>
+    </div>
+    {% endif %}
+
+    <!-- Bottom Right Corner Widget (Followers Status & Quick Actions) -->
+    {% if current_user.is_authenticated %}
+    <div class="bottom-right-widget">
+        <!-- Followers Status Widget -->
+        <div class="followers-status-widget d-none" id="followersStatusWidget">
+            <div class="followers-status-header">
+                <div class="followers-status-title">Friends' Status</div>
+                <button class="btn btn-sm btn-link text-primary p-0" onclick="toggleFollowersStatus()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="followers-status-list" id="followersStatusList">
+                <!-- Status items will be loaded here -->
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-spinner fa-spin me-2"></i>
+                    <span>Loading statuses...</span>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <a href="{{ url_for('status_feed') }}" class="view-more-btn btn-sm">
+                    <i class="fas fa-eye"></i> View All
+                </a>
+            </div>
+        </div>
+        
+        <!-- Quick Action Buttons -->
+        <button class="widget-btn create-status" onclick="createStatus()" title="Create Status">
+            <i class="fas fa-plus"></i>
+        </button>
+        <button class="widget-btn create-reel" onclick="uploadReel()" title="Upload Reel">
+            <i class="fas fa-video"></i>
+        </button>
+        <button class="widget-btn" onclick="toggleFollowersStatus()" title="Friends' Status">
+            <i class="fas fa-user-friends"></i>
+        </button>
     </div>
     {% endif %}
 
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3"></div>
 
+    <!-- Status Viewer Modal -->
+    <div id="statusViewer" class="status-viewer-container d-none">
+        <div class="status-view">
+            <div class="status-progress-bar">
+                <div class="status-progress" id="statusProgress"></div>
+            </div>
+            <div class="status-viewer-controls">
+                <div class="d-flex align-items-center">
+                    <div class="profile-with-status me-2">
+                        <div class="status-ring"></div>
+                        <img id="statusUserAvatar" class="profile-img-with-ring avatar-sm">
+                    </div>
+                    <div>
+                        <div class="text-white fw-bold" id="statusUsername"></div>
+                        <div class="text-white-50 small" id="statusTime"></div>
+                    </div>
+                </div>
+                <button class="status-close-btn" onclick="closeStatusViewer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="status-content" id="statusContent">
+                <!-- Status content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Reel Player Modal -->
+    <div id="reelPlayer" class="reel-player-container d-none">
+        <div class="reel-player">
+            <video id="reelVideo" controls></video>
+            <div class="reel-info-overlay">
+                <div class="reel-user-info">
+                    <div class="profile-with-status me-2">
+                        <div class="status-ring"></div>
+                        <img id="reelUserAvatar" class="profile-img-with-ring avatar-sm">
+                    </div>
+                    <div>
+                        <div class="reel-username" id="reelUsername"></div>
+                        <div class="reel-music-info">
+                            <i class="fas fa-music"></i>
+                            <span id="reelMusic"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="reel-caption-overlay" id="reelCaption"></div>
+            </div>
+            <div class="reel-player-controls">
+                <button class="reel-control-btn reel-like-btn" id="reelLikeBtn" onclick="likeReel()">
+                    <i class="far fa-heart"></i>
+                </button>
+                <button class="reel-control-btn" onclick="shareReel()">
+                    <i class="fas fa-share"></i>
+                </button>
+                <button class="reel-control-btn" onclick="closeReelPlayer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     
     <script>
+        // Global variables for status and reels
+        let currentStatusIndex = 0;
+        let statuses = [];
+        let statusTimer = null;
+        let reelPlayer = null;
+        let followersStatusWidgetVisible = false;
+        let currentUser = {
+            is_authenticated: {% if current_user.is_authenticated %}true{% else %}false{% endif %},
+            id: {% if current_user.is_authenticated %}{{ current_user.id }}{% else %}null{% endif %}
+        };
+
         $(document).ready(function() {
             console.log('Chatter - Clean Interface Loaded');
             
@@ -681,6 +1452,12 @@
             adjustContentPadding();
             $(window).resize(adjustContentPadding);
             
+            // Load followers status if user is authenticated
+            if (currentUser.is_authenticated) {
+                loadFollowersStatus();
+                setInterval(loadFollowersStatus, 30000); // Refresh every 30 seconds
+            }
+
             // Auto-expand textarea
             $(document).on('input', '.post-textarea', function() {
                 this.style.height = 'auto';
@@ -893,7 +1670,352 @@
                     }, 800);
                 }
             });
+
+            // Handle status clicks
+            $(document).on('click', '.status-story', function(e) {
+                e.preventDefault();
+                const statusId = $(this).data('status-id');
+                if (statusId) {
+                    viewStatus(statusId);
+                }
+            });
+
+            // Handle reel clicks
+            $(document).on('click', '.reel-card', function(e) {
+                if (!$(e.target).closest('.reel-action-btn').length) {
+                    const reelId = $(this).data('reel-id');
+                    if (reelId) {
+                        viewReel(reelId);
+                    }
+                }
+            });
         });
+        
+        // ============ STATUS FUNCTIONS ============
+        
+        function loadFollowersStatus() {
+            if (!currentUser.is_authenticated) return;
+            
+            $.ajax({
+                url: '/api/followers/status',
+                type: 'GET',
+                success: function(data) {
+                    updateFollowersStatusWidget(data);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading followers status:', error);
+                    $('#followersStatusList').html(`
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <span>Failed to load statuses</span>
+                        </div>
+                    `);
+                }
+            });
+        }
+        
+        function updateFollowersStatusWidget(statusData) {
+            const container = $('#followersStatusList');
+            container.empty();
+            
+            if (!statusData || statusData.length === 0) {
+                container.html(`
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-user-friends fa-2x mb-3"></i>
+                        <p class="mb-0">No friends have active status updates</p>
+                    </div>
+                `);
+                return;
+            }
+            
+            statusData.forEach(status => {
+                const timeAgo = formatRelativeTime(status.created_at);
+                const isViewed = status.viewed || false;
+                const profilePic = status.user.profile_picture ? 
+                    `/static/uploads/profiles/${status.user.profile_picture}` : 
+                    `https://ui-avatars.com/api/?name=${status.user.username}&background=1d9bf0&color=fff`;
+                
+                container.append(`
+                    <a href="javascript:void(0)" class="follower-status-item" onclick="viewStatus(${status.id})">
+                        <div class="follower-status-avatar">
+                            <div class="profile-with-status">
+                                ${!isViewed ? '<div class="status-ring new-status"></div>' : '<div class="status-ring"></div>'}
+                                <img src="${profilePic}" 
+                                     class="profile-img-with-ring avatar-sm"
+                                     onerror="this.src='https://ui-avatars.com/api/?name=${status.user.username}&background=1d9bf0&color=fff'">
+                            </div>
+                            ${status.count > 1 ? `<span class="status-count-badge">${status.count}</span>` : ''}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">${status.user.username}</div>
+                            <div class="small text-muted">${timeAgo}</div>
+                        </div>
+                        ${!isViewed ? '<div class="follower-status-indicator"></div>' : ''}
+                    </a>
+                `);
+            });
+        }
+        
+        function toggleFollowersStatus() {
+            const widget = $('#followersStatusWidget');
+            if (followersStatusWidgetVisible) {
+                widget.addClass('d-none');
+                followersStatusWidgetVisible = false;
+            } else {
+                widget.removeClass('d-none');
+                followersStatusWidgetVisible = true;
+                loadFollowersStatus();
+            }
+        }
+        
+        function viewStatus(statusId) {
+            $.ajax({
+                url: `/api/status/${statusId}`,
+                type: 'GET',
+                success: function(data) {
+                    showStatusViewer(data);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading status:', error);
+                    showToast('Failed to load status', 'danger');
+                }
+            });
+        }
+        
+        function showStatusViewer(status) {
+            // Stop any existing status viewer
+            if (statusTimer) {
+                clearTimeout(statusTimer);
+            }
+            
+            // Update status data
+            currentStatusIndex = 0;
+            statuses = status.user_statuses || [status];
+            
+            // Show viewer
+            $('#statusViewer').removeClass('d-none');
+            $('body').addClass('overflow-hidden');
+            
+            // Load first status
+            loadStatus(0);
+            
+            // Start progress bar
+            startStatusProgress();
+        }
+        
+        function loadStatus(index) {
+            if (index >= statuses.length) {
+                closeStatusViewer();
+                return;
+            }
+            
+            const status = statuses[index];
+            currentStatusIndex = index;
+            
+            // Update user info
+            const userAvatar = status.user.profile_picture ? 
+                `/static/uploads/profiles/${status.user.profile_picture}` : 
+                `https://ui-avatars.com/api/?name=${status.user.username}&background=1d9bf0&color=fff`;
+            
+            $('#statusUserAvatar').attr('src', userAvatar)
+                .on('error', function() {
+                    $(this).attr('src', `https://ui-avatars.com/api/?name=${status.user.username}&background=1d9bf0&color=fff`);
+                });
+            $('#statusUsername').text(status.user.username);
+            $('#statusTime').text(formatRelativeTime(status.created_at));
+            
+            // Update content
+            const contentDiv = $('#statusContent');
+            contentDiv.empty();
+            
+            if (status.media_type === 'text') {
+                contentDiv.html(`
+                    <div class="status-text-content" style="color: ${status.text_color || '#ffffff'}; 
+                                                           background: ${status.background_color || '#000000'}; 
+                                                           font-size: ${status.font_size || 24}px;">
+                        ${status.text || ''}
+                    </div>
+                `);
+            } else if (status.media_type === 'image') {
+                contentDiv.html(`
+                    <div class="status-media-content">
+                        <img src="/static/uploads/statuses/${status.media_url}" alt="Status image">
+                    </div>
+                `);
+            } else if (status.media_type === 'video') {
+                contentDiv.html(`
+                    <div class="status-media-content">
+                        <video src="/static/uploads/statuses/${status.media_url}" autoplay loop muted></video>
+                    </div>
+                `);
+            }
+            
+            // Mark as viewed
+            markStatusViewed(status.id);
+            
+            // Reset progress bar
+            $('#statusProgress').css('width', '0%');
+        }
+        
+        function startStatusProgress() {
+            let progress = 0;
+            const duration = 8000; // 8 seconds per status
+            
+            statusTimer = setInterval(function() {
+                progress += 100 / (duration / 100);
+                $('#statusProgress').css('width', progress + '%');
+                
+                if (progress >= 100) {
+                    clearInterval(statusTimer);
+                    loadStatus(currentStatusIndex + 1);
+                }
+            }, 100);
+        }
+        
+        function markStatusViewed(statusId) {
+            $.ajax({
+                url: `/api/status/viewed/${statusId}`,
+                type: 'POST',
+                success: function() {
+                    // Update UI if needed
+                },
+                error: function() {
+                    // Silently fail
+                }
+            });
+        }
+        
+        function closeStatusViewer() {
+            if (statusTimer) {
+                clearTimeout(statusTimer);
+            }
+            $('#statusViewer').addClass('d-none');
+            $('body').removeClass('overflow-hidden');
+        }
+        
+        // ============ REELS FUNCTIONS ============
+        
+        function viewReel(reelId) {
+            $.ajax({
+                url: `/api/reel/${reelId}`,
+                type: 'GET',
+                success: function(data) {
+                    showReelPlayer(data);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading reel:', error);
+                    showToast('Failed to load reel', 'danger');
+                }
+            });
+        }
+        
+        function showReelPlayer(reel) {
+            // Show player
+            $('#reelPlayer').removeClass('d-none');
+            $('body').addClass('overflow-hidden');
+            
+            // Set video source
+            const video = $('#reelVideo')[0];
+            video.src = `/static/uploads/reels/${reel.video_url}`;
+            video.load();
+            
+            // Update reel info
+            const userAvatar = reel.user.profile_picture ? 
+                `/static/uploads/profiles/${reel.user.profile_picture}` : 
+                `https://ui-avatars.com/api/?name=${reel.user.username}&background=1d9bf0&color=fff`;
+            
+            $('#reelUserAvatar').attr('src', userAvatar)
+                .on('error', function() {
+                    $(this).attr('src', `https://ui-avatars.com/api/?name=${reel.user.username}&background=1d9bf0&color=fff`);
+                });
+            $('#reelUsername').text(reel.user.username);
+            $('#reelMusic').text(reel.music || 'Original audio');
+            $('#reelCaption').text(reel.caption || '');
+            
+            // Update like button
+            const likeBtn = $('#reelLikeBtn');
+            likeBtn.data('reel-id', reel.id);
+            if (reel.liked) {
+                likeBtn.find('i').removeClass('far').addClass('fas');
+                likeBtn.addClass('liked');
+            } else {
+                likeBtn.find('i').removeClass('fas').addClass('far');
+                likeBtn.removeClass('liked');
+            }
+            
+            // Play video
+            video.play().catch(e => console.error('Video play failed:', e));
+            
+            // Mark as viewed
+            markReelViewed(reel.id);
+        }
+        
+        function likeReel() {
+            const reelId = $('#reelLikeBtn').data('reel-id');
+            if (!reelId) return;
+            
+            $.ajax({
+                url: `/reel/${reelId}/like`,
+                type: 'POST',
+                success: function(data) {
+                    const likeBtn = $('#reelLikeBtn');
+                    if (data.status === 'liked') {
+                        likeBtn.find('i').removeClass('far').addClass('fas');
+                        likeBtn.addClass('liked');
+                        showToast('Liked reel', 'success');
+                    } else {
+                        likeBtn.find('i').removeClass('fas').addClass('far');
+                        likeBtn.removeClass('liked');
+                        showToast('Removed like', 'info');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error liking reel:', error);
+                    showToast('Failed to like reel', 'danger');
+                }
+            });
+        }
+        
+        function shareReel() {
+            const reelId = $('#reelLikeBtn').data('reel-id');
+            if (!reelId) return;
+            
+            const shareUrl = `${window.location.origin}/reel/${reelId}`;
+            copyToClipboard(shareUrl, 'Reel link copied to clipboard!');
+        }
+        
+        function markReelViewed(reelId) {
+            $.ajax({
+                url: `/api/reel/${reelId}/viewed`,
+                type: 'POST',
+                success: function() {
+                    // Update view count if needed
+                },
+                error: function() {
+                    // Silently fail
+                }
+            });
+        }
+        
+        function closeReelPlayer() {
+            const video = $('#reelVideo')[0];
+            if (video) {
+                video.pause();
+                video.src = '';
+            }
+            $('#reelPlayer').addClass('d-none');
+            $('body').removeClass('overflow-hidden');
+        }
+        
+        // ============ UTILITY FUNCTIONS ============
+        
+        function createStatus() {
+            window.location.href = '/status/create';
+        }
+        
+        function uploadReel() {
+            window.location.href = '/reels/upload';
+        }
         
         // Toast notification function
         function showToast(message, type = 'info') {
@@ -1011,21 +2133,25 @@
         
         // Format date to relative time
         function formatRelativeTime(dateString) {
-            const date = new Date(dateString);
-            const now = new Date();
-            const diffMs = now - date;
-            const diffSec = Math.floor(diffMs / 1000);
-            const diffMin = Math.floor(diffSec / 60);
-            const diffHour = Math.floor(diffMin / 60);
-            const diffDay = Math.floor(diffHour / 24);
-            
-            if (diffSec < 60) return 'Just now';
-            if (diffMin < 60) return `${diffMin}m`;
-            if (diffHour < 24) return `${diffHour}h`;
-            if (diffDay < 7) return `${diffDay}d`;
-            if (diffDay < 30) return `${Math.floor(diffDay / 7)}w`;
-            if (diffDay < 365) return `${Math.floor(diffDay / 30)}mo`;
-            return `${Math.floor(diffDay / 365)}y`;
+            try {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffSec = Math.floor(diffMs / 1000);
+                const diffMin = Math.floor(diffSec / 60);
+                const diffHour = Math.floor(diffMin / 60);
+                const diffDay = Math.floor(diffHour / 24);
+                
+                if (diffSec < 60) return 'Just now';
+                if (diffMin < 60) return `${diffMin}m`;
+                if (diffHour < 24) return `${diffHour}h`;
+                if (diffDay < 7) return `${diffDay}d`;
+                if (diffDay < 30) return `${Math.floor(diffDay / 7)}w`;
+                if (diffDay < 365) return `${Math.floor(diffDay / 30)}mo`;
+                return `${Math.floor(diffDay / 365)}y`;
+            } catch (e) {
+                return 'Recently';
+            }
         }
         
         // Update all relative timestamps on the page
@@ -1058,6 +2184,9 @@
                         } else {
                             $('.notification-dot').hide();
                         }
+                    },
+                    error: function() {
+                        // Silently fail
                     }
                 });
             }
@@ -1145,6 +2274,71 @@
                 </button>
             `);
         }
+        
+        // Handle keyboard shortcuts for status viewer
+        $(document).on('keydown', function(e) {
+            // Close status viewer with ESC
+            if (e.key === 'Escape' && !$('#statusViewer').hasClass('d-none')) {
+                closeStatusViewer();
+            }
+            
+            // Close reel player with ESC
+            if (e.key === 'Escape' && !$('#reelPlayer').hasClass('d-none')) {
+                closeReelPlayer();
+            }
+            
+            // Navigate statuses with arrow keys
+            if (!$('#statusViewer').hasClass('d-none')) {
+                if (e.key === 'ArrowRight') {
+                    loadStatus(currentStatusIndex + 1);
+                } else if (e.key === 'ArrowLeft' && currentStatusIndex > 0) {
+                    loadStatus(currentStatusIndex - 1);
+                }
+            }
+        });
+        
+        // Handle video controls
+        $(document).on('click', '#reelPlayer video', function() {
+            const video = this;
+            if (video.paused) {
+                video.play();
+            } else {
+                video.pause();
+            }
+        });
+        
+        // Double tap to like on mobile
+        let lastTap = 0;
+        $(document).on('touchstart', '#reelPlayer video, .status-media-content', function(e) {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 300 && tapLength > 0) {
+                // Double tap detected
+                if ($(this).closest('#reelPlayer').length) {
+                    likeReel();
+                }
+                e.preventDefault();
+            }
+            lastTap = currentTime;
+        });
+        
+        // Close modals when clicking outside
+        $(document).on('click', '.status-viewer-container, .reel-player-container', function(e) {
+            if (e.target === this) {
+                if ($(this).hasClass('status-viewer-container')) {
+                    closeStatusViewer();
+                } else if ($(this).hasClass('reel-player-container')) {
+                    closeReelPlayer();
+                }
+            }
+        });
+        
+        // Initialize on page load
+        $(document).ready(function() {
+            // Add any initialization code here
+            console.log('Chatter initialized successfully');
+        });
+        
     </script>
 
     {% block scripts %}{% endblock %}

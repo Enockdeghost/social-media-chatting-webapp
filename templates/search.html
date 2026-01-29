@@ -1,159 +1,284 @@
 {% extends "base.html" %}
 
-{% block title %}Search {% endblock %}
+{% block title %}Search Results - Chatter{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <!-- Search Header -->
-        <div class="sticky-top bg-dark pt-3 pb-2 border-bottom border-secondary">
-            <div class="px-3">
-                <form action="{{ url_for('search') }}" method="GET">
-                    <div class="input-group">
-                        <span class="input-group-text bg-dark border-secondary text-muted">
-                            <i class="fas fa-search"></i>
-                        </span>
-                        <input type="text" name="q" class="form-control bg-dark text-light border-secondary search-box" 
-                               placeholder="Search Twatter" value="{{ query }}" autofocus>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Search Tabs -->
-            <nav class="nav nav-tabs border-0 mt-3" role="tablist">
-                <a class="nav-link {% if not query.startswith('#') %}active{% endif %} border-0 text-light" 
-                   href="{{ url_for('search', q=query) if query else '#' }}">
-                    Top
-                </a>
-                <a class="nav-link {% if query.startswith('#') %}active{% endif %} border-0 text-light" 
-                   href="{{ url_for('search', q='#' + query[1:]) if query.startswith('#') else '#' }}">
-                    Latest
-                </a>
-                <a class="nav-link border-0 text-light" href="#">People</a>
-                <a class="nav-link border-0 text-light" href="#">Media</a>
-            </nav>
-        </div>
-
-        <!-- Search Results -->
-        <div class="tab-content">
-            <!-- Users Results -->
-            {% if users and not query.startswith('#') %}
-            <div class="tab-pane fade show active">
-                <h6 class="fw-bold px-3 py-3 mb-0 bg-dark">People</h6>
-                {% for user in users %}
-                <div class="post-card">
-                    <div class="d-flex align-items-center">
-                        <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
-                             class="avatar me-3" onerror="this.src='https://via.placeholder.com/48'">
-                        
-                        <div class="flex-grow-1">
-                            <div class="fw-bold">{{ user.username }}</div>
-                            <div class="text-muted">@{{ user.username }}</div>
-                            {% if user.bio %}
-                            <div class="mt-1 small">{{ user.bio }}</div>
-                            {% endif %}
-                        </div>
-
-                        {% if user.id != current_user.id %}
-                        <button class="btn {% if current_user.is_following(user) %}btn-outline-light{% else %}btn-primary{% endif %} rounded-pill px-4 follow-btn" 
-                                data-user-id="{{ user.id }}">
-                            {% if current_user.is_following(user) %}Following{% else %}Follow{% endif %}
-                        </button>
-                        {% endif %}
-                    </div>
+<div class="container-fluid px-4 px-lg-5">
+    <!-- Search Header -->
+    <div class="mb-5">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="fw-bold mb-3">Search Results</h1>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted">Results for:</span>
+                    <span class="fw-bold text-primary">"{{ query }}"</span>
                 </div>
-                {% endfor %}
+            </div>
+            <div class="col-md-4">
+                <!-- Search Type Tabs -->
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('search', q=query, type='all') }}" 
+                       class="btn btn-sm {% if search_type == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %} rounded-pill">
+                        All
+                    </a>
+                    <a href="{{ url_for('search', q=query, type='users') }}" 
+                       class="btn btn-sm {% if search_type == 'users' %}btn-primary{% else %}btn-outline-primary{% endif %} rounded-pill">
+                        Users
+                    </a>
+                    <a href="{{ url_for('search', q=query, type='posts') }}" 
+                       class="btn btn-sm {% if search_type == 'posts' %}btn-primary{% else %}btn-outline-primary{% endif %} rounded-pill">
+                        Posts
+                    </a>
+                    <a href="{{ url_for('search', q=query, type='lists') }}" 
+                       class="btn btn-sm {% if search_type == 'lists' %}btn-primary{% else %}btn-outline-primary{% endif %} rounded-pill">
+                        Lists
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Search Results -->
+    <div class="row">
+        <div class="col-lg-8">
+            {% if search_type in ['all', 'users'] and users %}
+            <div class="mb-5">
+                <h4 class="fw-bold mb-4 d-flex align-items-center gap-2">
+                    <i class="fas fa-users text-primary"></i>
+                    <span>Users ({{ users|length }})</span>
+                </h4>
+                
+                <div class="row g-3">
+                    {% for user in users %}
+                    <div class="col-md-6">
+                        {% include 'components/user_card.html' %}
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
             {% endif %}
-
-            <!-- Hashtag Posts Results -->
-            {% if posts and query.startswith('#') %}
-            <div class="tab-pane fade show active">
-                <h6 class="fw-bold px-3 py-3 mb-0 bg-dark">Posts with {{ query }}</h6>
-                {% for post in posts %}
-                <div class="post-card">
-                    <div class="d-flex">
-                        <img src="{{ url_for('static', filename='uploads/profiles/' + post.author.profile_picture) }}" 
-                             class="avatar me-3" onerror="this.src='https://via.placeholder.com/48'">
-                        
-                        <div class="flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-start mb-1">
-                                <div>
-                                    <span class="fw-bold">{{ post.author.username }}</span>
-                                    <span class="text-muted ms-2">@{{ post.author.username }}</span>
-                                    <span class="text-muted ms-2">·</span>
-                                    <span class="text-muted">{{ post.created_at.strftime('%b %d') }}</span>
+            
+            {% if search_type in ['all', 'posts'] and posts %}
+            <div class="mb-5">
+                <h4 class="fw-bold mb-4 d-flex align-items-center gap-2">
+                    <i class="fas fa-comment text-primary"></i>
+                    <span>Posts ({{ posts|length }})</span>
+                </h4>
+                
+                <div class="posts-container">
+                    {% for post in posts %}
+                        {% with post=post %}
+                            {% include 'components/post_card.html' %}
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if search_type in ['all', 'lists'] and lists %}
+            <div class="mb-5">
+                <h4 class="fw-bold mb-4 d-flex align-items-center gap-2">
+                    <i class="fas fa-list text-primary"></i>
+                    <span>Lists ({{ lists|length }})</span>
+                </h4>
+                
+                <div class="row g-3">
+                    {% for list in lists %}
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm rounded-4" 
+                             style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h6 class="fw-bold mb-1">{{ list.name }}</h6>
+                                        <small class="text-muted">Created by 
+                                            <a href="{{ url_for('profile', username=list.creator.username) }}" 
+                                               class="text-decoration-none">
+                                                @{{ list.creator.username }}
+                                            </a>
+                                        </small>
+                                    </div>
+                                    {% if list.is_private %}
+                                    <span class="badge bg-secondary">Private</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Public</span>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if list.description %}
+                                <p class="mb-3 text-muted small">{{ list.description|truncate(100) }}</p>
+                                {% endif %}
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-users me-1"></i>
+                                        {{ list.members.count() }} members
+                                    </small>
+                                    <a href="{{ url_for('view_list', list_id=list.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        View List
+                                    </a>
                                 </div>
                             </div>
-
-                            <div class="post-content mb-3">
-                                {{ post.content | process_content | safe }}
-                            </div>
-
-                            {% if post.image %}
-                            <div class="post-image mb-3">
-                                <img src="{{ url_for('static', filename='uploads/posts/' + post.image) }}" 
-                                     class="img-fluid rounded-3" style="max-height: 400px; width: auto;">
-                            </div>
-                            {% endif %}
-
-                            <div class="d-flex justify-content-between align-items-center">
-                                <button class="btn action-btn">
-                                    <i class="far fa-comment"></i>
-                                    <span class="ms-1">{{ post.comment_count() }}</span>
-                                </button>
-
-                                <button class="btn action-btn like-btn {% if post.likes.filter_by(user_id=current_user.id).first() %}liked{% endif %}" 
-                                        data-post-id="{{ post.id }}">
-                                    <i class="{% if post.likes.filter_by(user_id=current_user.id).first() %}fas{% else %}far{% endif %} fa-heart"></i>
-                                    <span class="ms-1 like-count">{{ post.like_count() }}</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
             {% endif %}
-
-            <!-- No Results -->
-            {% if not users and not posts and query %}
+            
+            <!-- No Results Message -->
+            {% if not users and not posts and not lists %}
             <div class="text-center py-5">
-                <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">No results for "{{ query }}"</h5>
-                <p class="text-muted">Try searching for something else</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
-{% for user in users %}
-<div class="post-card">
-    <div class="d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center">
-            <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
-                 class="avatar me-3" onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
-            <div>
-                <div class="fw-bold">
-                    {{ user.username }}
-                    {% if user.is_admin %}
-                    <i class="fas fa-check-circle verified-badge" title="Verified Admin"></i>
-                    {% endif %}
+                <div class="mb-4">
+                    <i class="fas fa-search fa-4x text-muted opacity-50"></i>
                 </div>
-                <div class="text-muted">@{{ user.username }}</div>
-                {% if user.bio %}
-                <div class="text-muted small mt-1">{{ user.bio[:100] }}{% if user.bio|length > 100 %}...{% endif %}</div>
-                {% endif %}
+                <h4 class="fw-bold text-muted mb-3">No results found</h4>
+                <p class="text-muted mb-4">We couldn't find anything matching "{{ query }}"</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{{ url_for('feed') }}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>Go to Home
+                    </a>
+                    <a href="{{ url_for('trending') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-hashtag me-2"></i>Explore Trending
+                    </a>
+                </div>
             </div>
-        </div>
-        <div>
-            {% if user.id != current_user.id %}
-            <button class="btn btn-outline-primary btn-sm rounded-pill follow-btn" data-user-id="{{ user.id }}">
-                {% if current_user.is_following(user) %}Following{% else %}Follow{% endif %}
-            </button>
             {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Search Tips -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4" 
+                 style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="fas fa-lightbulb text-warning"></i>
+                        <span>Search Tips</span>
+                    </h6>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-2">
+                            <i class="fas fa-hashtag me-2"></i>
+                            Use <span class="text-primary">#</span> to search hashtags
+                        </small>
+                        <small class="text-muted d-block mb-2">
+                            <i class="fas fa-at me-2"></i>
+                            Use <span class="text-primary">@</span> to search users
+                        </small>
+                        <small class="text-muted d-block">
+                            <i class="fas fa-filter me-2"></i>
+                            Use tabs to filter results
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Searches -->
+            <div class="card border-0 shadow-sm rounded-4" 
+                 style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="fas fa-history text-primary"></i>
+                        <span>Recent Searches</span>
+                    </h6>
+                    
+                    <div id="recent-searches">
+                        <!-- Will be populated by JavaScript -->
+                        <p class="text-muted small mb-0">No recent searches</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
-{% endfor %}
+
+<style>
+    .posts-container {
+        max-height: 600px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+    
+    .posts-container::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .posts-container::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    .posts-container::-webkit-scrollbar-thumb {
+        background: var(--border-light);
+        border-radius: 3px;
+    }
+</style>
+
+<script>
+    // Store recent searches in localStorage
+    document.addEventListener('DOMContentLoaded', function() {
+        const query = "{{ query }}";
+        
+        if (query) {
+            // Get existing searches
+            let recentSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+            
+            // Add current search if not already in list
+            if (!recentSearches.includes(query)) {
+                recentSearches.unshift(query);
+                
+                // Keep only last 5 searches
+                recentSearches = recentSearches.slice(0, 5);
+                
+                // Save back to localStorage
+                localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+            }
+        }
+        
+        // Display recent searches
+        displayRecentSearches();
+    });
+    
+    function displayRecentSearches() {
+        const recentSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+        const container = document.getElementById('recent-searches');
+        
+        if (recentSearches.length > 0) {
+            container.innerHTML = '';
+            
+            recentSearches.forEach(search => {
+                const searchItem = document.createElement('div');
+                searchItem.className = 'd-flex justify-content-between align-items-center mb-2';
+                searchItem.innerHTML = `
+                    <a href="{{ url_for('search') }}?q=${encodeURIComponent(search)}" 
+                       class="text-decoration-none text-primary">
+                        <i class="fas fa-search me-2"></i>
+                        ${search}
+                    </a>
+                    <button class="btn btn-sm btn-outline-danger border-0" 
+                            onclick="removeSearch('${search}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(searchItem);
+            });
+        }
+    }
+    
+    function removeSearch(searchTerm) {
+        let recentSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+        recentSearches = recentSearches.filter(s => s !== searchTerm);
+        localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+        displayRecentSearches();
+    }
+    
+    // Clear all searches
+    function clearAllSearches() {
+        if (confirm('Clear all recent searches?')) {
+            localStorage.removeItem('recentSearches');
+            displayRecentSearches();
+        }
+    }
+</script>
 {% endblock %}

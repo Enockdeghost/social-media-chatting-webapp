@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Reel{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="card glass-effect fade-in">
+                <div class="card-header bg-transparent border-bottom">
+                    <h4 class="mb-0"><i class="fas fa-video me-2"></i>Upload Reel</h4>
+                    <small class="text-muted">Upload short videos up to 60 seconds</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('upload_reel') }}" enctype="multipart/form-data" id="reelForm">
+                        <!-- Video Upload -->
+                        <div class="mb-4">
+                            <div class="border-dashed rounded-3 p-5 text-center mb-3" 
+                                 style="border: 2px dashed var(--border-light); background: var(--card-color);">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <h5>Drop your video here</h5>
+                                <p class="text-muted mb-3">or click to browse files</p>
+                                <input type="file" name="video" id="video" class="d-none" accept="video/*" required>
+                                <label for="video" class="btn btn-primary">
+                                    <i class="fas fa-folder-open me-1"></i> Select Video
+                                </label>
+                                <div class="mt-3">
+                                    <small class="text-muted">MP4, MOV, AVI, MKV • Max 16MB • Max 60 seconds</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Video Preview -->
+                            <div id="video-preview" class="text-center d-none">
+                                <div class="position-relative d-inline-block">
+                                    <video id="preview-video" controls class="rounded" style="max-width: 100%; max-height: 400px;"></video>
+                                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" 
+                                            onclick="removeVideoPreview()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted" id="video-info"></small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Caption -->
+                        <div class="mb-4">
+                            <label for="caption" class="form-label">Caption</label>
+                            <textarea name="caption" id="caption" class="form-control post-textarea" 
+                                      placeholder="Add a catchy caption for your reel..." 
+                                      rows="3" maxlength="500"></textarea>
+                            <div class="text-end mt-1">
+                                <span class="text-muted small" id="caption-counter">0/500</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Music -->
+                        <div class="mb-4">
+                            <label for="music" class="form-label">Music/Original Audio</label>
+                            <input type="text" name="music" id="music" class="form-control" 
+                                   placeholder="Add music title or 'Original Audio'">
+                            <div class="form-text">Add trending music to reach more viewers</div>
+                        </div>
+                        
+                        <!-- Location -->
+                        <div class="mb-4">
+                            <label for="location" class="form-label">Location (Optional)</label>
+                            <input type="text" name="location" id="location" class="form-control" 
+                                   placeholder="Add location">
+                        </div>
+                        
+                        <!-- Privacy & Settings -->
+                        <div class="card bg-dark border-0 mb-4">
+                            <div class="card-body">
+                                <h6 class="mb-3"><i class="fas fa-cog me-2"></i>Settings</h6>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="allow_comments" name="allow_comments" checked>
+                                        <label class="form-check-label" for="allow_comments">
+                                            Allow Comments
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="allow_sharing" name="allow_sharing" checked>
+                                        <label class="form-check-label" for="allow_sharing">
+                                            Allow Sharing
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Visibility</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="visibility" id="public" value="public" checked>
+                                        <label class="form-check-label" for="public">
+                                            <i class="fas fa-globe me-1"></i> Public (Anyone can view)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="visibility" id="followers" value="followers">
+                                        <label class="form-check-label" for="followers">
+                                            <i class="fas fa-user-friends me-1"></i> Followers Only
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('reels_feed') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                                <i class="fas fa-upload me-1"></i> Upload Reel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Upload Tips -->
+            <div class="row mt-4">
+                <div class="col-md-6 mb-3">
+                    <div class="card glass-effect h-100">
+                        <div class="card-body">
+                            <h6 class="mb-3"><i class="fas fa-lightbulb me-2 text-warning"></i>Reel Tips</h6>
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2"><i class="fas fa-clock me-2 text-primary"></i>Keep it short (15-30 seconds)</li>
+                                <li class="mb-2"><i class="fas fa-volume-up me-2 text-accent"></i>Use clear audio</li>
+                                <li class="mb-2"><i class="fas fa-sun me-2 text-warning"></i>Good lighting is key</li>
+                                <li class="mb-2"><i class="fas fa-hashtag me-2 text-info"></i>Use 3-5 relevant hashtags</li>
+                                <li><i class="fas fa-music me-2 text-success"></i>Add trending music</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <div class="card glass-effect h-100">
+                        <div class="card-body">
+                            <h6 class="mb-3"><i class="fas fa-chart-line me-2 text-info"></i>Best Practices</h6>
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2"><i class="fas fa-eye me-2 text-success"></i>First 3 seconds are crucial</li>
+                                <li class="mb-2"><i class="fas fa-comment me-2 text-primary"></i>Engage with comments</li>
+                                <li class="mb-2"><i class="fas fa-share me-2 text-accent"></i>Share to your feed</li>
+                                <li class="mb-2"><i class="fas fa-calendar me-2 text-warning"></i>Post consistently</li>
+                                <li><i class="fas fa-users me-2 text-info"></i>Collaborate with others</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Initialize character counter
+        setupCharacterCounter('caption', 'caption-counter');
+        
+        // Video upload handling
+        $('#video').change(function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Validate file size (16MB)
+                if (file.size > 16 * 1024 * 1024) {
+                    showToast('File size must be less than 16MB', 'danger');
+                    $(this).val('');
+                    return;
+                }
+                
+                // Validate file type
+                const validTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
+                if (!validTypes.includes(file.type)) {
+                    showToast('Please upload a valid video file (MP4, MOV, AVI, MKV)', 'danger');
+                    $(this).val('');
+                    return;
+                }
+                
+                // Create video preview
+                const videoURL = URL.createObjectURL(file);
+                const video = $('#preview-video')[0];
+                video.src = videoURL;
+                
+                // Get video duration
+                video.addEventListener('loadedmetadata', function() {
+                    const duration = video.duration;
+                    if (duration > 60) {
+                        showToast('Video must be 60 seconds or less', 'danger');
+                        $('#video').val('');
+                        $('#video-preview').addClass('d-none');
+                        URL.revokeObjectURL(videoURL);
+                        return;
+                    }
+                    
+                    $('#video-info').text(
+                        `${Math.round(file.size / 1024 / 1024)}MB • ${Math.round(duration)} seconds`
+                    );
+                    
+                    // Enable submit button
+                    $('#submitBtn').prop('disabled', false);
+                });
+                
+                // Show preview
+                $('#video-preview').removeClass('d-none');
+            }
+        });
+        
+        // Drag and drop
+        const dropZone = $('.border-dashed');
+        dropZone.on('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).css('border-color', 'var(--primary-color)');
+            $(this).css('background', 'rgba(29, 155, 240, 0.1)');
+        });
+        
+        dropZone.on('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).css('border-color', 'var(--border-light)');
+            $(this).css('background', 'var(--card-color)');
+        });
+        
+        dropZone.on('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).css('border-color', 'var(--border-light)');
+            $(this).css('background', 'var(--card-color)');
+            
+            const files = e.originalEvent.dataTransfer.files;
+            if (files.length > 0) {
+                $('#video')[0].files = files;
+                $('#video').trigger('change');
+            }
+        });
+        
+        // Click to upload
+        dropZone.click(function() {
+            $('#video').click();
+        });
+    });
+    
+    function removeVideoPreview() {
+        $('#video').val('');
+        $('#video-preview').addClass('d-none');
+        $('#submitBtn').prop('disabled', true);
+        const video = $('#preview-video')[0];
+        if (video.src) {
+            URL.revokeObjectURL(video.src);
+            video.src = '';
+        }
+    }
+    
+    // Form submission
+    $('#reelForm').submit(function(e) {
+        const video = $('#video').val();
+        if (!video) {
+            e.preventDefault();
+            showToast('Please select a video to upload', 'danger');
+            return;
+        }
+        
+        // Show loading state
+        $('#submitBtn').prop('disabled', true);
+        $('#submitBtn').html('<i class="fas fa-spinner fa-spin me-1"></i> Uploading...');
+    });
+</script>
+{% endblock %}

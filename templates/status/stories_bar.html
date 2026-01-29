@@ -1,0 +1,38 @@
+<!-- Status Stories Bar -->
+{% if status_stories and status_stories|length > 0 %}
+<div class="status-stories-bar mb-4 fade-in">
+    <!-- Your Status -->
+    <a href="{{ url_for('create_status') }}" class="status-story">
+        <div class="status-story-add">
+            <i class="fas fa-plus fa-lg"></i>
+        </div>
+        <span class="status-story-username text-muted">Your story</span>
+    </a>
+    
+    <!-- Followers Statuses -->
+    {% for story in status_stories %}
+    {% if story.statuses and story.statuses|length > 0 %}
+    <a href="javascript:void(0)" class="status-story" onclick="viewStatus({{ story.statuses[0].id }})" data-status-id="{{ story.statuses[0].id }}">
+        <div class="status-story-circle {% if story.has_unviewed %}status-unseen{% else %}status-seen{% endif %}">
+            <img src="{{ get_user_avatar_url(story.user) }}" 
+                 class="status-story-avatar"
+                 onerror="this.src='https://ui-avatars.com/api/?name={{ story.user.username }}&background=1d9bf0&color=fff'">
+            {% if story.count > 1 %}
+            <span class="status-count-badge">{{ story.count }}</span>
+            {% endif %}
+        </div>
+        <span class="status-story-username">{{ story.user.username }}</span>
+    </a>
+    {% endif %}
+    {% endfor %}
+    
+    <!-- View More Button -->
+    {% if status_stories|length > 5 %}
+    <div class="text-center" style="min-width: 70px;">
+        <a href="{{ url_for('status_feed') }}" class="view-more-btn btn-sm mt-3">
+            <i class="fas fa-chevron-right"></i>
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endif %}

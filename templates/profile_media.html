@@ -1,0 +1,572 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.username }}'s Media - Chatter{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 px-lg-5">
+    <!-- Media Header -->
+    <div class="d-flex align-items-center justify-content-between mb-5">
+        <div>
+            <h1 class="fw-bold mb-2">{{ user.username }}'s Media</h1>
+            <p class="text-muted mb-0">
+                <i class="fas fa-image me-2"></i>
+                {{ posts_with_images|length }} photos and videos
+            </p>
+        </div>
+        
+        <div>
+            <a href="{{ url_for('profile', username=user.username) }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Profile
+            </a>
+        </div>
+    </div>
+    
+    <!-- Media Gallery -->
+    {% if posts_with_images %}
+    <div class="row">
+        <!-- Filters -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4" 
+                 style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3">Filter Media</h6>
+                    
+                    <div class="mb-3">
+                        <label class="form-label small text-muted mb-2">Sort by</label>
+                        <select class="form-select bg-dark border-light text-white" id="sortMedia">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="popular">Most Liked</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label small text-muted mb-2">Time Period</label>
+                        <div class="d-flex flex-column gap-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="timePeriod" id="allTime" checked>
+                                <label class="form-check-label small" for="allTime">All Time</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="timePeriod" id="thisYear">
+                                <label class="form-check-label small" for="thisYear">This Year</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="timePeriod" id="thisMonth">
+                                <label class="form-check-label small" for="thisMonth">This Month</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="timePeriod" id="thisWeek">
+                                <label class="form-check-label small" for="thisWeek">This Week</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-3 border-top" style="border-color: var(--border-light) !important;">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="text-center p-2 rounded-3" style="background: var(--card-hover);">
+                                    <div class="fw-bold text-primary">{{ posts_with_images|length }}</div>
+                                    <small class="text-muted">Total</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-2 rounded-3" style="background: var(--card-hover);">
+                                    <div class="fw-bold text-primary">{{ posts_with_images|selectattr('content')|list|length }}</div>
+                                    <small class="text-muted">With Captions</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Stats Card -->
+            <div class="card border-0 shadow-sm rounded-4" 
+                 style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3">About @{{ user.username }}</h6>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <a href="{{ url_for('profile', username=user.username) }}" class="text-decoration-none me-3">
+                            <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+                                 class="rounded-circle border-2 border-dark"
+                                 style="width: 48px; height: 48px; object-fit: cover;"
+                                 onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
+                        </a>
+                        <div>
+                            <a href="{{ url_for('profile', username=user.username) }}" 
+                               class="text-decoration-none fw-bold d-block">
+                                {{ user.username }}
+                                {% if user.is_verified %}
+                                <i class="fas fa-check-circle verified-badge"></i>
+                                {% endif %}
+                            </a>
+                            <small class="text-muted">{{ user.followers.count() }} followers</small>
+                        </div>
+                    </div>
+                    
+                    {% if user.bio %}
+                    <p class="small mb-3">{{ user.bio|truncate(100) }}</p>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('profile', username=user.username) }}" 
+                           class="btn btn-sm btn-outline-primary w-100">
+                            View Full Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Media Grid -->
+        <div class="col-lg-9">
+            <div class="row g-3" id="mediaGrid">
+                {% for post in posts_with_images %}
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <div class="media-item position-relative rounded-3 overflow-hidden hover-lift" 
+                         style="aspect-ratio: 1; cursor: pointer; background: var(--card-hover);"
+                         onclick="openMediaModal('{{ post.id }}')">
+                        <img src="{{ url_for('static', filename='uploads/posts/' + post.image) }}" 
+                             class="w-100 h-100 object-fit-cover"
+                             style="transition: transform 0.3s ease;"
+                             alt="Post image by @{{ post.author.username }}">
+                        
+                        <!-- Hover Overlay -->
+                        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-end p-3"
+                             style="background: linear-gradient(transparent 50%, rgba(0,0,0,0.7) 100%); opacity: 0; transition: opacity 0.3s ease;">
+                            <div class="w-100">
+                                {% if post.content %}
+                                <p class="text-white small mb-2" style="line-height: 1.3;">{{ post.content|truncate(60) }}</p>
+                                {% endif %}
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-white-50">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ post.created_at|time_ago }}
+                                    </small>
+                                    <small class="text-white-50">
+                                        <i class="fas fa-heart me-1"></i>
+                                        {{ post.like_count() }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Image Icon -->
+                        <div class="position-absolute top-0 end-0 m-3">
+                            <i class="fas fa-image text-white bg-dark bg-opacity-50 rounded-circle p-2"></i>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Load More Button -->
+            {% if posts_with_images|length > 24 %}
+            <div class="text-center mt-5">
+                <button class="btn btn-outline-primary px-5" id="loadMoreMedia">
+                    <i class="fas fa-plus me-2"></i>Load More
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <!-- No Media Message -->
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <i class="fas fa-image fa-4x text-muted opacity-50"></i>
+        </div>
+        <h4 class="fw-bold text-muted mb-3">No media yet</h4>
+        <p class="text-muted mb-4">
+            {% if current_user.id == user.id %}
+            Share photos and videos to appear here.
+            {% else %}
+            When {{ user.username }} shares photos and videos, they'll appear here.
+            {% endif %}
+        </p>
+        {% if current_user.id == user.id %}
+        <a href="{{ url_for('feed') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Create Your First Post
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Media Modal -->
+<div class="modal fade" id="mediaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-header border-0">
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3 bg-dark bg-opacity-50 rounded-circle p-2" 
+                        data-bs-dismiss="modal" style="z-index: 1;"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="modalCarousel" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-inner rounded-3" id="carouselItems">
+                        <!-- Carousel items will be loaded dynamically -->
+                    </div>
+                    
+                    <button class="carousel-control-prev" type="button" data-bs-target="#modalCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon bg-dark bg-opacity-50 rounded-circle p-3"></span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#modalCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon bg-dark bg-opacity-50 rounded-circle p-3"></span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Post Info -->
+            <div class="modal-footer border-0 justify-content-start">
+                <div class="w-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <a href="#" class="text-decoration-none me-3" id="modalAuthorLink">
+                            <img src="" alt="Author" 
+                                 class="rounded-circle border-2 border-dark"
+                                 style="width: 40px; height: 40px; object-fit: cover;"
+                                 id="modalAuthorImage">
+                        </a>
+                        <div>
+                            <a href="#" class="text-decoration-none fw-bold text-white" id="modalAuthorName">
+                                <!-- Author name will be loaded -->
+                            </a>
+                            <div class="text-white-50 small" id="modalPostDate">
+                                <!-- Date will be loaded -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="text-white mb-3" id="modalPostContent">
+                        <!-- Content will be loaded -->
+                    </p>
+                    
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn btn-sm btn-outline-light like-btn-modal">
+                            <i class="far fa-heart me-2"></i>
+                            <span class="like-count">0</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-light">
+                            <i class="far fa-comment me-2"></i>
+                            <span class="comment-count">0</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-light">
+                            <i class="fas fa-share me-2"></i>
+                            Share
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .media-item:hover .position-absolute:not(.top-0.end-0) {
+        opacity: 1 !important;
+    }
+    
+    .media-item:hover img {
+        transform: scale(1.05);
+    }
+    
+    .object-fit-cover {
+        object-fit: cover;
+    }
+    
+    .hover-lift {
+        transition: all 0.3s ease;
+    }
+    
+    .hover-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .carousel-item img {
+        max-height: 70vh;
+        object-fit: contain;
+        margin: 0 auto;
+    }
+    
+    .carousel-control-prev,
+    .carousel-control-next {
+        width: auto;
+        opacity: 0.7;
+        transition: opacity 0.3s ease;
+    }
+    
+    .carousel-control-prev:hover,
+    .carousel-control-next:hover {
+        opacity: 1;
+    }
+    
+    .modal-content {
+        backdrop-filter: blur(10px);
+        background: rgba(0, 0, 0, 0.7) !important;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    
+    .media-item {
+        animation: fadeIn 0.5s ease-out;
+        animation-fill-mode: both;
+    }
+    
+    /* Stagger animation for grid items */
+    .media-item:nth-child(1) { animation-delay: 0.1s; }
+    .media-item:nth-child(2) { animation-delay: 0.2s; }
+    .media-item:nth-child(3) { animation-delay: 0.3s; }
+    .media-item:nth-child(4) { animation-delay: 0.4s; }
+    .media-item:nth-child(5) { animation-delay: 0.5s; }
+    .media-item:nth-child(6) { animation-delay: 0.6s; }
+    .media-item:nth-child(7) { animation-delay: 0.7s; }
+    .media-item:nth-child(8) { animation-delay: 0.8s; }
+</style>
+
+<script>
+    // Initialize media modal
+    let currentMediaIndex = 0;
+    let mediaPosts = {{ posts_with_images|tojson|safe }};
+    
+    function openMediaModal(postId) {
+        // Find the post index
+        currentMediaIndex = mediaPosts.findIndex(post => post.id == postId);
+        
+        if (currentMediaIndex === -1) return;
+        
+        // Clear previous carousel items
+        const carouselItems = document.getElementById('carouselItems');
+        carouselItems.innerHTML = '';
+        
+        // Add all media items to carousel
+        mediaPosts.forEach((post, index) => {
+            const isActive = index === currentMediaIndex ? 'active' : '';
+            const item = document.createElement('div');
+            item.className = `carousel-item ${isActive}`;
+            item.innerHTML = `
+                <img src="{{ url_for('static', filename='uploads/posts/') }}${post.image}" 
+                     class="d-block w-100" 
+                     alt="Post by @${post.author.username}">
+            `;
+            carouselItems.appendChild(item);
+        });
+        
+        // Update post info
+        updateModalPostInfo(currentMediaIndex);
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('mediaModal'));
+        modal.show();
+    }
+    
+    function updateModalPostInfo(index) {
+        const post = mediaPosts[index];
+        
+        // Update author info
+        document.getElementById('modalAuthorImage').src = 
+            "{{ url_for('static', filename='uploads/profiles/') }}" + post.author.profile_picture;
+        document.getElementById('modalAuthorLink').href = 
+            "{{ url_for('profile', username='') }}" + post.author.username;
+        document.getElementById('modalAuthorName').textContent = post.author.username;
+        document.getElementById('modalAuthorName').href = 
+            "{{ url_for('profile', username='') }}" + post.author.username;
+        
+        // Update post info
+        document.getElementById('modalPostDate').textContent = 
+            new Date(post.created_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        
+        document.getElementById('modalPostContent').textContent = post.content || '';
+        
+        // Update stats
+        document.querySelector('.like-count').textContent = post.like_count || 0;
+        document.querySelector('.comment-count').textContent = post.comment_count || 0;
+        
+        // Update like button state
+        const likeBtn = document.querySelector('.like-btn-modal');
+        likeBtn.classList.toggle('liked', post.is_liked || false);
+        likeBtn.querySelector('i').className = post.is_liked ? 'fas fa-heart me-2' : 'far fa-heart me-2';
+    }
+    
+    // Handle carousel slide events
+    document.getElementById('modalCarousel').addEventListener('slide.bs.carousel', function(event) {
+        currentMediaIndex = event.to;
+        setTimeout(() => updateModalPostInfo(currentMediaIndex), 100);
+    });
+    
+    // Filter and sort functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        // Sort media
+        document.getElementById('sortMedia').addEventListener('change', function() {
+            const sortValue = this.value;
+            const mediaGrid = document.getElementById('mediaGrid');
+            const items = Array.from(mediaGrid.children);
+            
+            items.sort((a, b) => {
+                const aDate = new Date(a.dataset.date);
+                const bDate = new Date(b.dataset.date);
+                
+                switch(sortValue) {
+                    case 'newest':
+                        return bDate - aDate;
+                    case 'oldest':
+                        return aDate - bDate;
+                    case 'popular':
+                        return parseInt(b.dataset.likes) - parseInt(a.dataset.likes);
+                    default:
+                        return 0;
+                }
+            });
+            
+            // Reorder items
+            items.forEach(item => mediaGrid.appendChild(item));
+        });
+        
+        // Time period filter
+        document.querySelectorAll('input[name="timePeriod"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.id === 'allTime') {
+                    // Show all items
+                    document.querySelectorAll('.media-item').forEach(item => {
+                        item.style.display = 'block';
+                    });
+                } else {
+                    const now = new Date();
+                    let cutoffDate;
+                    
+                    switch(this.id) {
+                        case 'thisYear':
+                            cutoffDate = new Date(now.getFullYear(), 0, 1);
+                            break;
+                        case 'thisMonth':
+                            cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                            break;
+                        case 'thisWeek':
+                            cutoffDate = new Date(now);
+                            cutoffDate.setDate(now.getDate() - 7);
+                            break;
+                    }
+                    
+                    // Filter items
+                    document.querySelectorAll('.media-item').forEach(item => {
+                        const itemDate = new Date(item.dataset.date);
+                        item.style.display = itemDate >= cutoffDate ? 'block' : 'none';
+                    });
+                }
+            });
+        });
+        
+        // Load more functionality
+        const loadMoreBtn = document.getElementById('loadMoreMedia');
+        if (loadMoreBtn) {
+            let visibleItems = 24;
+            const allItems = document.querySelectorAll('.media-item');
+            
+            // Initially hide items beyond first 24
+            allItems.forEach((item, index) => {
+                if (index >= visibleItems) {
+                    item.style.display = 'none';
+                }
+            });
+            
+            loadMoreBtn.addEventListener('click', function() {
+                // Show next 12 items
+                for (let i = visibleItems; i < visibleItems + 12 && i < allItems.length; i++) {
+                    allItems[i].style.display = 'block';
+                    // Add animation
+                    allItems[i].style.animationDelay = `${(i - visibleItems) * 0.1}s`;
+                    allItems[i].classList.add('fade-in');
+                }
+                
+                visibleItems += 12;
+                
+                // Hide button if all items are visible
+                if (visibleItems >= allItems.length) {
+                    loadMoreBtn.style.display = 'none';
+                }
+            });
+        }
+        
+        // Add data attributes to media items for sorting
+        document.querySelectorAll('.media-item').forEach((item, index) => {
+            const post = mediaPosts[index];
+            if (post) {
+                item.dataset.date = post.created_at;
+                item.dataset.likes = post.like_count || 0;
+            }
+        });
+    });
+    
+    // Keyboard navigation for modal
+    document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('mediaModal');
+        if (modal.classList.contains('show')) {
+            if (e.key === 'ArrowLeft') {
+                // Previous
+                const carousel = bootstrap.Carousel.getInstance(document.getElementById('modalCarousel'));
+                carousel.prev();
+            } else if (e.key === 'ArrowRight') {
+                // Next
+                const carousel = bootstrap.Carousel.getInstance(document.getElementById('modalCarousel'));
+                carousel.next();
+            } else if (e.key === 'Escape') {
+                // Close
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                modalInstance.hide();
+            }
+        }
+    });
+    
+    // Like functionality in modal
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.like-btn-modal')) {
+            const postId = mediaPosts[currentMediaIndex].id;
+            const btn = e.target.closest('.like-btn-modal');
+            
+            // Toggle like state
+            const isLiked = btn.classList.contains('liked');
+            const icon = btn.querySelector('i');
+            const countSpan = btn.querySelector('.like-count');
+            
+            // Update UI immediately
+            btn.classList.toggle('liked');
+            icon.className = btn.classList.contains('liked') ? 'fas fa-heart me-2' : 'far fa-heart me-2';
+            
+            // Update count
+            let count = parseInt(countSpan.textContent);
+            countSpan.textContent = btn.classList.contains('liked') ? count + 1 : count - 1;
+            
+            // Send AJAX request
+            fetch(`/post/${postId}/like`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update count with server response
+                if (data.count !== undefined) {
+                    countSpan.textContent = data.count;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Revert UI on error
+                btn.classList.toggle('liked');
+                icon.className = btn.classList.contains('liked') ? 'fas fa-heart me-2' : 'far fa-heart me-2';
+                countSpan.textContent = count;
+            });
+        }
+    });
+</script>
+{% endblock %}

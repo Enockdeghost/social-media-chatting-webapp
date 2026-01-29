@@ -20,8 +20,8 @@
                             <div>
                                 <h2 class="fw-bold mb-0">#{{ tag }}</h2>
                                 <p class="text-muted mb-0">
-                                    <span class="fw-semibold">{{ posts|length }}</span>
-                                    {{ 'post' if posts|length == 1 else 'posts' }}
+                                    <span class="fw-semibold">{{ posts.total }}</span>
+                                    {{ 'post' if posts.total == 1 else 'posts' }}
                                     {% if hashtag %}
                                     · Used {{ hashtag.count }} times
                                     {% endif %}
@@ -65,7 +65,7 @@
 
         <!-- Posts Container -->
         <div class="posts-container">
-            {% for post in posts %}
+            {% for post in posts.items %}
             <div class="post-card enhanced-post">
                 <!-- Post Header -->
                 <div class="post-header">
@@ -200,7 +200,9 @@
             </div>
             {% endif %}
 
-            {% else %}
+            {% endfor %}
+            
+            {% if posts.total == 0 %}
             <!-- Empty State -->
             <div class="text-center py-5 empty-state">
                 <div class="empty-icon mb-4">
@@ -212,15 +214,66 @@
                     <i class="fas fa-pen me-2"></i>Create a post
                 </a>
             </div>
-            {% endfor %}
+            {% endif %}
         </div>
 
-        <!-- Load More Button -->
-        {% if posts|length >= 10 %}
+        <!-- Pagination Controls -->
+        {% if posts.pages > 1 %}
+        <div class="mt-4">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if posts.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('hashtag', tag=tag, page=posts.prev_num) }}">
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-chevron-left"></i> Previous</span>
+                        </li>
+                    {% endif %}
+                    
+                    {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            {% if page_num == posts.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('hashtag', tag=tag, page=page_num) }}">{{ page_num }}</a>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if posts.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('hashtag', tag=tag, page=posts.next_num) }}">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Next <i class="fas fa-chevron-right"></i></span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        <!-- Load More Button (Alternative to pagination) -->
+        {% if posts.has_next %}
         <div class="text-center py-4">
-            <button class="btn btn-outline-primary" id="loadMore">
+            <a href="{{ url_for('hashtag', tag=tag, page=posts.next_num) }}" class="btn btn-outline-primary" id="loadMore">
                 <i class="fas fa-sync me-2"></i>Load more posts
-            </button>
+            </a>
         </div>
         {% endif %}
     </div>
@@ -272,19 +325,6 @@ document.addEventListener('DOMContentLoaded', function() {
         card.style.animationDelay = `${index * 0.1}s`;
         card.classList.add('fade-in');
     });
-});
-
-// Load more functionality (placeholder)
-document.getElementById('loadMore')?.addEventListener('click', function() {
-    this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
-    this.disabled = true;
-    
-    // Simulate loading
-    setTimeout(() => {
-        alert('This would load more posts in a real implementation');
-        this.innerHTML = '<i class="fas fa-sync me-2"></i>Load more posts';
-        this.disabled = false;
-    }, 1000);
 });
 
 // Image preview enhancement
@@ -471,6 +511,30 @@ document.querySelectorAll('.post-image-preview').forEach(img => {
 
 .comment-btn:hover {
     color: #0dcaf0 !important;
+}
+
+/* Pagination styles */
+.page-link {
+    background-color: var(--bs-dark);
+    border-color: #495057;
+    color: var(--bs-light);
+}
+
+.page-link:hover {
+    background-color: #2d3035;
+    border-color: #6c757d;
+    color: var(--bs-light);
+}
+
+.page-item.active .page-link {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.page-item.disabled .page-link {
+    background-color: #2d3035;
+    border-color: #495057;
+    color: #6c757d;
 }
 </style>
 {% endblock %}

@@ -3,308 +3,724 @@
 {% block title %}{{ user.username }} - Profile - Chatter{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- Profile Header -->
-    <div class="glass-effect rounded-3 mb-4" style="border: 1px solid var(--border-light);">
+<div class="container-fluid px-0">
+    <!-- Enhanced Cover & Profile Section -->
+    <div class="profile-cover-section position-relative">
         <!-- Cover Photo -->
-        <div class="position-relative">
-            <div class="profile-cover" style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px 12px 0 0;"></div>
-            
-            <!-- Profile Picture -->
-            <div class="position-absolute" style="bottom: -60px; left: 20px;">
-                <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
-                     class="rounded-circle border-4 border-dark" 
-                     style="width: 120px; height: 120px; object-fit: cover; border: 4px solid var(--background-color);"
-                     onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
+        <div class="cover-container position-relative" style="height: 400px;">
+            <div class="cover-image w-100 h-100 position-relative">
+                {% if user.cover_picture and user.cover_picture != 'default_cover.jpg' %}
+                <img src="{{ url_for('static', filename='uploads/covers/' + user.cover_picture) }}" 
+                     class="w-100 h-100" 
+                     style="object-fit: cover;">
+                {% else %}
+                <div class="w-100 h-100" 
+                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                {% endif %}
+                
+                <!-- Gradient Overlay -->
+                <div class="position-absolute top-0 start-0 w-100 h-100" 
+                     style="background: linear-gradient(to bottom, transparent 40%, var(--background-color) 100%);"></div>
             </div>
-            
-            <!-- Edit Profile Button (for own profile) -->
-            {% if current_user.id == user.id %}
-            <div class="position-absolute" style="bottom: -50px; right: 20px;">
-                <a href="{{ url_for('edit_profile') }}" class="btn btn-outline-light">
-                    <i class="fas fa-edit me-2"></i>Edit Profile
-                </a>
-            </div>
-            {% endif %}
         </div>
         
-        <!-- Profile Info -->
-        <div class="p-4" style="margin-top: 60px;">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <h2 class="fw-bold mb-1">{{ user.username }}</h2>
-                    {% if user.is_verified %}
-                    <span class="verified-badge me-1"><i class="fas fa-check-circle"></i> Verified</span>
-                    {% endif %}
-                    {% if user.is_admin %}
-                    <span class="admin-badge">Admin</span>
-                    {% endif %}
-                    
-                    <p class="text-muted mb-2">@{{ user.username }}</p>
-                    
-                    {% if user.bio %}
-                    <p class="mb-3">{{ user.bio }}</p>
-                    {% endif %}
-                    
-                    {% if user.location %}
-                    <p class="text-muted mb-1">
-                        <i class="fas fa-map-marker-alt me-2"></i>{{ user.location }}
-                    </p>
-                    {% endif %}
-                    
-                    {% if user.website %}
-                    <p class="text-muted mb-1">
-                        <i class="fas fa-link me-2"></i>
-                        <a href="{{ user.website }}" target="_blank" class="text-decoration-none" style="color: var(--primary-color);">
-                            {{ user.website|truncate(30) }}
-                        </a>
-                    </p>
-                    {% endif %}
-                    
-                    <p class="text-muted mb-0">
-                        <i class="fas fa-calendar me-2"></i>
-                        Joined {{ user.created_at.strftime('%B %Y') }}
-                    </p>
-                </div>
-                
-                <!-- Follow/Message/More buttons -->
-                <div class="d-flex gap-2">
-                    {% if current_user.id != user.id %}
-                        {% if current_user.has_blocked(user) %}
-                        <button class="btn btn-outline-danger unblock-btn" data-user-id="{{ user.id }}">
-                            <i class="fas fa-ban me-2"></i>Unblock
-                        </button>
-                        {% else %}
-                        <button class="btn {% if current_user.is_following(user) %}btn-primary{% else %}btn-outline-primary{% endif %} follow-btn" 
-                                data-user-id="{{ user.id }}">
-                            {% if current_user.is_following(user) %}
-                                <i class="fas fa-user-check me-2"></i>Following
-                            {% else %}
-                                <i class="fas fa-user-plus me-2"></i>Follow
-                            {% endif %}
-                        </button>
-                        
-                        <a href="{{ url_for('conversation', user_id=user.id) }}" class="btn btn-outline-light">
-                            <i class="fas fa-envelope"></i>
-                        </a>
-                        {% endif %}
-                    {% endif %}
-                    
-                    <!-- More options dropdown -->
-                    <div class="dropdown">
-                        <button class="btn btn-outline-light" type="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-ellipsis-h"></i>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-dark">
-                            {% if current_user.id != user.id %}
-                            <li>
-                                <button class="dropdown-item block-btn" data-user-id="{{ user.id }}">
-                                    <i class="fas fa-ban me-2"></i>
-                                    {% if current_user.has_blocked(user) %}Unblock User{% else %}Block User{% endif %}
-                                </button>
-                            </li>
-                            <li>
-                                <button class="dropdown-item report-btn" data-user-id="{{ user.id }}">
-                                    <i class="fas fa-flag me-2"></i>Report User
-                                </button>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            {% endif %}
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('profile_followers', username=user.username) }}">
-                                    <i class="fas fa-users me-2"></i>View Followers
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('profile_following', username=user.username) }}">
-                                    <i class="fas fa-user-friends me-2"></i>View Following
-                                </a>
-                            </li>
-                        </ul>
+        <!-- Profile Card Overlay -->
+        <div class="profile-card-container position-absolute start-0 w-100" style="bottom: -100px;">
+            <div class="container-fluid px-4 px-lg-5">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="profile-card glass-effect shadow-lg border-0 rounded-4" 
+                             style="border: 1px solid rgba(255,255,255,0.1) !important; backdrop-filter: blur(20px);">
+                            <div class="p-4 p-lg-5">
+                                <div class="row align-items-center">
+                                    <!-- Profile Picture & Basic Info -->
+                                    <div class="col-lg-8">
+                                        <div class="d-flex align-items-start">
+                                            <!-- Profile Picture -->
+                                            <div class="position-relative me-4 me-lg-5">
+                                                <div class="position-relative">
+                                                    <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+                                                         class="rounded-circle border-4 border-dark shadow-lg" 
+                                                         style="width: 160px; height: 160px; object-fit: cover;"
+                                                         onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff&size=160'">
+                                                    
+                                                    <!-- Online Status -->
+                                                    {% if user.is_online %}
+                                                    <div class="position-absolute bottom-3 end-3 bg-success rounded-circle border-3 border-dark" 
+                                                         style="width: 24px; height: 24px;"></div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- User Info -->
+                                            <div class="flex-grow-1">
+                                                <div class="mb-3">
+                                                    <div class="d-flex align-items-center flex-wrap mb-2">
+                                                        <h1 class="fw-bold me-3 mb-2">{{ user.username }}</h1>
+                                                        
+                                                        <!-- Badges -->
+                                                        <div class="d-flex flex-wrap gap-2 mb-2">
+                                                            {% if user.is_verified %}
+                                                            <span class="verified-badge d-inline-flex align-items-center gap-1 px-3 py-1 rounded-pill" 
+                                                                  style="background: rgba(29, 155, 240, 0.15); border: 1px solid rgba(29, 155, 240, 0.3);">
+                                                                <i class="fas fa-check-circle text-primary fs-6"></i>
+                                                                <small class="text-primary fw-semibold">Verified</small>
+                                                            </span>
+                                                            {% endif %}
+                                                            
+                                                            {% if user.is_admin %}
+                                                            <span class="admin-badge d-inline-flex align-items-center gap-1 px-3 py-1 rounded-pill" 
+                                                                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                                                <i class="fas fa-crown text-white fs-6"></i>
+                                                                <small class="text-white fw-semibold">Admin</small>
+                                                            </span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <p class="text-muted mb-3 fs-5">@{{ user.username }}</p>
+                                                    
+                                                    {% if user.bio %}
+                                                    <p class="mb-4" style="font-size: 1.1rem; line-height: 1.6; max-width: 600px;">{{ user.bio }}</p>
+                                                    {% endif %}
+                                                    
+                                                    <!-- Quick Stats -->
+                                                    <div class="d-flex flex-wrap gap-4 mb-4">
+                                                        <div>
+                                                            <span class="fw-bold fs-4 d-block">{{ total_following }}</span>
+                                                            <span class="text-muted">Following</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="fw-bold fs-4 d-block">{{ total_followers }}</span>
+                                                            <span class="text-muted">Followers</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="fw-bold fs-4 d-block">{{ total_posts }}</span>
+                                                            <span class="text-muted">Posts</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="fw-bold fs-4 d-block">{{ total_likes }}</span>
+                                                            <span class="text-muted">Likes</span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Profile Details -->
+                                                    <div class="d-flex flex-wrap gap-3">
+                                                        {% if user.location %}
+                                                        <span class="d-flex align-items-center gap-2 text-muted">
+                                                            <i class="fas fa-map-marker-alt"></i>
+                                                            <span>{{ user.location }}</span>
+                                                        </span>
+                                                        {% endif %}
+                                                        
+                                                        {% if user.website %}
+                                                        <span class="d-flex align-items-center gap-2">
+                                                            <i class="fas fa-link"></i>
+                                                            <a href="{{ user.website }}" target="_blank" 
+                                                               class="text-primary text-decoration-none">
+                                                                {{ user.website|replace('https://', '')|replace('http://', '')|truncate(30) }}
+                                                            </a>
+                                                        </span>
+                                                        {% endif %}
+                                                        
+                                                        <span class="d-flex align-items-center gap-2 text-muted">
+                                                            <i class="fas fa-calendar"></i>
+                                                            <span>Joined {{ user.created_at.strftime('%B %Y') }}</span>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Action Buttons -->
+                                    <div class="col-lg-4">
+                                        <div class="d-flex flex-column align-items-end h-100">
+                                            {% if current_user.id == user.id %}
+                                            <div class="d-flex gap-2 mb-4">
+                                                <a href="{{ url_for('edit_profile') }}" 
+                                                   class="btn btn-outline-light rounded-pill px-4 d-flex align-items-center gap-2">
+                                                    <i class="fas fa-edit"></i>
+                                                    <span>Edit Profile</span>
+                                                </a>
+                                            </div>
+                                            {% else %}
+                                            <div class="d-flex gap-2 mb-4">
+                                                <button class="btn {% if is_following %}btn-primary{% else %}btn-outline-primary{% endif %} rounded-pill px-4 d-flex align-items-center gap-2 follow-btn" 
+                                                        data-user-id="{{ user.id }}">
+                                                    <i class="fas {% if is_following %}fa-user-check{% else %}fa-user-plus{% endif %}"></i>
+                                                    <span>{% if is_following %}Following{% else %}Follow{% endif %}</span>
+                                                </button>
+                                                
+                                                <a href="{{ url_for('conversation', user_id=user.id) }}" 
+                                                   class="btn btn-outline-light rounded-pill px-4 d-flex align-items-center gap-2">
+                                                    <i class="fas fa-envelope"></i>
+                                                    <span>Message</span>
+                                                </a>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            <!-- Additional Actions -->
+                                            <div class="d-flex flex-wrap gap-2">
+                                                {% if mutual_followers and current_user.id != user.id %}
+                                                <div class="bg-dark bg-opacity-50 rounded-pill px-3 py-2">
+                                                    <small class="text-light">
+                                                        <i class="fas fa-users me-1"></i>
+                                                        {{ mutual_followers|length }} mutual connections
+                                                    </small>
+                                                </div>
+                                                {% endif %}
+                                                
+                                                <div class="dropdown">
+                                                    <button class="btn btn-outline-light rounded-circle" 
+                                                            type="button" 
+                                                            data-bs-toggle="dropdown"
+                                                            style="width: 40px; height: 40px;">
+                                                        <i class="fas fa-ellipsis-h"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end shadow-lg">
+                                                        {% if current_user.id != user.id %}
+                                                        <li>
+                                                            <a class="dropdown-item d-flex align-items-center gap-3 py-3" 
+                                                               href="#" onclick="addToList('{{ user.id }}')">
+                                                                <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                                                     style="width: 36px; height: 36px; background: rgba(0, 186, 124, 0.1);">
+                                                                    <i class="fas fa-list text-success"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <small class="fw-bold d-block">Add to List</small>
+                                                                    <small class="text-muted">Add to a custom list</small>
+                                                                </div>
+                                                            </a>
+                                                        </li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <button class="dropdown-item d-flex align-items-center gap-3 py-3 {% if is_blocked %}text-warning{% else %}text-danger{% endif %}"
+                                                                    data-user-id="{{ user.id }}">
+                                                                <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                                                     style="width: 36px; height: 36px; background: rgba(244, 33, 46, 0.1);">
+                                                                    <i class="fas fa-ban"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <small class="fw-bold d-block">
+                                                                        {% if is_blocked %}Unblock{% else %}Block{% endif %} @{{ user.username }}
+                                                                    </small>
+                                                                    <small class="text-muted">
+                                                                        {% if is_blocked %}Remove block restrictions{% else %}Block this user{% endif %}
+                                                                    </small>
+                                                                </div>
+                                                            </button>
+                                                        </li>
+                                                        <li>
+                                                            <button class="dropdown-item d-flex align-items-center gap-3 py-3 text-danger report-btn" 
+                                                                    data-user-id="{{ user.id }}"
+                                                                    data-username="{{ user.username }}">
+                                                                <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                                                     style="width: 36px; height: 36px; background: rgba(244, 33, 46, 0.1);">
+                                                                    <i class="fas fa-flag"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <small class="fw-bold d-block">Report User</small>
+                                                                    <small class="text-muted">Report abusive behavior</small>
+                                                                </div>
+                                                            </button>
+                                                        </li>
+                                                        {% endif %}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Stats -->
-            <div class="d-flex gap-4 mt-4">
-                <a href="{{ url_for('profile_following', username=user.username) }}" class="text-decoration-none">
-                    <span class="fw-bold">{{ total_following }}</span>
-                    <span class="text-muted">Following</span>
-                </a>
-                <a href="{{ url_for('profile_followers', username=user.username) }}" class="text-decoration-none">
-                    <span class="fw-bold">{{ total_followers }}</span>
-                    <span class="text-muted">Followers</span>
-                </a>
-                <a href="#" class="text-decoration-none">
-                    <span class="fw-bold">{{ total_likes }}</span>
-                    <span class="text-muted">Likes</span>
-                </a>
-            </div>
         </div>
     </div>
     
-    <!-- Pinned Post (if exists) -->
-    {% if pinned_post %}
-    <div class="glass-effect rounded-3 mb-4" style="border: 2px solid var(--primary-color); position: relative;">
-        <div class="position-absolute" style="top: 10px; right: 10px;">
-            <span class="badge" style="background: var(--primary-color);">
-                <i class="fas fa-thumbtack me-1"></i>Pinned
-            </span>
-        </div>
-        <div class="p-3">
-            {% include 'components/post_card.html' %}
-        </div>
-    </div>
-    {% endif %}
-    
-    <!-- Profile Tabs -->
-    <nav class="mb-4">
-        <div class="nav nav-tabs" id="profileTabs" role="tablist">
-            <button class="nav-link active" id="posts-tab" data-bs-toggle="tab" data-bs-target="#posts" type="button">
-                <i class="fas fa-comment me-2"></i>Posts
-            </button>
-            <button class="nav-link" id="replies-tab" data-bs-toggle="tab" data-bs-target="#replies" type="button">
-                <i class="fas fa-comments me-2"></i>Replies
-            </button>
-            <button class="nav-link" id="media-tab" data-bs-toggle="tab" data-bs-target="#media" type="button">
-                <i class="fas fa-image me-2"></i>Media
-            </button>
-            <button class="nav-link" id="likes-tab" data-bs-toggle="tab" data-bs-target="#likes" type="button">
-                <i class="fas fa-heart me-2"></i>Likes
-            </button>
-        </div>
-    </nav>
-    
-    <!-- Tab Content -->
-    <div class="tab-content" id="profileTabContent">
-        <!-- Posts Tab -->
-        <div class="tab-pane fade show active" id="posts">
-            {% if posts %}
-                {% for post in posts %}
-                    {% include 'components/post_card.html' %}
-                {% endfor %}
-            {% else %}
-                <div class="text-center py-5">
-                    <i class="fas fa-comments fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">No posts yet</h5>
-                    <p class="text-muted">When {{ user.username }} posts, you'll see it here.</p>
+    <!-- Main Content Area -->
+    <div class="main-content-area mt-5 pt-5">
+        <div class="container-fluid px-4 px-lg-5">
+            <div class="row">
+                <!-- Left Column - User Details & Connections -->
+                <div class="col-lg-4">
+                    <!-- Activity Status Card -->
+                    <div class="card border-0 shadow-sm rounded-4 mb-4" 
+                         style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                                <i class="fas fa-signal text-primary"></i>
+                                <span>Activity Status</span>
+                            </h6>
+                            
+                            {% if user.is_online %}
+                            <div class="d-flex align-items-center justify-content-between p-3 rounded-3 mb-3" 
+                                 style="background: rgba(0, 186, 124, 0.1); border: 1px solid rgba(0, 186, 124, 0.2);">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="bg-success rounded-circle" style="width: 10px; height: 10px;"></div>
+                                    <span class="fw-semibold text-success">Online now</span>
+                                </div>
+                                <small class="text-success">Active</small>
+                            </div>
+                            {% else %}
+                            <div class="d-flex align-items-center justify-content-between p-3 rounded-3 mb-3" 
+                                 style="background: rgba(108, 117, 125, 0.1); border: 1px solid var(--border-light);">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="far fa-clock text-muted"></i>
+                                    <span class="fw-semibold">Last active</span>
+                                </div>
+                                <small class="text-muted">{{ user.last_seen|time_ago }}</small>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="small text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                {% if user.is_online %}
+                                Currently active and available for conversations
+                                {% else %}
+                                Usually responds within a few hours
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Mutual Connections -->
+                    {% if mutual_followers and current_user.id != user.id %}
+                    <div class="card border-0 shadow-sm rounded-4 mb-4" 
+                         style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                                    <i class="fas fa-users text-primary"></i>
+                                    <span>Mutual Connections</span>
+                                </h6>
+                                <span class="badge bg-primary rounded-pill">{{ mutual_followers|length }}</span>
+                            </div>
+                            
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                {% for mutual in mutual_followers[:12] %}
+                                <a href="{{ url_for('profile', username=mutual.username) }}" 
+                                   class="position-relative" 
+                                   data-bs-toggle="tooltip" 
+                                   title="@{{ mutual.username }}"
+                                   style="transition: transform 0.2s ease;">
+                                    <img src="{{ url_for('static', filename='uploads/profiles/' + mutual.profile_picture) }}" 
+                                         class="rounded-circle border-2 border-dark"
+                                         style="width: 42px; height: 42px; object-fit: cover;"
+                                         onerror="this.src='https://ui-avatars.com/api/?name={{ mutual.username }}&background=1d9bf0&color=fff'">
+                                </a>
+                                {% endfor %}
+                            </div>
+                            
+                            <a href="{{ url_for('profile_followers', username=user.username) }}" 
+                               class="btn btn-outline-primary btn-sm w-100">
+                                View All Connections
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- User Lists -->
+                    {% set user_lists = user.created_lists.limit(4).all() %}
+                    {% if user_lists %}
+                    <div class="card border-0 shadow-sm rounded-4 mb-4" 
+                         style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                                    <i class="fas fa-list text-success"></i>
+                                    <span>Lists</span>
+                                </h6>
+                                {% if current_user.id == user.id %}
+                                <a href="{{ url_for('lists') }}" class="btn btn-sm btn-outline-primary rounded-circle" 
+                                   style="width: 32px; height: 32px;">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                            
+                            {% for list in user_lists %}
+                            <a href="{{ url_for('view_list', list_id=list.id) }}" 
+                               class="d-block text-decoration-none p-3 rounded-3 mb-2 hover-lift" 
+                               style="background: var(--card-hover);">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold mb-1">{{ list.name }}</div>
+                                        <small class="text-muted">{{ list.members.count() }} members • {{ 'Private' if list.is_private else 'Public' }}</small>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-muted"></i>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
-            {% endif %}
-        </div>
-        
-        <!-- Other tabs (simplified for now) -->
-        <div class="tab-pane fade" id="replies">
-            <div class="text-center py-5">
-                <i class="fas fa-comments fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">No replies yet</h5>
-            </div>
-        </div>
-        
-        <div class="tab-pane fade" id="media">
-            <div class="row g-2">
-                {% for post in posts if post.image %}
-                <div class="col-md-4">
-                    <img src="{{ url_for('static', filename='uploads/posts/' + post.image) }}" 
-                         class="img-fluid rounded-3" style="aspect-ratio: 1; object-fit: cover; cursor: pointer;"
-                         onclick="window.location.href='{{ url_for('view_post', post_id=post.id) }}'">
+                
+                <!-- Center Column - Media & Activity -->
+                <div class="col-lg-8">
+                    <!-- Media Gallery -->
+                    {% if posts_with_images %}
+                    <div class="card border-0 shadow-sm rounded-4 mb-4" 
+                         style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div>
+                                    <h6 class="fw-bold mb-1 d-flex align-items-center gap-2">
+                                        <i class="fas fa-images text-accent"></i>
+                                        <span>Media Gallery</span>
+                                    </h6>
+                                    <small class="text-muted">{{ posts_with_images|length }} photos and videos</small>
+                                </div>
+                                <a href="{{ url_for('profile_media', username=user.username) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    View All
+                                </a>
+                            </div>
+                            
+                            <div class="row g-3">
+                                {% for post in posts_with_images[:6] %}
+                                <div class="col-md-4 col-sm-6">
+                                    <div class="position-relative media-item rounded-3 overflow-hidden" 
+                                         style="aspect-ratio: 1; cursor: pointer;"
+                                         onclick="window.location.href='{{ url_for('view_post', post_id=post.id) }}'">
+                                        <img src="{{ url_for('static', filename='uploads/posts/' + post.image) }}" 
+                                             class="w-100 h-100 object-fit-cover"
+                                             style="transition: transform 0.3s ease;">
+                                        
+                                        <!-- Hover Overlay -->
+                                        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50 opacity-0"
+                                             style="transition: opacity 0.3s ease;">
+                                            <div class="text-center p-3">
+                                                <i class="fas fa-expand text-white fs-4 mb-2"></i>
+                                                <p class="text-white mb-0 small">{{ post.content|truncate(30) }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Recent Activity -->
+                    <div class="card border-0 shadow-sm rounded-4" 
+                         style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+                                <i class="fas fa-history text-primary"></i>
+                                <span>Recent Activity</span>
+                            </h6>
+                            
+                            {% if posts %}
+                            <div class="activity-timeline">
+                                {% for post in posts[:3] %}
+                                <div class="activity-item mb-4 pb-4" 
+                                     style="border-bottom: 1px solid var(--border-light);">
+                                    <div class="d-flex">
+                                        <!-- Activity Icon -->
+                                        <div class="flex-shrink-0 me-3">
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                                 style="width: 48px; height: 48px; background: rgba(29, 155, 240, 0.1);">
+                                                <i class="fas fa-comment text-primary"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Activity Content -->
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <span class="fw-bold">Posted an update</span>
+                                                    <small class="text-muted ms-2">{{ post.created_at|time_ago }}</small>
+                                                </div>
+                                                <a href="{{ url_for('view_post', post_id=post.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    View
+                                                </a>
+                                            </div>
+                                            
+                                            <p class="mb-3" style="line-height: 1.5;">{{ post.content|truncate(150) }}</p>
+                                            
+                                            <!-- Post Stats -->
+                                            <div class="d-flex align-items-center gap-3">
+                                                <small class="d-flex align-items-center gap-1 text-muted">
+                                                    <i class="fas fa-heart"></i>
+                                                    {{ post.like_count() }}
+                                                </small>
+                                                <small class="d-flex align-items-center gap-1 text-muted">
+                                                    <i class="fas fa-comment"></i>
+                                                    {{ post.comment_count() }}
+                                                </small>
+                                                <small class="d-flex align-items-center gap-1 text-muted">
+                                                    <i class="fas fa-share"></i>
+                                                    {{ post.bookmark_count() }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                
+                                <!-- View More -->
+                                <div class="text-center pt-2">
+                                    <a href="{{ url_for('profile', username=user.username) }}#posts" 
+                                       class="btn btn-outline-primary">
+                                        View All Activity
+                                    </a>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <div class="mb-3">
+                                    <i class="fas fa-comments fa-3x text-muted opacity-50"></i>
+                                </div>
+                                <h6 class="fw-bold text-muted mb-2">No recent activity</h6>
+                                <p class="text-muted small">When {{ user.username }} becomes active, updates will appear here.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-                {% endfor %}
-            </div>
-        </div>
-        
-        <div class="tab-pane fade" id="likes">
-            <div class="text-center py-5">
-                <i class="fas fa-heart fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">No likes yet</h5>
             </div>
         </div>
     </div>
 </div>
 
+<style>
+    .profile-cover-section {
+        padding-bottom: 120px;
+    }
+    
+    .cover-container {
+        overflow: hidden;
+    }
+    
+    .cover-image img {
+        transition: transform 0.5s ease;
+    }
+    
+    .cover-container:hover .cover-image img {
+        transform: scale(1.02);
+    }
+    
+    .profile-card {
+        background: rgba(22, 24, 28, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    .media-item:hover img {
+        transform: scale(1.1);
+    }
+    
+    .media-item:hover .bg-opacity-50 {
+        opacity: 1 !important;
+    }
+    
+    .hover-lift {
+        transition: all 0.3s ease;
+    }
+    
+    .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+    
+    .activity-item {
+        transition: all 0.3s ease;
+    }
+    
+    .activity-item:hover {
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 12px;
+        padding-left: 10px;
+        padding-right: 10px;
+        margin-left: -10px;
+        margin-right: -10px;
+    }
+    
+    .object-fit-cover {
+        object-fit: cover;
+    }
+    
+    /* Smooth animations */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .profile-card {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    /* Professional scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: var(--card-color);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: var(--border-light);
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-secondary);
+    }
+</style>
+
 <script>
-    // Follow/Unfollow functionality
-    document.querySelectorAll('.follow-btn').forEach(btn => {
-        btn.addEventListener('click', async function() {
-            const userId = this.dataset.userId;
-            const originalText = this.innerHTML;
-            
-            this.disabled = true;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
-            
-            try {
-                const response = await fetch(`/follow/${userId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.status === 'followed') {
-                    this.classList.remove('btn-outline-primary');
-                    this.classList.add('btn-primary');
-                    this.innerHTML = '<i class="fas fa-user-check me-2"></i>Following';
-                } else {
-                    this.classList.remove('btn-primary');
-                    this.classList.add('btn-outline-primary');
-                    this.innerHTML = '<i class="fas fa-user-plus me-2"></i>Follow';
-                }
-                
-                // Show toast notification
-                showToast(data.message || 'Action completed', 'success');
-                
-            } catch (error) {
-                console.error('Error:', error);
-                this.innerHTML = originalText;
-                showToast('An error occurred', 'danger');
-            } finally {
-                this.disabled = false;
-            }
-        });
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Bootstrap tooltips
+        const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        tooltips.forEach(tooltip => new bootstrap.Tooltip(tooltip));
+        
+        // Add hover effect to profile picture
+        const profilePic = document.querySelector('.profile-avatar');
+        if (profilePic) {
+            profilePic.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.05)';
+            });
+            profilePic.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        }
+        
+        // Animate stats counter (optional)
+        animateStats();
     });
     
-    // Block/Unblock functionality
-    document.querySelectorAll('.block-btn, .unblock-btn').forEach(btn => {
-        btn.addEventListener('click', async function() {
-            const userId = this.dataset.userId;
-            const isUnblock = this.classList.contains('unblock-btn');
-            
-            if (!confirm(isUnblock ? 'Unblock this user?' : 'Block this user?')) return;
-            
-            const originalText = this.innerHTML;
-            this.disabled = true;
-            
-            try {
-                const response = await fetch(`/block/${userId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.status === 'blocked') {
-                    this.classList.add('btn-danger');
-                    this.classList.remove('btn-outline-danger');
-                    this.innerHTML = '<i class="fas fa-ban me-2"></i>Unblock';
-                    showToast('User blocked', 'success');
-                } else {
-                    this.classList.remove('btn-danger');
-                    this.classList.add('btn-outline-danger');
-                    this.innerHTML = '<i class="fas fa-ban me-2"></i>Block';
-                    showToast('User unblocked', 'success');
+    // Smooth scroll to sections
+    function scrollToSection(sectionId) {
+        const element = document.getElementById(sectionId);
+        if (element) {
+            window.scrollTo({
+                top: element.offsetTop - 100,
+                behavior: 'smooth'
+            });
+        }
+    }
+    
+    // Add to List function
+    function addToList(userId) {
+        fetch('/api/user/lists')
+            .then(response => response.json())
+            .then(lists => {
+                if (lists.length === 0) {
+                    showToast('Create a list first to organize connections!', 'info');
+                    return;
                 }
                 
-            } catch (error) {
+                const modalHtml = `
+                    <div class="modal fade" id="addToListModal" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow-lg" style="background: var(--card-color);">
+                                <div class="modal-header border-bottom border-light">
+                                    <h5 class="modal-title fw-bold">Add to List</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body p-4">
+                                    <p class="text-muted mb-4">Select a list to add @{{ user.username }} to:</p>
+                                    <div id="lists-container">
+                                        ${lists.map(list => `
+                                            <div class="list-item d-flex align-items-center justify-content-between p-3 rounded-3 mb-2 hover-lift" 
+                                                 style="background: var(--card-hover); cursor: pointer;"
+                                                 onclick="addUserToList(${list.id}, ${userId})">
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                                         style="width: 40px; height: 40px; background: rgba(0, 186, 124, 0.1);">
+                                                        <i class="fas fa-list text-success"></i>
+                                                    </div>
+                                                    <div>
+                                                        <strong class="d-block">${list.name}</strong>
+                                                        <small class="text-muted">${list.member_count || list.members?.count() || 0} members</small>
+                                                    </div>
+                                                </div>
+                                                <i class="fas fa-plus text-primary"></i>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-top border-light">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <a href="{{ url_for('lists') }}" class="btn btn-primary">
+                                        <i class="fas fa-plus me-2"></i>Create New List
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                const modal = new bootstrap.Modal(document.getElementById('addToListModal'));
+                modal.show();
+                
+                // Clean up modal on close
+                document.getElementById('addToListModal').addEventListener('hidden.bs.modal', function() {
+                    this.remove();
+                });
+            })
+            .catch(error => {
                 console.error('Error:', error);
-                this.innerHTML = originalText;
-                showToast('An error occurred', 'danger');
-            } finally {
-                this.disabled = false;
+                showToast('Failed to load lists. Please try again.', 'danger');
+            });
+    }
+    
+    function addUserToList(listId, userId) {
+        fetch(`/lists/${listId}/add_member`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `username={{ user.username }}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Successfully added to list!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('addToListModal')).hide();
+            } else {
+                showToast(data.error || 'Failed to add user to list', 'danger');
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.', 'danger');
         });
-    });
+    }
+    
+    // Optional: Animate stats counter
+    function animateStats() {
+        const stats = document.querySelectorAll('.fs-4');
+        stats.forEach(stat => {
+            const target = parseInt(stat.textContent);
+            let current = 0;
+            const increment = target / 30;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                stat.textContent = Math.floor(current);
+            }, 50);
+        });
+    }
 </script>
 {% endblock %}

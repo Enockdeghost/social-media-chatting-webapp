@@ -1,0 +1,113 @@
+<!-- templates/components/post_card.html -->
+<div class="post-card fade-in" data-post-id="{{ post.id }}">
+    <!-- Post Header -->
+    <div class="d-flex align-items-start">
+        <!-- Avatar -->
+        <a href="{{ url_for('profile', username=post.author.username) }}" class="text-decoration-none me-3">
+            <img src="{{ url_for('static', filename='uploads/profiles/' + post.author.profile_picture) }}" 
+                 alt="{{ post.author.username }}" 
+                 class="avatar"
+                 onerror="this.src='https://ui-avatars.com/api/?name={{ post.author.username }}&background=1d9bf0&color=fff'">
+        </a>
+        
+        <!-- Post Content -->
+        <div class="flex-grow-1">
+            <!-- Author Info -->
+            <div class="d-flex align-items-center mb-2">
+                <a href="{{ url_for('profile', username=post.author.username) }}" 
+                   class="text-decoration-none fw-bold me-2">
+                    {{ post.author.username }}
+                    {% if post.author.is_verified %}
+                    <i class="fas fa-check-circle verified-badge"></i>
+                    {% endif %}
+                </a>
+                
+                <span class="text-muted me-2">@{{ post.author.username }}</span>
+                <span class="text-muted small" data-bs-toggle="tooltip" title="{{ post.created_at.strftime('%B %d, %Y at %I:%M %p') }}">
+                    · {{ post.created_at|time_ago }}
+                </span>
+                
+                {% if post.is_pinned_by(post.author) %}
+                <span class="pin-badge ms-2">Pinned</span>
+                {% endif %}
+            </div>
+            
+            <!-- Post Text -->
+            {% if post.content %}
+            <p class="mb-3" style="white-space: pre-wrap;">{{ post.content|process_content|safe }}</p>
+            {% endif %}
+            
+            <!-- Post Image -->
+            {% if post.image %}
+            <div class="mb-3 rounded-3 overflow-hidden" style="max-width: 100%;">
+                <img src="{{ url_for('static', filename='uploads/posts/' + post.image) }}" 
+                     alt="Post image" 
+                     class="img-fluid rounded-3 w-100 hover-lift"
+                     style="max-height: 400px; object-fit: cover; cursor: pointer;"
+                     onclick="viewImage('{{ url_for('static', filename='uploads/posts/' + post.image) }}')">
+            </div>
+            {% endif %}
+            
+            <!-- Post Actions -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <!-- Reply Button -->
+                <button class="action-btn" data-bs-toggle="modal" data-bs-target="#replyModal{{ post.id }}">
+                    <i class="far fa-comment"></i>
+                    <span class="comment-count">{{ post.comment_count() }}</span>
+                </button>
+                
+                <!-- Like Button -->
+                <button class="action-btn like-btn {% if post.likes.filter_by(user_id=current_user.id).first() %}liked{% endif %}" 
+                        data-post-id="{{ post.id }}">
+                    <i class="{% if post.likes.filter_by(user_id=current_user.id).first() %}fas{% else %}far{% endif %} fa-heart"></i>
+                    <span class="like-count">{{ post.like_count() }}</span>
+                </button>
+                
+                <!-- Bookmark Button -->
+                <button class="action-btn bookmark-btn {% if post.bookmarks.filter_by(user_id=current_user.id).first() %}bookmarked{% endif %}" 
+                        data-post-id="{{ post.id }}">
+                    <i class="{% if post.bookmarks.filter_by(user_id=current_user.id).first() %}fas{% else %}far{% endif %} fa-bookmark"></i>
+                </button>
+                
+                <!-- More Options -->
+                <div class="dropdown">
+                    <button class="action-btn" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark">
+                        {% if current_user.id == post.author.id %}
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('edit_post', post_id=post.id) }}">
+                                <i class="fas fa-edit me-2"></i>Edit Post
+                            </a>
+                        </li>
+                        <li>
+                            <button class="dropdown-item pin-post-btn" data-post-id="{{ post.id }}">
+                                <i class="fas fa-thumbtack me-2"></i>
+                                {% if post.is_pinned_by(current_user) %}Unpin from Profile{% else %}Pin to Profile{% endif %}
+                            </button>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <button class="dropdown-item text-danger delete-post-btn" data-post-id="{{ post.id }}">
+                                <i class="fas fa-trash me-2"></i>Delete Post
+                            </button>
+                        </li>
+                        {% else %}
+                        <li>
+                            <button class="dropdown-item" onclick="copyToClipboard('{{ request.host_url }}post/{{ post.id }}', 'Post link copied!')">
+                                <i class="fas fa-link me-2"></i>Copy Link
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item report-btn" onclick="showPostReportModal({{ post.id }}, {{ post.author.id }})">
+                                <i class="fas fa-flag me-2"></i>Report Post
+                            </button>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

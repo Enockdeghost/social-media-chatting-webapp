@@ -1,0 +1,87 @@
+<div class="user-card fade-in">
+    <div class="d-flex align-items-center p-3 rounded-3 hover-lift" 
+         style="background: var(--card-color); border: 1px solid var(--border-light);">
+        <!-- Profile Picture -->
+        <a href="{{ url_for('profile', username=user.username) }}" class="text-decoration-none me-3">
+            <div class="position-relative">
+                <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+                     alt="{{ user.username }}" 
+                     class="rounded-circle border-2 border-dark"
+                     style="width: 56px; height: 56px; object-fit: cover;"
+                     onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
+                
+                <!-- Online Status -->
+                {% if user.is_online %}
+                <div class="position-absolute bottom-0 end-0 bg-success rounded-circle border-2 border-dark" 
+                     style="width: 12px; height: 12px;"></div>
+                {% endif %}
+            </div>
+        </a>
+        
+        <!-- User Info -->
+        <div class="flex-grow-1">
+            <div class="d-flex align-items-center mb-1">
+                <a href="{{ url_for('profile', username=user.username) }}" 
+                   class="text-decoration-none fw-bold me-2">
+                    {{ user.username }}
+                </a>
+                
+                {% if user.is_verified %}
+                <i class="fas fa-check-circle verified-badge"></i>
+                {% endif %}
+                
+                {% if user.is_admin %}
+                <span class="admin-badge ms-2">Admin</span>
+                {% endif %}
+            </div>
+            
+            {% if user.bio %}
+            <p class="text-muted small mb-2" style="line-height: 1.3;">
+                {{ user.bio|truncate(80) }}
+            </p>
+            {% endif %}
+            
+            <!-- Stats -->
+            <div class="d-flex align-items-center gap-3">
+                <small class="text-muted">
+                    <i class="fas fa-users me-1"></i>
+                    {{ user.followers.count() }} followers
+                </small>
+                <small class="text-muted">
+                    <i class="fas fa-comment me-1"></i>
+                    {{ user.posts.count() }} posts
+                </small>
+            </div>
+        </div>
+        
+        <!-- Action Button -->
+        <div class="ms-3">
+            {% if current_user.id != user.id %}
+                {% if current_user.is_following(user) %}
+                <button class="btn btn-sm btn-primary follow-btn rounded-pill px-3" 
+                        data-user-id="{{ user.id }}">
+                    <i class="fas fa-user-check me-1"></i>
+                    <span>Following</span>
+                </button>
+                {% else %}
+                <button class="btn btn-sm btn-outline-primary follow-btn rounded-pill px-3" 
+                        data-user-id="{{ user.id }}">
+                    <i class="fas fa-user-plus me-1"></i>
+                    <span>Follow</span>
+                </button>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .user-card {
+        transition: all 0.3s ease;
+    }
+    
+    .user-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+</style>

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Status Viewers{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <!-- Header -->
+            <div class="d-flex align-items-center mb-4">
+                <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary me-3">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h4 class="mb-0">Status Viewers</h4>
+                    <small class="text-muted">{{ viewers|length }} people viewed this status</small>
+                </div>
+            </div>
+            
+            <!-- Viewers List -->
+            <div class="card glass-effect">
+                <div class="card-body p-0">
+                    {% if viewers and viewers|length > 0 %}
+                    <div class="list-group list-group-flush">
+                        {% for viewer in viewers %}
+                        <div class="list-group-item d-flex align-items-center p-3">
+                            <div class="position-relative me-3">
+                                <img src="{{ get_user_avatar_url(viewer) }}" 
+                                     class="avatar"
+                                     onerror="this.src='https://ui-avatars.com/api/?name={{ viewer.username }}&background=1d9bf0&color=fff'">
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0">{{ viewer.username }}</h6>
+                                        <small class="text-muted">
+                                            {% if viewer == current_user %}
+                                            You
+                                            {% else %}
+                                            {{ viewer.followers.count() }} followers
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted d-block">Viewed</small>
+                                        <small class="text-muted">
+                                            {% if viewer.status_views.first() %}
+                                            {{ viewer.status_views.first().viewed_at|time_ago }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if viewer.id != current_user.id %}
+                            <div class="ms-3">
+                                {% if current_user.is_following(viewer) %}
+                                <button class="btn btn-primary btn-sm follow-btn" data-user-id="{{ viewer.id }}">
+                                    Following
+                                </button>
+                                {% else %}
+                                <button class="btn btn-outline-primary btn-sm follow-btn" data-user-id="{{ viewer.id }}">
+                                    Follow
+                                </button>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="bg-light bg-opacity-10 rounded-circle p-4 d-inline-block mb-3">
+                            <i class="fas fa-eye-slash fa-3x text-muted"></i>
+                        </div>
+                        <h5>No viewers yet</h5>
+                        <p class="text-muted">No one has viewed this status yet</p>
+                        <a href="{{ url_for('feed') }}" class="btn btn-primary">
+                            <i class="fas fa-home me-1"></i> Go to Feed
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Info Card -->
+            <div class="card glass-effect mt-3">
+                <div class="card-body">
+                    <h6 class="mb-3"><i class="fas fa-chart-line me-2 text-info"></i>Viewer Insights</h6>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="display-6 fw-bold">{{ viewers|length }}</div>
+                            <small class="text-muted">Total Views</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="display-6 fw-bold">{{ status.views_count }}</div>
+                            <small class="text-muted">Views Count</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="display-6 fw-bold">
+                                {% if status.created_at %}
+                                {{ (datetime.utcnow() - status.created_at).seconds // 3600 }}h
+                                {% else %}
+                                0h
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">Active For</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

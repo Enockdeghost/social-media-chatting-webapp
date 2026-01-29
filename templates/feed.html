@@ -3,266 +3,1089 @@
 {% block title %}Home - Chatter{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid feed-container">
     <div class="row">
         <!-- Left Sidebar - Desktop -->
-        <div class="col-md-3 d-none d-md-block">
-            <div class="sticky-top" style="top: 80px;">
+        <div class="col-lg-3 col-md-4 d-none d-md-block">
+            <div class="sticky-sidebar" style="top: 80px;">
                 <!-- User Profile Card -->
-                <div class="trending-card mb-3">
-                    <div class="d-flex align-items-center">
-                        <img src="{{ url_for('static', filename='uploads/profiles/' + current_user.profile_picture) }}" 
-                             class="avatar me-3" 
-                             onerror="this.src='https://ui-avatars.com/api/?name={{ current_user.username }}&background=1d9bf0&color=fff'">
-                        <div>
-                            <h6 class="mb-0 fw-bold">@{{ current_user.username }}</h6>
-                            <small class="text-muted">{{ current_user.followers.count() }} followers</small>
+                <div class="profile-card mb-4 glass-effect">
+                    <div class="profile-header">
+                        <div class="profile-banner" style="background: var(--card-color);">
+                            <div class="profile-avatar-wrapper">
+                                <img src="{{ get_user_avatar_url(current_user) }}" 
+                                     class="profile-avatar-large"
+                                     alt="{{ current_user.username }}">
+                                {% if current_user.is_verified %}
+                                <div class="verified-badge">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="profile-info p-3 pt-5">
+                            <h5 class="mb-1 fw-bold">@{{ current_user.username }}</h5>
+                            <p class="text-muted mb-2">{{ current_user.bio or "No bio yet" }}</p>
+                            <div class="d-flex justify-content-between mb-3">
+                                <div class="text-center">
+                                    <div class="fw-bold">{{ current_user.get_post_count() }}</div>
+                                    <small class="text-muted">Posts</small>
+                                </div>
+                                <div class="text-center">
+                                    <div class="fw-bold">{{ current_user.followers.count() }}</div>
+                                    <small class="text-muted">Followers</small>
+                                </div>
+                                <div class="text-center">
+                                    <div class="fw-bold">{{ current_user.followed.count() }}</div>
+                                    <small class="text-muted">Following</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="mt-3">
-                        <a href="{{ url_for('bookmarks') }}" class="action-btn w-100 justify-content-center">
-                            <i class="fas fa-bookmark me-2"></i> Bookmarks
+                </div>
+
+                <!-- Navigation Menu -->
+                <div class="nav-card mb-4 glass-effect">
+                    <h6 class="sidebar-title mb-3">Navigation</h6>
+                    <div class="nav-menu">
+                        <a href="{{ url_for('profile', username=current_user.username) }}" 
+                           class="nav-item active hover-lift">
+                            <i class="fas fa-home"></i>
+                            <span>Home</span>
                         </a>
-                        <a href="{{ url_for('lists') }}" class="action-btn w-100 justify-content-center mt-2">
-                            <i class="fas fa-list me-2"></i> Lists
+                        <a href="{{ url_for('profile', username=current_user.username) }}" 
+                           class="nav-item hover-lift">
+                            <i class="fas fa-user-circle"></i>
+                            <span>Profile</span>
+                        </a>
+                        <a href="{{ url_for('messages') }}" class="nav-item hover-lift">
+                            <i class="fas fa-envelope"></i>
+                            <span>Messages</span>
+                            {% if current_user.get_unread_message_count() > 0 %}
+                            <span class="notification-badge">{{ current_user.get_unread_message_count() }}</span>
+                            {% endif %}
+                        </a>
+                        <a href="{{ url_for('notifications') }}" class="nav-item hover-lift">
+                            <i class="fas fa-bell"></i>
+                            <span>Notifications</span>
+                            {% if current_user.get_unread_notification_count() > 0 %}
+                            <span class="notification-badge">{{ current_user.get_unread_notification_count() }}</span>
+                            {% endif %}
+                        </a>
+                        <a href="{{ url_for('bookmarks') }}" class="nav-item hover-lift">
+                            <i class="fas fa-bookmark"></i>
+                            <span>Bookmarks</span>
+                        </a>
+                        <a href="{{ url_for('lists') }}" class="nav-item hover-lift">
+                            <i class="fas fa-list"></i>
+                            <span>Lists</span>
+                        </a>
+                        <a href="{{ url_for('trending') }}" class="nav-item hover-lift">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Trending</span>
+                        </a>
+                        <a href="{{ url_for('reels_feed') }}" class="nav-item hover-lift">
+                            <i class="fas fa-video"></i>
+                            <span>Reels</span>
                         </a>
                     </div>
                 </div>
 
-                <!-- Quick Links -->
-                <div class="trending-card mb-3">
-                    <h6 class="fw-bold mb-3">Quick Links</h6>
-                    <ul class="list-unstyled">
-                        <li class="mb-2">
-                            <a href="{{ url_for('profile', username=current_user.username) }}" class="text-decoration-none d-flex align-items-center py-2 px-3 rounded-3 hover-lift" 
-                               style="color: var(--text-primary); background: var(--card-hover);">
-                                <i class="fas fa-user-circle me-3"></i> My Profile
-                            </a>
-                        </li>
-                        <li class="mb-2">
-                            <a href="{{ url_for('pinned_posts', username=current_user.username) }}" class="text-decoration-none d-flex align-items-center py-2 px-3 rounded-3 hover-lift" 
-                               style="color: var(--text-primary); background: var(--card-hover);">
-                                <i class="fas fa-thumbtack me-3"></i> Pinned Posts
-                            </a>
-                        </li>
-                        <li class="mb-2">
-                            <a href="{{ url_for('trending') }}" class="text-decoration-none d-flex align-items-center py-2 px-3 rounded-3 hover-lift" 
-                               style="color: var(--text-primary); background: var(--card-hover);">
-                                <i class="fas fa-chart-line me-3"></i> Trending
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ url_for('profile_followers', username=current_user.username) }}" class="text-decoration-none d-flex align-items-center py-2 px-3 rounded-3 hover-lift" 
-                               style="color: var(--text-primary); background: var(--card-hover);">
-                                <i class="fas fa-users me-3"></i> Followers
-                            </a>
-                        </li>
-                    </ul>
+                <!-- Quick Actions -->
+                <div class="quick-actions mb-4 glass-effect p-3 rounded-3">
+                    <h6 class="sidebar-title mb-3">Quick Actions</h6>
+                    <a href="{{ url_for('create_post') }}" class="btn btn-primary w-100 mb-2">
+                        <i class="fas fa-plus-circle me-2"></i>Create Post
+                    </a>
+                    <a href="{{ url_for('upload_reel') }}" class="btn btn-outline-primary w-100 mb-2">
+                        <i class="fas fa-video me-2"></i>Upload Reel
+                    </a>
+                    <a href="{{ url_for('create_status') }}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-circle me-2"></i>Add Status
+                    </a>
                 </div>
             </div>
         </div>
 
-        <!-- Main Feed -->
-        <div class="col-12 col-md-6">
-            <!-- Create Post Card -->
-            <div class="glass-effect rounded-3 mb-3" style="border: 1px solid var(--border-light);">
-                <div class="p-3">
-                    <form method="POST" action="{{ url_for('create_post') }}" enctype="multipart/form-data" id="post-form">
-                        <div class="d-flex align-items-start">
-                            <img src="{{ url_for('static', filename='uploads/profiles/' + current_user.profile_picture) }}" 
-                                 class="avatar me-3" 
-                                 onerror="this.src='https://ui-avatars.com/api/?name={{ current_user.username }}&background=1d9bf0&color=fff'">
-                            <div class="flex-grow-1">
-                                <textarea name="content" class="form-control mb-2 post-textarea" 
-                                          placeholder="What's happening?" 
-                                          rows="3" 
-                                          maxlength="280"></textarea>
-                                
-                                <!-- Image Preview -->
-                                <div id="image-preview" class="mb-2 d-none">
-                                    <div class="position-relative" style="max-width: 300px;">
-                                        <img id="preview-image" class="img-fluid rounded-3">
-                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
-                                                onclick="removeImage()">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Post Actions -->
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label class="action-btn" style="cursor: pointer;">
-                                            <i class="fas fa-image"></i>
-                                            <input type="file" name="image" id="image-input" accept="image/*" class="d-none" onchange="previewImage(event)">
-                                        </label>
-                                        <button type="button" class="action-btn" data-bs-toggle="tooltip" title="Add GIF">
-                                            <i class="fas fa-film"></i>
-                                        </button>
-                                        <button type="button" class="action-btn" data-bs-toggle="tooltip" title="Add Poll">
-                                            <i class="fas fa-chart-pie"></i>
-                                        </button>
-                                    </div>
-                                    
-                                    <div class="d-flex align-items-center gap-3">
-                                        <span class="text-muted small char-counter">0/280</span>
-                                        <button type="submit" class="btn btn-primary px-4">
-                                            <i class="fas fa-paper-plane me-2"></i>Post
-                                        </button>
-                                    </div>
+        <!-- Main Feed Content -->
+        <div class="col-lg-6 col-md-8 col-12">
+            <!-- Status Stories -->
+            {% if status_stories %}
+            <div class="stories-container mb-4 glass-effect rounded-3">
+                <div class="stories-scroll">
+                    <!-- Your Story -->
+                    <div class="story-item">
+                        <a href="{{ url_for('create_status') }}" class="story-link">
+                            <div class="story-avatar new-story">
+                                <img src="{{ get_user_avatar_url(current_user) }}" 
+                                     class="story-image"
+                                     alt="Your story">
+                                <div class="add-story">
+                                    <i class="fas fa-plus"></i>
                                 </div>
                             </div>
+                            <small class="story-username">You</small>
+                        </a>
+                    </div>
+                    
+                    <!-- Followed Users Stories -->
+                    {% for story in status_stories %}
+                        {% if story.count > 0 %}
+                        {% set first_status = story.statuses[0] %}
+                        <div class="story-item">
+                            <a href="{{ url_for('view_status', status_id=first_status.id) }}" 
+                               class="story-link">
+                                <div class="story-avatar {% if story.has_unviewed %}has-unseen{% endif %}">
+                                    <img src="{{ get_user_avatar_url(story.user) }}" 
+                                         class="story-image"
+                                         alt="{{ story.user.username }}">
+                                    {% if story.count > 1 %}
+                                    <span class="story-count">{{ story.count }}</span>
+                                    {% endif %}
+                                </div>
+                                <small class="story-username">{{ story.user.username }}</small>
+                            </a>
                         </div>
-                    </form>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <!-- View More -->
+                    {% if total_active_statuses > 10 %}
+                    <div class="story-item">
+                        <a href="{{ url_for('status_feed') }}" class="story-link">
+                            <div class="story-avatar view-more">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </div>
+                            <small class="story-username">More</small>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Create Post Card -->
+            <div class="create-post-card mb-4 glass-effect rounded-3">
+                <div class="d-flex">
+                    <div class="post-avatar">
+                        <img src="{{ get_user_avatar_url(current_user) }}" 
+                             class="rounded-circle"
+                             alt="{{ current_user.username }}">
+                    </div>
+                    <div class="post-content flex-grow-1">
+                        <form method="POST" action="{{ url_for('create_post') }}" enctype="multipart/form-data">
+                            <textarea name="content" 
+                                      class="post-textarea" 
+                                      placeholder="What's happening?" 
+                                      rows="2"></textarea>
+                            
+                            <!-- Image Preview -->
+                            <div id="image-preview" class="image-preview d-none mb-2">
+                                <div class="position-relative">
+                                    <img id="preview-image" class="img-fluid rounded-3">
+                                    <button type="button" class="btn-close remove-image" onclick="removeImage()"></button>
+                                </div>
+                            </div>
+                            
+                            <!-- Post Actions -->
+                            <div class="post-actions d-flex justify-content-between align-items-center mt-3">
+                                <div class="action-buttons">
+                                    <label class="action-btn">
+                                        <i class="fas fa-image text-primary"></i>
+                                        <input type="file" name="image" id="image-input" accept="image/*" class="d-none" onchange="previewImage(event)">
+                                    </label>
+                                    <label class="action-btn" data-bs-toggle="tooltip" title="Add GIF">
+                                        <i class="fas fa-film text-success"></i>
+                                    </label>
+                                    <label class="action-btn" data-bs-toggle="tooltip" title="Add Poll">
+                                        <i class="fas fa-chart-pie text-warning"></i>
+                                    </label>
+                                    <label class="action-btn" data-bs-toggle="tooltip" title="Add Emoji">
+                                        <i class="far fa-smile text-info"></i>
+                                    </label>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <span class="char-counter me-3">0/280</span>
+                                    <button type="submit" class="btn btn-primary px-4 rounded-pill">
+                                        <i class="fas fa-paper-plane me-2"></i>Post
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feed Filters -->
+            <div class="feed-filters mb-4">
+                <div class="d-flex justify-content-between border-bottom">
+                    <div class="nav nav-tabs border-0">
+                        <button class="nav-link active" data-feed-type="following">For You</button>
+                        <button class="nav-link" data-feed-type="trending">Trending</button>
+                        <button class="nav-link" data-feed-type="reels">Reels</button>
+                    </div>
+                    <div class="feed-sort">
+                        <select class="form-select form-select-sm" style="max-width: 150px;">
+                            <option>Latest</option>
+                            <option>Most Liked</option>
+                            <option>Most Commented</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
             <!-- Posts Feed -->
-            {% if posts.items %}
-                {% for post in posts.items %}
-                    {% include 'components/post_card.html' %}
-                {% endfor %}
-                
-                <!-- Pagination -->
-                <nav class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        {% if posts.has_prev %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('feed', page=posts.prev_num) }}" style="background: var(--card-color); color: var(--text-primary);">
-                                <i class="fas fa-chevron-left"></i>
+            <div class="posts-feed">
+                {% if posts.items %}
+                    {% for post in posts.items %}
+                        {% include 'components/post_card.html' %}
+                    {% endfor %}
+                    
+                    <!-- Load More -->
+                    {% if posts.has_next %}
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('feed', page=posts.next_num) }}" class="btn btn-outline-primary rounded-pill px-4">
+                            <i class="fas fa-sync me-2"></i>Load More
+                        </a>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <!-- Empty Feed State -->
+                    <div class="empty-feed text-center py-5">
+                        <div class="empty-icon mb-3">
+                            <i class="fas fa-comments fa-3x text-muted"></i>
+                        </div>
+                        <h5 class="mb-2">Welcome to Chatter!</h5>
+                        <p class="text-muted mb-4">Start by posting something or following other users</p>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="{{ url_for('create_post') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create First Post
                             </a>
-                        </li>
-                        {% endif %}
-                        
-                        {% for page_num in posts.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=3) %}
-                            {% if page_num %}
-                                <li class="page-item {% if page_num == posts.page %}active{% endif %}">
-                                    <a class="page-link" href="{{ url_for('feed', page=page_num) }}" 
-                                       style="{% if page_num == posts.page %}background: var(--primary-color); border-color: var(--primary-color);{% else %}background: var(--card-color); color: var(--text-primary);{% endif %}">
-                                        {{ page_num }}
-                                    </a>
-                                </li>
-                            {% else %}
-                                <li class="page-item disabled">
-                                    <span class="page-link">...</span>
-                                </li>
-                            {% endif %}
-                        {% endfor %}
-                        
-                        {% if posts.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('feed', page=posts.next_num) }}" style="background: var(--card-color); color: var(--text-primary);">
-                                <i class="fas fa-chevron-right"></i>
+                            <a href="{{ url_for('search') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-user-plus me-2"></i>Find People
                             </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            {% else %}
-                <!-- Empty State -->
-                <div class="text-center py-5">
-                    <i class="fas fa-comments fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">No posts yet</h5>
-                    <p class="text-muted">Start by posting something or following other users!</p>
-                </div>
-            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
         </div>
 
         <!-- Right Sidebar -->
-        <div class="col-md-3 d-none d-md-block">
-            <div class="sticky-top" style="top: 80px;">
+        <div class="col-lg-3 d-none d-lg-block">
+            <div class="sticky-sidebar" style="top: 80px;">
                 <!-- Search -->
-                <div class="mb-3">
-                    <form action="{{ url_for('search') }}" method="GET">
-                        <div class="input-group">
-                            <input type="text" class="form-control search-box" name="q" placeholder="Search Chatter" value="{{ query }}">
-                            <button class="btn" type="submit" style="background: var(--card-color); color: var(--text-primary); border: 1px solid var(--border-light);">
-                                <i class="fas fa-search"></i>
+                <div class="search-box mb-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" 
+                               class="form-control border-start-0" 
+                               placeholder="Search Chatter..."
+                               onfocus="this.parentElement.classList.add('focused')"
+                               onblur="this.parentElement.classList.remove('focused')">
+                    </div>
+                </div>
+
+                <!-- Trending Topics -->
+                <div class="trending-card mb-4 glass-effect rounded-3">
+                    <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Trending Now</h5>
+                        <a href="{{ url_for('trending') }}" class="text-decoration-none small">See all</a>
+                    </div>
+                    <div class="trending-list">
+                        {% for hashtag in trending[:5] %}
+                        <div class="trending-item">
+                            <a href="{{ url_for('hashtag', tag=hashtag.tag) }}" class="trending-link hover-lift">
+                                <div class="trending-rank">{{ loop.index }}</div>
+                                <div class="trending-content">
+                                    <div class="trending-tag">#{{ hashtag.tag }}</div>
+                                    <div class="trending-count">{{ hashtag.count }} posts</div>
+                                </div>
+                                <i class="fas fa-chevron-right trending-arrow"></i>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Who to Follow -->
+                <div class="follow-card mb-4 glass-effect rounded-3">
+                    <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Who to Follow</h5>
+                        <a href="{{ url_for('search') }}" class="text-decoration-none small">Refresh</a>
+                    </div>
+                    <div class="follow-list">
+                        {% for user in suggestions %}
+                        <div class="follow-item">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ get_user_avatar_url(user) }}" 
+                                     class="follow-avatar rounded-circle me-3"
+                                     alt="{{ user.username }}">
+                                <div class="follow-info">
+                                    <div class="d-flex align-items-center">
+                                        <h6 class="mb-0">{{ user.username }}</h6>
+                                        {% if user.is_verified %}
+                                        <i class="fas fa-check-circle verified-icon ms-1"></i>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">{{ user.followers.count() }} followers</small>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm {% if current_user.is_following(user) %}btn-primary{% else %}btn-outline-primary{% endif %} follow-btn" 
+                                    data-user-id="{{ user.id }}">
+                                {% if current_user.is_following(user) %}Following{% else %}Follow{% endif %}
                             </button>
                         </div>
-                    </form>
-                </div>
-
-                <!-- Trending -->
-                <div class="trending-card mb-3">
-                    <h6 class="fw-bold mb-3">Trending Now</h6>
-                    {% for hashtag in trending %}
-                    <div class="mb-2">
-                        <a href="{{ url_for('hashtag', tag=hashtag.tag) }}" class="text-decoration-none d-flex justify-content-between align-items-center p-2 rounded-3 hover-lift" 
-                           style="color: var(--text-primary); background: var(--card-hover);">
-                            <div>
-                                <small class="text-muted">#{{ hashtag.tag }}</small>
-                                <br>
-                                <small>{{ hashtag.count }} posts</small>
-                            </div>
-                            <i class="fas fa-chevron-right text-muted"></i>
-                        </a>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
 
-                <!-- Who to follow -->
-                <div class="trending-card">
-                    <h6 class="fw-bold mb-3">Who to follow</h6>
-                    {% for user in suggestions %}
-                    <div class="d-flex align-items-center justify-content-between mb-3 p-2 rounded-3 hover-lift" style="background: var(--card-hover);">
-                        <div class="d-flex align-items-center">
-                            <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
-                                 class="avatar-sm me-2"
-                                 onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
-                            <div>
-                                <h6 class="mb-0 small fw-bold">{{ user.username }}</h6>
-                                {% if user.is_verified %}
-                                <i class="fas fa-check-circle verified-badge"></i>
-                                {% endif %}
-                                <small class="text-muted">{{ user.followers.count() }} followers</small>
+                <!-- Online Friends -->
+                <div class="online-card mb-4 glass-effect rounded-3">
+                    <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Online Now</h5>
+                        <span class="badge bg-success">{{ current_user.followed.filter_by(is_online=True).count() }}</span>
+                    </div>
+                    <div class="online-list">
+                        {% for user in current_user.followed.filter_by(is_online=True).limit(5).all() %}
+                        <div class="online-item">
+                            <div class="position-relative">
+                                <img src="{{ get_user_avatar_url(user) }}" 
+                                     class="online-avatar rounded-circle"
+                                     alt="{{ user.username }}">
+                                <span class="online-indicator"></span>
                             </div>
+                            <div class="online-info">
+                                <div class="online-username">{{ user.username }}</div>
+                                <div class="online-status">Active now</div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary message-btn" 
+                                    onclick="window.location.href='{{ url_for('conversation', user_id=user.id) }}'">
+                                <i class="fas fa-envelope"></i>
+                            </button>
                         </div>
-                        <button class="btn btn-sm {% if current_user.is_following(user) %}btn-primary{% else %}btn-outline-primary{% endif %} follow-btn" 
-                                data-user-id="{{ user.id }}">
-                            {% if current_user.is_following(user) %}Following{% else %}Follow{% endif %}
-                        </button>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
+                </div>
+
+                <!-- Footer Links -->
+                <div class="footer-links">
+                    <div class="d-flex flex-wrap gap-3 mb-2">
+                        <a href="#" class="text-muted small">About</a>
+                        <a href="#" class="text-muted small">Help Center</a>
+                        <a href="#" class="text-muted small">Terms</a>
+                        <a href="#" class="text-muted small">Privacy</a>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<style>
+.feed-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.sticky-sidebar {
+    position: sticky;
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+/* Profile Card */
+.profile-card {
+    background: var(--card-color);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+}
+
+.profile-banner {
+    height: 100px;
+    position: relative;
+    background: linear-gradient(135deg, var(--primary-color), #0c7abf);
+}
+
+.profile-avatar-wrapper {
+    position: absolute;
+    bottom: -30px;
+    left: 20px;
+}
+
+.profile-avatar-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 4px solid var(--card-color);
+    object-fit: cover;
+    background: var(--card-color);
+}
+
+.verified-badge {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: var(--primary-color);
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    border: 2px solid var(--card-color);
+}
+
+/* Navigation Menu */
+.nav-card {
+    background: var(--card-color);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid var(--border-light);
+}
+
+.sidebar-title {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.nav-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-radius: 12px;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: all 0.2s;
+    position: relative;
+    border: 1px solid transparent;
+}
+
+.nav-item:hover {
+    background: var(--card-hover);
+    color: var(--primary-color);
+    border-color: var(--border-light);
+}
+
+.nav-item.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.nav-item i {
+    width: 24px;
+    margin-right: 12px;
+}
+
+.notification-badge {
+    position: absolute;
+    right: 15px;
+    background: #f4212e;
+    color: white;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+
+/* Stories */
+.stories-container {
+    background: var(--card-color);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid var(--border-light);
+}
+
+.stories-scroll {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+}
+
+.story-item {
+    flex: 0 0 auto;
+    text-align: center;
+}
+
+.story-link {
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.story-avatar {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    padding: 3px;
+    margin-bottom: 8px;
+    position: relative;
+    background: var(--card-hover);
+}
+
+.story-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--card-hover);
+}
+
+.new-story {
+    border: 2px solid var(--border-light);
+}
+
+.add-story {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: var(--primary-color);
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--card-color);
+}
+
+.has-unseen {
+    background: linear-gradient(45deg, var(--primary-color), #0c7abf);
+    padding: 4px;
+}
+
+.story-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #f4212e;
+    color: white;
+    font-size: 12px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.view-more {
+    border: 2px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--text-muted);
+    background: var(--card-hover);
+}
+
+.story-username {
+    font-size: 12px;
+    display: block;
+    max-width: 70px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
+}
+
+/* Create Post */
+.create-post-card {
+    background: var(--card-color);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid var(--border-light);
+}
+
+.post-avatar {
+    margin-right: 15px;
+}
+
+.post-avatar img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 50%;
+    background: var(--card-hover);
+}
+
+.post-textarea {
+    width: 100%;
+    border: none;
+    resize: none;
+    font-size: 16px;
+    padding: 10px 0;
+    min-height: 60px;
+    background: transparent;
+    color: var(--text-primary);
+}
+
+.post-textarea:focus {
+    outline: none;
+}
+
+.post-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.image-preview {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+}
+
+.remove-image {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+}
+
+.action-btn {
+    cursor: pointer;
+    font-size: 18px;
+    transition: transform 0.2s;
+    color: var(--text-muted);
+}
+
+.action-btn:hover {
+    transform: scale(1.1);
+    color: var(--primary-color);
+}
+
+/* Trending, Follow, Online Cards */
+.trending-card, .follow-card, .online-card {
+    background: var(--card-color);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid var(--border-light);
+}
+
+.trending-list, .follow-list, .online-list {
+    margin-top: 15px;
+}
+
+.trending-item, .follow-item, .online-item {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.trending-item:last-child, .follow-item:last-child, .online-item:last-child {
+    border-bottom: none;
+}
+
+.trending-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: var(--text-primary);
+    padding: 8px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.trending-link:hover {
+    background: var(--card-hover);
+}
+
+.trending-rank {
+    font-weight: bold;
+    color: var(--text-muted);
+    margin-right: 12px;
+    font-size: 14px;
+}
+
+.trending-tag {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.trending-count {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.trending-arrow {
+    margin-left: auto;
+    color: var(--text-muted);
+}
+
+/* Follow Cards */
+.follow-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+}
+
+.follow-avatar {
+    width: 45px;
+    height: 45px;
+    object-fit: cover;
+    background: var(--card-hover);
+}
+
+.verified-icon {
+    color: var(--primary-color);
+    font-size: 14px;
+}
+
+/* Online Friends */
+.online-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+}
+
+.online-avatar {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    background: var(--card-hover);
+}
+
+.online-indicator {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 10px;
+    height: 10px;
+    background: #4cd964;
+    border: 2px solid var(--card-color);
+    border-radius: 50%;
+}
+
+.online-username {
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.online-status {
+    font-size: 12px;
+    color: #4cd964;
+}
+
+/* Search Box */
+.search-box .input-group {
+    border-radius: 50px;
+    background: var(--card-hover);
+    border: 1px solid var(--border-light);
+    transition: all 0.2s;
+}
+
+.search-box .input-group.focused {
+    background: var(--card-color);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(29, 155, 240, 0.2);
+}
+
+.search-box .form-control {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+}
+
+.search-box .form-control:focus {
+    box-shadow: none;
+}
+
+.search-box .form-control::placeholder {
+    color: var(--text-muted);
+}
+
+/* Buttons */
+.btn-primary {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Feed Filters */
+.feed-filters .nav-link {
+    color: var(--text-muted);
+    border: none;
+    padding: 10px 20px;
+}
+
+.feed-filters .nav-link.active {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    background: transparent;
+}
+
+.feed-filters .nav-link:hover {
+    color: var(--primary-color);
+}
+
+/* Empty Feed */
+.empty-feed {
+    background: var(--card-color);
+    border-radius: 16px;
+    padding: 40px;
+    border: 1px solid var(--border-light);
+}
+
+/* Glass Effect */
+.glass-effect {
+    background: var(--card-color);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-light);
+}
+
+/* Hover Effects */
+.hover-lift {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sticky-sidebar {
+        position: static;
+        height: auto;
+        margin-bottom: 20px;
+    }
+    
+    .stories-scroll {
+        gap: 15px;
+    }
+    
+    .story-avatar {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .create-post-card {
+        padding: 15px;
+    }
+}
+</style>
+
 <script>
-    function previewImage(event) {
-        const input = event.target;
-        const preview = document.getElementById('preview-image');
-        const previewContainer = document.getElementById('image-preview');
+function previewImage(event) {
+    const input = event.target;
+    const preview = document.getElementById('preview-image');
+    const previewContainer = document.getElementById('image-preview');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
         
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                preview.src = e.target.result;
-                previewContainer.classList.remove('d-none');
-            }
-            
-            reader.readAsDataURL(input.files[0]);
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            previewContainer.classList.remove('d-none');
         }
-    }
-    
-    function removeImage() {
-        document.getElementById('image-input').value = '';
-        document.getElementById('image-preview').classList.add('d-none');
-    }
-    
-    // Character counter
-    document.querySelector('.post-textarea').addEventListener('input', function() {
-        const counter = document.querySelector('.char-counter');
-        counter.textContent = `${this.value.length}/280`;
         
-        if (this.value.length > 280) {
-            counter.style.color = '#f4212e';
-        } else {
-            counter.style.color = 'var(--text-muted)';
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function removeImage() {
+    document.getElementById('image-input').value = '';
+    document.getElementById('image-preview').classList.add('d-none');
+}
+
+// Character counter
+const textarea = document.querySelector('.post-textarea');
+if (textarea) {
+    textarea.addEventListener('input', function() {
+        const counter = document.querySelector('.char-counter');
+        if (counter) {
+            const count = this.value.length;
+            counter.textContent = `${count}/280`;
+            
+            if (count > 280) {
+                counter.style.color = '#f4212e';
+            } else if (count > 250) {
+                counter.style.color = '#ffa502';
+            } else {
+                counter.style.color = 'var(--text-muted)';
+            }
         }
     });
+}
+
+// Follow button functionality
+document.querySelectorAll('.follow-btn').forEach(button => {
+    button.addEventListener('click', async function() {
+        const userId = this.dataset.userId;
+        const originalText = this.textContent;
+        
+        try {
+            const response = await fetch(`/follow/${userId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'followed') {
+                this.classList.remove('btn-outline-primary');
+                this.classList.add('btn-primary');
+                this.textContent = 'Following';
+                showToast(`Started following ${data.message.split(' ').pop()}`, 'success');
+            } else {
+                this.classList.remove('btn-primary');
+                this.classList.add('btn-outline-primary');
+                this.textContent = 'Follow';
+                showToast(`Unfollowed ${data.message.split(' ').pop()}`, 'info');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            this.textContent = originalText;
+            showToast('Error processing request', 'error');
+        }
+    });
+});
+
+function showToast(message, type = 'info') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast-alert toast-${type}`;
+    toast.textContent = message;
+    
+    // Style toast
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        color: white;
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+        font-size: 14px;
+    `;
+    
+    if (type === 'success') {
+        toast.style.background = 'var(--primary-color)';
+    } else if (type === 'error') {
+        toast.style.background = '#f4212e';
+    } else {
+        toast.style.background = 'var(--primary-color)';
+    }
+    
+    document.body.appendChild(toast);
+    
+    // Add animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            toast.remove();
+            style.remove();
+        }, 300);
+    }, 3000);
+}
+
+// Tab switching for feed filters
+document.querySelectorAll('.feed-filters .nav-link').forEach(tab => {
+    tab.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Remove active class from all tabs
+        document.querySelectorAll('.feed-filters .nav-link').forEach(t => {
+            t.classList.remove('active');
+        });
+        
+        // Add active class to clicked tab
+        this.classList.add('active');
+        
+        // Here you would typically load different feed content
+        const feedType = this.dataset.feedType;
+        console.log(`Switching to ${feedType} feed`);
+        
+        // You would make an AJAX call here to load the appropriate feed
+        // loadFeed(feedType);
+    });
+});
+
+// Search functionality
+const searchInput = document.querySelector('.search-box input');
+if (searchInput) {
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            if (this.value.length > 2) {
+                // You can add live search functionality here
+                console.log(`Searching for: ${this.value}`);
+            }
+        }, 500);
+    });
+}
+
+// Auto-resize textarea
+function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+}
+
+const postTextarea = document.querySelector('.post-textarea');
+if (postTextarea) {
+    postTextarea.addEventListener('input', function() {
+        autoResize(this);
+    });
+    
+    // Initial resize
+    autoResize(postTextarea);
+}
 </script>
 {% endblock %}
