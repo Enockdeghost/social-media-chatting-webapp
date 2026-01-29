@@ -73,6 +73,14 @@ class User(UserMixin, db.Model):
     list_subscriptions = db.relationship('ListSubscriber', backref='subscriber', lazy='dynamic', cascade='all, delete-orphan')
     list_memberships = db.relationship('ListMember', backref='member', lazy='dynamic', cascade='all, delete-orphan')
     
+    # Reels & Status relationships
+    reels = db.relationship('Reel', backref='user', lazy='dynamic', cascade='all, delete-orphan')
+    reel_likes = db.relationship('ReelLike', backref='liker', lazy='dynamic', cascade='all, delete-orphan')
+    reel_comments = db.relationship('ReelComment', backref='author', lazy='dynamic', cascade='all, delete-orphan')
+    reel_views = db.relationship('ReelView', backref='viewer', lazy='dynamic', cascade='all, delete-orphan')
+    statuses = db.relationship('Status', backref='user', lazy='dynamic', cascade='all, delete-orphan')
+    status_views = db.relationship('StatusView', backref='viewer', lazy='dynamic', cascade='all, delete-orphan')
+    
     # Many-to-many relationships
     followed = db.relationship(
         'User', secondary=followers,
@@ -105,12 +113,10 @@ class User(UserMixin, db.Model):
 
     def block(self, user):
         if not self.has_blocked(user):
-            # Unfollow each other if following
             if self.is_following(user):
                 self.unfollow(user)
             if user.is_following(self):
                 user.unfollow(self)
-            
             self.blocked.append(user)
 
     def unblock(self, user):
@@ -124,7 +130,6 @@ class User(UserMixin, db.Model):
         return user.has_blocked(self)
 
     def can_interact_with(self, user):
-        """Check if current user can interact with another user (not blocked)"""
         return not self.has_blocked(user) and not user.has_blocked(self)
 
     def get_unread_message_count(self):
@@ -133,26 +138,135 @@ class User(UserMixin, db.Model):
     def get_unread_notification_count(self):
         return Notification.query.filter_by(user_id=self.id, is_read=False).count()
 
-    def get_accessible_lists(self):
-        """Get all lists the user can view (public or their own or subscribed)"""
-        # Lists created by user
-        created = db.session.query(UserList.id).filter(UserList.user_id == self.id)
+    def get_mutual_followers(self, other_user, limit=5):
+        """Get mutual followers between current user and another user"""
+        if not self.is_authenticated or not other_user:
+            return []
         
-        # Lists user is subscribed to
-        subscribed = db.session.query(ListSubscriber.list_id).filter(ListSubscriber.user_id == self.id)
+        # Get the set of user ids that both self and other_user follow
+        self_following = {user.id for user in self.followed.all()}
+        other_following = {user.id for user in other_user.followed.all()}
         
-        # Public lists
-        public = db.session.query(UserList.id).filter(UserList.is_private == False)
+        mutual_ids = self_following.intersection(other_following)
         
-        # Combine
-        accessible_ids = created.union(subscribed).union(public)
+        # Return User objects for these ids, with optional limit
+        query = User.query.filter(User.id.in_(mutual_ids))
+        if limit:
+            query = query.limit(limit)
         
-        return UserList.query.filter(UserList.id.in_(accessible_ids)).distinct()
+        return query.all() if mutual_ids else []
 
-    def get_mutual_followers(self, user):
-        """Get mutual followers between two users"""
-        return self.followers.filter(User.followed.contains(user)).all()
+    def get_follow_suggestions(self, limit=5):
+        """Get suggested users to follow (users followed by people you follow)"""
+        if not self.is_authenticated:
+            return []
+        
+        # Get IDs of people the current user follows
+        following_ids = [user.id for user in self.followed.all()]
+        
+        if not following_ids:
+            # If not following anyone, return random users
+            return User.query.filter(
+                User.id != self.id,
+                ~User.id.in_([b.id for b in self.blocked.all()])
+            ).order_by(func.random()).limit(limit).all()
+        
+        # Get users followed by people the current user follows
+        suggestions = User.query.join(followers, User.id == followers.c.followed_id).filter(
+            followers.c.follower_id.in_(following_ids),
+            User.id != self.id,
+            ~User.id.in_(following_ids),
+            ~User.id.in_([b.id for b in self.blocked.all()])
+        ).group_by(User.id).order_by(func.count().desc()).limit(limit).all()
+        
+        return suggestions
 
+    def get_post_count(self):
+        """Get count of user's non-deleted posts"""
+        return Post.query.filter_by(user_id=self.id, is_deleted=False).count()
+
+    def get_like_count(self):
+        """Get total likes received on user's posts"""
+        return db.session.query(func.count(Like.id)).join(Post).filter(
+            Post.user_id == self.id,
+            Post.is_deleted == False
+        ).scalar() or 0
+
+    def is_mutual_follow(self, user):
+        """Check if two users follow each other"""
+        return self.is_following(user) and user.is_following(self)
+
+    def get_common_groups(self, other_user):
+        """Get common lists/groups both users are members of"""
+        if not self.is_authenticated or not other_user:
+            return []
+        
+        # Get lists where both users are members
+        user_list_ids = [lm.list_id for lm in self.list_memberships.all()]
+        other_list_ids = [lm.list_id for lm in other_user.list_memberships.all()]
+        
+        common_list_ids = set(user_list_ids).intersection(set(other_list_ids))
+        
+        if common_list_ids:
+            return UserList.query.filter(UserList.id.in_(common_list_ids)).all()
+        return []
+
+    def update_last_seen(self):
+        """Update user's last seen timestamp"""
+        self.last_seen = datetime.utcnow()
+        db.session.commit()
+
+    def get_recent_activity(self, limit=10):
+        """Get user's recent activity"""
+        if not self.is_authenticated:
+            return []
+        
+        # Get recent posts, likes, and comments
+        recent_posts = Post.query.filter_by(
+            user_id=self.id, 
+            is_deleted=False
+        ).order_by(Post.created_at.desc()).limit(limit//2).all()
+        
+        recent_likes = Like.query.join(Post).filter(
+            Like.user_id == self.id,
+            Post.is_deleted == False
+        ).order_by(Like.created_at.desc()).limit(limit//2).all()
+        
+        recent_comments = Comment.query.filter_by(
+            user_id=self.id,
+            is_deleted=False
+        ).order_by(Comment.created_at.desc()).limit(limit//2).all()
+        
+        # Combine and sort by date
+        activity = []
+        for post in recent_posts:
+            activity.append({
+                'type': 'post',
+                'content': post.content[:100],
+                'created_at': post.created_at,
+                'link': f'/post/{post.id}'
+            })
+        
+        for like in recent_likes:
+            activity.append({
+                'type': 'like',
+                'content': f"Liked {like.post.author.username}'s post",
+                'created_at': like.created_at,
+                'link': f'/post/{like.post.id}'
+            })
+        
+        for comment in recent_comments:
+            activity.append({
+                'type': 'comment',
+                'content': comment.content[:100],
+                'created_at': comment.created_at,
+                'link': f'/post/{comment.post.id}'
+            })
+        
+        # Sort by creation date, most recent first
+        activity.sort(key=lambda x: x['created_at'], reverse=True)
+        return activity[:limit]
+    
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
@@ -298,6 +412,73 @@ class ListSubscriber(db.Model):
     subscribed_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     __table_args__ = (db.UniqueConstraint('list_id', 'user_id', name='unique_list_subscriber'),)
+
+
+class Reel(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    video_url = db.Column(db.String(500), nullable=False)
+    thumbnail_url = db.Column(db.String(500))
+    caption = db.Column(db.Text)
+    duration = db.Column(db.Float)
+    music = db.Column(db.String(200))
+    location = db.Column(db.String(200))
+    views_count = db.Column(db.Integer, default=0)
+    likes_count = db.Column(db.Integer, default=0)
+    comments_count = db.Column(db.Integer, default=0)
+    shares_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_archived = db.Column(db.Boolean, default=False)
+    
+    likes = db.relationship('ReelLike', backref='reel', lazy='dynamic', cascade='all, delete-orphan')
+    comments = db.relationship('ReelComment', backref='reel', lazy='dynamic', cascade='all, delete-orphan')
+    views = db.relationship('ReelView', backref='reel', lazy='dynamic', cascade='all, delete-orphan')
+
+class ReelLike(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    reel_id = db.Column(db.Integer, db.ForeignKey('reel.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    __table_args__ = (db.UniqueConstraint('user_id', 'reel_id', name='unique_reel_like'),)
+
+class ReelComment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    reel_id = db.Column(db.Integer, db.ForeignKey('reel.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_deleted = db.Column(db.Boolean, default=False)
+
+class ReelView(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    reel_id = db.Column(db.Integer, db.ForeignKey('reel.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    duration_watched = db.Column(db.Float)
+    __table_args__ = (db.UniqueConstraint('user_id', 'reel_id', name='unique_reel_view'),)
+
+# ============ STATUS MODELS ============
+class Status(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    media_type = db.Column(db.String(10), nullable=False)
+    media_url = db.Column(db.String(500))
+    text = db.Column(db.Text)
+    background_color = db.Column(db.String(20))
+    text_color = db.Column(db.String(20))
+    font_size = db.Column(db.Integer, default=24)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    views_count = db.Column(db.Integer, default=0)
+    
+    views = db.relationship('StatusView', backref='status', lazy='dynamic', cascade='all, delete-orphan')
+
+class StatusView(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    status_id = db.Column(db.Integer, db.ForeignKey('status.id'), nullable=False)
+    viewed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    __table_args__ = (db.UniqueConstraint('user_id', 'status_id', name='unique_status_view'),)
 
 # Helper functions
 @login_manager.user_loader
@@ -450,41 +631,41 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-@app.route('/feed')
-@login_required
-def feed():
-    page = request.args.get('page', 1, type=int)
+# @app.route('/feed')
+# @login_required
+# def feed():
+#     page = request.args.get('page', 1, type=int)
     
-    # Get users that current user follows
-    followed_users = current_user.followed.all()
-    followed_ids = [u.id for u in followed_users] + [current_user.id]
+#     # Get users that current user follows
+#     followed_users = current_user.followed.all()
+#     followed_ids = [u.id for u in followed_users] + [current_user.id]
     
-    # Exclude blocked users
-    blocked_users = [b.id for b in current_user.blocked.all()]
-    blocked_by = [b.id for b in current_user.blocked_by.all()]
+#     # Exclude blocked users
+#     blocked_users = [b.id for b in current_user.blocked.all()]
+#     blocked_by = [b.id for b in current_user.blocked_by.all()]
     
-    # Get posts from followed users, excluding blocked content
-    posts_query = Post.query.filter(
-        Post.user_id.in_(followed_ids),
-        Post.is_deleted == False,
-        ~Post.user_id.in_(blocked_users),
-        ~Post.user_id.in_(blocked_by)
-    ).order_by(Post.created_at.desc())
+#     # Get posts from followed users, excluding blocked content
+#     posts_query = Post.query.filter(
+#         Post.user_id.in_(followed_ids),
+#         Post.is_deleted == False,
+#         ~Post.user_id.in_(blocked_users),
+#         ~Post.user_id.in_(blocked_by)
+#     ).order_by(Post.created_at.desc())
     
-    posts = posts_query.paginate(page=page, per_page=20, error_out=False)
+#     posts = posts_query.paginate(page=page, per_page=20, error_out=False)
     
-    # Get trending hashtags
-    trending = Hashtag.query.order_by(Hashtag.count.desc(), Hashtag.last_used.desc()).limit(5).all()
+#     # Get trending hashtags
+#     trending = Hashtag.query.order_by(Hashtag.count.desc(), Hashtag.last_used.desc()).limit(5).all()
     
-    # Get user suggestions (not followed, not blocked)
-    suggestions = User.query.filter(
-        User.id != current_user.id,
-        ~User.id.in_(followed_ids),
-        ~User.id.in_(blocked_users),
-        ~User.id.in_(blocked_by)
-    ).order_by(func.random()).limit(5).all()
+#     # Get user suggestions (not followed, not blocked)
+#     suggestions = User.query.filter(
+#         User.id != current_user.id,
+#         ~User.id.in_(followed_ids),
+#         ~User.id.in_(blocked_users),
+#         ~User.id.in_(blocked_by)
+#     ).order_by(func.random()).limit(5).all()
     
-    return render_template('feed.html', posts=posts, trending=trending, suggestions=suggestions)
+#     return render_template('feed.html', posts=posts, trending=trending, suggestions=suggestions)
 
 @app.route('/post', methods=['POST'])
 @login_required
@@ -809,6 +990,12 @@ def profile(username):
     pinned_post_data = PinnedPost.query.filter_by(user_id=user.id).first()
     pinned_post = pinned_post_data.post if pinned_post_data and not pinned_post_data.post.is_deleted else None
     
+    # Get posts with images for media section
+    posts_with_images = Post.query.filter_by(
+        user_id=user.id,
+        is_deleted=False
+    ).filter(Post.image.isnot(None)).order_by(Post.created_at.desc()).all()
+    
     # Calculate stats
     total_likes = sum(post.like_count() for post in posts)
     total_posts = len(posts)
@@ -820,12 +1007,36 @@ def profile(username):
     is_blocked = current_user.has_blocked(user)
     is_blocked_by = user.has_blocked(current_user)
     
-    # Get mutual followers
-    mutual_followers = current_user.get_mutual_followers(user) if current_user.is_authenticated else []
+    # Get mutual followers - simplified version
+    mutual_followers = []
+    if current_user.is_authenticated and user != current_user:
+        # Users that both current_user and user follow
+        current_following = {u.id for u in current_user.followed}
+        user_following = {u.id for u in user.followed}
+        mutual_ids = current_following.intersection(user_following)
+        if mutual_ids:
+            mutual_followers = User.query.filter(User.id.in_(mutual_ids)).limit(5).all()
+    
+    # Get user suggestions (not followed, not blocked)
+    blocked_ids = [b.id for b in current_user.blocked.all()]
+    blocked_by_ids = [b.id for b in current_user.blocked_by.all()]
+    followed_ids = [u.id for u in current_user.followed.all()] + [current_user.id]
+    
+    suggestions = User.query.filter(
+        User.id != current_user.id,
+        User.id != user.id,
+        ~User.id.in_(followed_ids),
+        ~User.id.in_(blocked_ids),
+        ~User.id.in_(blocked_by_ids)
+    ).order_by(func.random()).limit(5).all()
+    
+    # Create recent activity data (simplified)
+    recent_activity = []
     
     return render_template('profile.html', 
                          user=user, 
                          posts=posts, 
+                         posts_with_images=posts_with_images[:6],
                          pinned_post=pinned_post,
                          total_likes=total_likes,
                          total_posts=total_posts,
@@ -834,37 +1045,92 @@ def profile(username):
                          is_following=is_following,
                          is_blocked=is_blocked,
                          is_blocked_by=is_blocked_by,
-                         mutual_followers=mutual_followers[:5])
+                         mutual_followers=mutual_followers,
+                         suggestions=suggestions,
+                         recent_activity=recent_activity)
+# @app.route('/profile/<username>/followers')
+# @login_required
+# def profile_followers(username):
+#     user = User.query.filter_by(username=username).first_or_404()
+    
+#     if not current_user.can_interact_with(user):
+#         flash('You cannot view this profile.', 'danger')
+#         return redirect(url_for('feed'))
+    
+#     followers_list = user.followers.all()
+    
+#     return render_template('profile_followers.html', 
+#                          user=user, 
+#                          followers=followers_list)
 
-@app.route('/profile/<username>/followers')
+# @app.route('/profile/<username>/following')
+# @login_required
+# def profile_following(username):
+#     user = User.query.filter_by(username=username).first_or_404()
+    
+#     if not current_user.can_interact_with(user):
+#         flash('You cannot view this profile.', 'danger')
+#         return redirect(url_for('feed'))
+    
+#     following_list = user.followed.all()
+    
+#     return render_template('profile_following.html', 
+#                          user=user, 
+#                          following=following_list)
+
+@app.route('/profile/<username>/media')
 @login_required
-def profile_followers(username):
+def profile_media(username):
+    """Show user's media posts"""
     user = User.query.filter_by(username=username).first_or_404()
     
     if not current_user.can_interact_with(user):
         flash('You cannot view this profile.', 'danger')
         return redirect(url_for('feed'))
     
-    followers_list = user.followers.all()
+    posts_with_images = Post.query.filter_by(
+        user_id=user.id,
+        is_deleted=False
+    ).filter(Post.image.isnot(None)).order_by(
+        Post.created_at.desc()
+    ).all()
     
-    return render_template('profile_followers.html', 
+    # Convert posts to JSON-safe format for JavaScript
+    posts_json = []
+    for post in posts_with_images:
+        posts_json.append({
+            'id': post.id,
+            'image': post.image,
+            'content': post.content,
+            'created_at': post.created_at.isoformat(),
+            'like_count': post.like_count(),
+            'comment_count': post.comment_count(),
+            'author': {
+                'username': post.author.username,
+                'profile_picture': post.author.profile_picture
+            }
+        })
+    
+    return render_template('profile_media.html', 
                          user=user, 
-                         followers=followers_list)
+                         posts_with_images=posts_with_images,
+                         posts_json=posts_json)
 
-@app.route('/profile/<username>/following')
+@app.route('/profile/<username>/lists')
 @login_required
-def profile_following(username):
+def profile_lists(username):
+    """Show user's lists"""
     user = User.query.filter_by(username=username).first_or_404()
     
     if not current_user.can_interact_with(user):
         flash('You cannot view this profile.', 'danger')
         return redirect(url_for('feed'))
     
-    following_list = user.followed.all()
+    user_lists = UserList.query.filter_by(user_id=user.id).all()
     
-    return render_template('profile_following.html', 
+    return render_template('profile_lists.html', 
                          user=user, 
-                         following=following_list)
+                         user_lists=user_lists)
 
 @app.route('/profile/edit', methods=['GET', 'POST'])
 @login_required
@@ -1766,6 +2032,95 @@ def search_list_users():
         } for user in users]
     })
 
+@app.route('/api/user/lists')
+@login_required
+def get_user_lists():
+    """Get user's lists for adding other users"""
+    lists = UserList.query.filter_by(user_id=current_user.id).all()
+    return jsonify([{
+        'id': lst.id,
+        'name': lst.name,
+        'description': lst.description,
+        'member_count': lst.members.count()
+    } for lst in lists])
+
+@app.route('/profile/<username>/followers')
+@login_required
+def profile_followers(username):
+    """Show user's followers"""
+    user = User.query.filter_by(username=username).first_or_404()
+    
+    if not current_user.can_interact_with(user):
+        flash('You cannot view this profile.', 'danger')
+        return redirect(url_for('feed'))
+    
+    followers = user.followers.all()
+    
+    return render_template('profile_followers.html', 
+                         user=user, 
+                         followers=followers)
+
+@app.route('/profile/<username>/following')
+@login_required
+def profile_following(username):
+    """Show users this user is following"""
+    user = User.query.filter_by(username=username).first_or_404()
+    
+    if not current_user.can_interact_with(user):
+        flash('You cannot view this profile.', 'danger')
+        return redirect(url_for('feed'))
+    
+    following = user.followed.all()
+    
+    return render_template('profile_following.html', 
+                         user=user, 
+                         following=following)
+
+
+
+@app.route('/api/search/live')
+@login_required
+def live_search():
+    """Live search API for autocomplete"""
+    query = request.args.get('q', '').strip()
+    
+    if len(query) < 2:
+        return jsonify({'users': [], 'hashtags': []})
+    
+    # Search users
+    users = User.query.filter(
+        User.username.contains(query),
+        User.id != current_user.id,
+        ~User.id.in_([b.id for b in current_user.blocked.all()]),
+        ~User.id.in_([b.id for b in current_user.blocked_by.all()])
+    ).limit(10).all()
+    
+    # Search hashtags
+    hashtags = Hashtag.query.filter(
+        Hashtag.tag.contains(query[1:] if query.startswith('#') else query)
+    ).order_by(Hashtag.count.desc()).limit(5).all()
+    
+    return jsonify({
+        'users': [{
+            'id': user.id,
+            'username': user.username,
+            'profile_picture': user.profile_picture,
+            'is_verified': user.is_verified,
+            'follower_count': user.followers.count()
+        } for user in users],
+        'hashtags': [{
+            'tag': hashtag.tag,
+            'count': hashtag.count
+        } for hashtag in hashtags]
+    })
+
+@app.route('/notifications/count')
+@login_required
+def notification_count():
+    """Get unread notification count"""
+    count = current_user.get_unread_notification_count()
+    return jsonify({'count': count})
+
 # Post Pinning Routes
 @app.route('/post/<int:post_id>/pin', methods=['POST'])
 @login_required
@@ -1807,6 +2162,981 @@ def pin_post(post_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+    
+    
+    
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin:
+            flash('You need admin privileges to access this page.', 'danger')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'mp4', 'mov', 'avi', 'mkv'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def extract_hashtags(content):
+    return re.findall(r'#(\w+)', content)
+
+def extract_mentions(content):
+    return re.findall(r'@(\w+)', content)
+
+def process_content(content):
+    if not content:
+        return ''
+    content = re.sub(r'#(\w+)', r'<a href="/hashtag/\1" class="text-primary hashtag">#\1</a>', content)
+    content = re.sub(r'@(\w+)', r'<a href="/profile/\1" class="text-info mention">@\1</a>', content)
+    return content
+
+def validate_password(password):
+    if len(password) < 8:
+        return "Password must be at least 8 characters long"
+    if not re.search(r'[A-Z]', password):
+        return "Password must contain at least one uppercase letter"
+    if not re.search(r'[a-z]', password):
+        return "Password must contain at least one lowercase letter"
+    if not re.search(r'\d', password):
+        return "Password must contain at least one number"
+    return None
+
+def validate_username(username):
+    if len(username) < 3 or len(username) > 30:
+        return "Username must be between 3 and 30 characters"
+    if not re.match(r'^[a-zA-Z0-9_]+$', username):
+        return "Username can only contain letters, numbers, and underscores"
+    return None
+
+# ============ CONTEXT PROCESSORS ============
+@app.context_processor
+def utility_processor():
+    def has_active_status(user_id):
+        """Check if a user has active status"""
+        if not user_id:
+            return False
+        return Status.query.filter(
+            Status.user_id == user_id,
+            Status.expires_at > datetime.utcnow()
+        ).count() > 0
+    
+    def get_active_status_count(user_id):
+        """Get count of active statuses for a user"""
+        if not user_id:
+            return 0
+        return Status.query.filter(
+            Status.user_id == user_id,
+            Status.expires_at > datetime.utcnow()
+        ).count()
+    
+    def get_user_avatar_url(user):
+        """Get user avatar URL with fallback"""
+        if user and user.profile_picture and user.profile_picture != 'default.jpg':
+            return url_for('static', filename='uploads/profiles/' + user.profile_picture)
+        elif user:
+            return f'https://ui-avatars.com/api/?name={user.username}&background=1d9bf0&color=fff'
+        return ''
+    
+    def get_followed_users_with_status(current_user):
+        """Get followed users with active statuses"""
+        if not current_user or not current_user.is_authenticated:
+            return []
+        
+        followed_users = current_user.followed.all()
+        users_with_status = []
+        
+        for user in followed_users:
+            active_statuses = Status.query.filter(
+                Status.user_id == user.id,
+                Status.expires_at > datetime.utcnow()
+            ).order_by(Status.created_at.desc()).all()
+            
+            if active_statuses:
+                viewed = StatusView.query.filter(
+                    StatusView.user_id == current_user.id,
+                    StatusView.status_id.in_([s.id for s in active_statuses])
+                ).first() is not None
+                
+                users_with_status.append({
+                    'user': user,
+                    'statuses': active_statuses,
+                    'viewed': viewed,
+                    'count': len(active_statuses)
+                })
+        
+        return users_with_status
+    
+    def get_status_stories_for_feed(current_user):
+        """Get status stories for the feed page"""
+        if not current_user or not current_user.is_authenticated:
+            return []
+        
+        followed_users = current_user.followed.all()
+        followed_ids = [u.id for u in followed_users] + [current_user.id]
+        
+        users_with_status = []
+        for user_id in followed_ids:
+            user = User.query.get(user_id)
+            if not user:
+                continue
+                
+            active_statuses = Status.query.filter(
+                Status.user_id == user_id,
+                Status.expires_at > datetime.utcnow()
+            ).order_by(Status.created_at.desc()).all()
+            
+            if active_statuses:
+                viewed_status_ids = [sv.status_id for sv in 
+                                   StatusView.query.filter_by(user_id=current_user.id).all()]
+                
+                users_with_status.append({
+                    'user': user,
+                    'statuses': active_statuses,
+                    'has_unviewed': any(s.id not in viewed_status_ids for s in active_statuses),
+                    'count': len(active_statuses)
+                })
+        
+        return users_with_status
+    
+    return dict(
+        has_active_status=has_active_status,
+        get_active_status_count=get_active_status_count,
+        get_user_avatar_url=get_user_avatar_url,
+        get_followed_users_with_status=get_followed_users_with_status,
+        get_status_stories_for_feed=get_status_stories_for_feed,
+        datetime=datetime
+    )
+
+# ============ BEFORE REQUEST ============
+@app.before_request
+def update_last_seen():
+    if current_user.is_authenticated:
+        current_user.last_seen = datetime.utcnow()
+        if current_user.is_online and (datetime.utcnow() - current_user.last_seen).seconds > 300:
+            current_user.is_online = False
+        db.session.commit()
+
+@app.before_request
+def cleanup_expired_statuses():
+    """Clean up expired statuses"""
+    Status.query.filter(Status.expires_at < datetime.utcnow()).delete(synchronize_session=False)
+    db.session.commit()
+
+# ============ REELS ROUTES ============
+@app.route('/reels')
+@login_required
+def reels_feed():
+    """Reels feed page"""
+    page = request.args.get('page', 1, type=int)
+    
+    followed_users = current_user.followed.all()
+    followed_ids = [u.id for u in followed_users] + [current_user.id]
+    
+    blocked_ids = [b.id for b in current_user.blocked.all()]
+    blocked_by_ids = [b.id for b in current_user.blocked_by.all()]
+    
+    reels_query = Reel.query.filter(
+        Reel.user_id.in_(followed_ids),
+        Reel.is_archived == False,
+        ~Reel.user_id.in_(blocked_ids),
+        ~Reel.user_id.in_(blocked_by_ids)
+    ).order_by(Reel.created_at.desc())
+    
+    reels = reels_query.paginate(page=page, per_page=10, error_out=False)
+    
+    trending_reels = Reel.query.filter(
+        Reel.is_archived == False,
+        ~Reel.user_id.in_(blocked_ids),
+        ~Reel.user_id.in_(blocked_by_ids)
+    ).order_by(Reel.views_count.desc(), Reel.likes_count.desc()).limit(5).all()
+    
+    return render_template('reels/feed.html', reels=reels, trending_reels=trending_reels)
+
+@app.route('/reels/upload', methods=['GET', 'POST'])
+@login_required
+def upload_reel():
+    """Upload a new reel"""
+    if request.method == 'POST':
+        video = request.files.get('video')
+        caption = request.form.get('caption', '').strip()
+        music = request.form.get('music', '').strip()
+        location = request.form.get('location', '').strip()
+        
+        if not video or not allowed_file(video.filename):
+            flash('Please upload a valid video file (MP4, MOV, AVI, MKV).', 'danger')
+            return redirect(request.url)
+        
+        filename = secure_filename(f"reel_{current_user.id}_{datetime.utcnow().timestamp()}_{video.filename}")
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'reels', filename)
+        video.save(filepath)
+        
+        thumbnail_filename = f"thumb_{filename.rsplit('.', 1)[0]}.jpg"
+        thumbnail_path = os.path.join(app.config['UPLOAD_FOLDER'], 'reel_thumbnails', thumbnail_filename)
+        
+        try:
+            from PIL import Image, ImageDraw
+            img = Image.new('RGB', (640, 1136), color=(73, 109, 137))
+            draw = ImageDraw.Draw(img)
+            draw.text((320, 568), "REEL", fill=(255, 255, 255))
+            img.save(thumbnail_path, 'JPEG')
+        except:
+            pass
+        
+        reel = Reel(
+            user_id=current_user.id,
+            video_url=filename,
+            thumbnail_url=thumbnail_filename,
+            caption=caption,
+            music=music,
+            location=location,
+            duration=15.0
+        )
+        
+        db.session.add(reel)
+        db.session.commit()
+        
+        flash('Reel uploaded successfully!', 'success')
+        return redirect(url_for('view_reel', reel_id=reel.id))
+    
+    return render_template('reels/upload.html')
+
+@app.route('/reel/<int:reel_id>')
+@login_required
+def view_reel(reel_id):
+    """View a single reel"""
+    reel = Reel.query.get_or_404(reel_id)
+    
+    if not current_user.can_interact_with(reel.user):
+        flash('You cannot view this reel.', 'danger')
+        return redirect(url_for('reels_feed'))
+    
+    existing_view = ReelView.query.filter_by(
+        user_id=current_user.id,
+        reel_id=reel_id
+    ).first()
+    
+    if not existing_view:
+        view = ReelView(user_id=current_user.id, reel_id=reel_id)
+        reel.views_count += 1
+        db.session.add(view)
+        db.session.commit()
+    else:
+        existing_view.created_at = datetime.utcnow()
+        db.session.commit()
+    
+    comments = ReelComment.query.filter_by(
+        reel_id=reel_id,
+        is_deleted=False
+    ).order_by(ReelComment.created_at.desc()).all()
+    
+    is_liked = ReelLike.query.filter_by(
+        user_id=current_user.id,
+        reel_id=reel_id
+    ).first() is not None
+    
+    suggested_reels = Reel.query.filter(
+        Reel.id != reel_id,
+        Reel.is_archived == False,
+        ~Reel.user_id.in_([b.id for b in current_user.blocked.all()])
+    ).order_by(func.random()).limit(5).all()
+    
+    return render_template('reels/view.html', 
+                         reel=reel, 
+                         comments=comments,
+                         is_liked=is_liked,
+                         suggested_reels=suggested_reels)
+
+@app.route('/reel/<int:reel_id>/like', methods=['POST'])
+@login_required
+def like_reel(reel_id):
+    """Like/unlike a reel"""
+    try:
+        reel = Reel.query.get_or_404(reel_id)
+        
+        existing_like = ReelLike.query.filter_by(
+            user_id=current_user.id,
+            reel_id=reel_id
+        ).first()
+        
+        if existing_like:
+            db.session.delete(existing_like)
+            reel.likes_count -= 1
+            liked = False
+        else:
+            like = ReelLike(user_id=current_user.id, reel_id=reel_id)
+            reel.likes_count += 1
+            db.session.add(like)
+            
+            if reel.user_id != current_user.id:
+                notif = Notification(
+                    user_id=reel.user_id,
+                    content=f"{current_user.username} liked your reel",
+                    link=f"/reel/{reel_id}",
+                    notification_type='reel_like'
+                )
+                db.session.add(notif)
+            liked = True
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'liked' if liked else 'unliked',
+            'likes_count': reel.likes_count
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/reel/<int:reel_id>/comment', methods=['POST'])
+@login_required
+def comment_reel(reel_id):
+    """Add comment to reel"""
+    try:
+        reel = Reel.query.get_or_404(reel_id)
+        content = request.form.get('content', '').strip()
+        
+        if not content:
+            return jsonify({'error': 'Comment cannot be empty'}), 400
+        
+        comment = ReelComment(
+            user_id=current_user.id,
+            reel_id=reel_id,
+            content=content
+        )
+        
+        reel.comments_count += 1
+        db.session.add(comment)
+        
+        if reel.user_id != current_user.id:
+            notif = Notification(
+                user_id=reel.user_id,
+                content=f"{current_user.username} commented on your reel",
+                link=f"/reel/{reel_id}",
+                notification_type='reel_comment'
+            )
+            db.session.add(notif)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'comment': {
+                'id': comment.id,
+                'content': content,
+                'created_at': comment.created_at.isoformat(),
+                'user': {
+                    'username': current_user.username,
+                    'profile_picture': current_user.profile_picture
+                }
+            },
+            'comments_count': reel.comments_count
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/reel/<int:reel_id>/share', methods=['POST'])
+@login_required
+def share_reel(reel_id):
+    """Share a reel"""
+    try:
+        reel = Reel.query.get_or_404(reel_id)
+        reel.shares_count += 1
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'shares_count': reel.shares_count
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/reel/<int:reel_id>/delete', methods=['POST'])
+@login_required
+def delete_reel(reel_id):
+    """Delete a reel"""
+    try:
+        reel = Reel.query.get_or_404(reel_id)
+        
+        if reel.user_id != current_user.id and not current_user.is_admin:
+            return jsonify({'error': 'You can only delete your own reels'}), 403
+        
+        reel.is_archived = True
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Reel deleted successfully'})
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# ============ STATUS ROUTES ============
+@app.route('/status/create', methods=['GET', 'POST'])
+@login_required
+def create_status():
+    """Create a new status"""
+    if request.method == 'POST':
+        media_type = request.form.get('media_type', 'text')
+        text = request.form.get('text', '').strip()
+        background_color = request.form.get('background_color', '#000000')
+        text_color = request.form.get('text_color', '#ffffff')
+        font_size = request.form.get('font_size', 24, type=int)
+        
+        media_url = None
+        if 'media' in request.files:
+            media = request.files['media']
+            if media and media.filename != '' and allowed_file(media.filename):
+                filename = secure_filename(f"status_{current_user.id}_{datetime.utcnow().timestamp()}_{media.filename}")
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'statuses', filename)
+                media.save(filepath)
+                media_url = filename
+        
+        expires_at = datetime.utcnow() + timedelta(hours=24)
+        
+        status = Status(
+            user_id=current_user.id,
+            media_type=media_type,
+            media_url=media_url,
+            text=text,
+            background_color=background_color,
+            text_color=text_color,
+            font_size=font_size,
+            expires_at=expires_at
+        )
+        
+        db.session.add(status)
+        db.session.commit()
+        
+        flash('Status created! It will expire in 24 hours.', 'success')
+        return redirect(url_for('feed'))
+    
+    return render_template('status/create.html')
+
+@app.route('/status/<int:status_id>')
+@login_required
+def view_status(status_id):
+    """View a status"""
+    status = Status.query.get_or_404(status_id)
+    
+    if status.expires_at < datetime.utcnow():
+        flash('This status has expired.', 'danger')
+        return redirect(url_for('feed'))
+    
+    existing_view = StatusView.query.filter_by(
+        user_id=current_user.id,
+        status_id=status_id
+    ).first()
+    
+    if not existing_view:
+        view = StatusView(user_id=current_user.id, status_id=status_id)
+        status.views_count += 1
+        db.session.add(view)
+        db.session.commit()
+    
+    next_statuses = Status.query.filter(
+        Status.user_id == status.user_id,
+        Status.id != status_id,
+        Status.expires_at > datetime.utcnow()
+    ).order_by(Status.created_at.asc()).all()
+    
+    return render_template('status/view.html', 
+                         status=status, 
+                         next_statuses=next_statuses)
+
+@app.route('/status/feed')
+@login_required
+def status_feed():
+    """View all statuses from followed users"""
+    followed_users = current_user.followed.all()
+    followed_ids = [u.id for u in followed_users] + [current_user.id]
+    
+    # Get sort parameter
+    sort_type = request.args.get('sort', 'newest')
+    
+    # Query statuses
+    query = Status.query.filter(
+        Status.user_id.in_(followed_ids),
+        Status.expires_at > datetime.utcnow()
+    )
+    
+    # Apply sorting
+    if sort_type == 'oldest':
+        query = query.order_by(Status.created_at.asc())
+    elif sort_type == 'most_views':
+        query = query.order_by(Status.views_count.desc())
+    else:  # newest
+        query = query.order_by(Status.created_at.desc())
+    
+    statuses = query.all()
+    
+    # Group statuses by user
+    statuses_by_user = {}
+    total_active_statuses = 0
+    total_views = 0
+    
+    for status in statuses:
+        if status.user_id not in statuses_by_user:
+            statuses_by_user[status.user_id] = []
+        statuses_by_user[status.user_id].append(status)
+        total_active_statuses += 1
+        total_views += status.views_count
+    
+    # Get viewed status IDs
+    viewed_status_ids = [sv.status_id for sv in 
+                        StatusView.query.filter_by(user_id=current_user.id).all()]
+    
+    # Get top viewers for current user's statuses
+    user_status_ids = [s.id for s in current_user.statuses]
+    top_viewers_query = StatusView.query.filter(
+        StatusView.status_id.in_(user_status_ids)
+    ).group_by(StatusView.user_id).order_by(db.func.count().desc()).limit(5).all()
+    
+    top_viewers = []
+    for viewer in top_viewers_query:
+        user = User.query.get(viewer.user_id)
+        if user:
+            view_count = StatusView.query.filter(
+                StatusView.user_id == viewer.user_id,
+                StatusView.status_id.in_(user_status_ids)
+            ).count()
+            top_viewers.append({
+                'user': user,
+                'view_count': view_count
+            })
+    
+    # Get recent viewers (last 5)
+    recent_viewers_query = StatusView.query.filter(
+        StatusView.status_id.in_(user_status_ids)
+    ).order_by(StatusView.viewed_at.desc()).limit(5).all()
+    
+    recent_viewers = []
+    for viewer in recent_viewers_query:
+        user = User.query.get(viewer.user_id)
+        if user and user.id != current_user.id:
+            recent_viewers.append({
+                'user': user,
+                'viewed_at': viewer.viewed_at
+            })
+    
+    # Calculate active statuses for current user
+    current_user_active_statuses = Status.query.filter(
+        Status.user_id == current_user.id,
+        Status.expires_at > datetime.utcnow()
+    ).count()
+    
+    # Calculate views for current user
+    current_user_views_today = StatusView.query.join(Status).filter(
+        Status.user_id == current_user.id,
+        StatusView.viewed_at >= datetime.utcnow().date()
+    ).count()
+    
+    current_user_total_views = StatusView.query.join(Status).filter(
+        Status.user_id == current_user.id
+    ).count()
+    
+    # Calculate days since joining
+    days_since_joining = (datetime.utcnow() - current_user.created_at).days
+    
+    # Calculate average daily views
+    avg_daily_views = 0
+    if days_since_joining > 0:
+        avg_daily_views = current_user_total_views / days_since_joining
+    
+    return render_template('status/feed.html',
+                         statuses_by_user=statuses_by_user,
+                         viewed_status_ids=viewed_status_ids,
+                         total_active_statuses=total_active_statuses,
+                         total_views=total_views,
+                         top_viewers=top_viewers,
+                         recent_viewers=recent_viewers,
+                         current_user_active_statuses=current_user_active_statuses,
+                         current_user_views_today=current_user_views_today,
+                         current_user_total_views=current_user_total_views,
+                         avg_daily_views=round(avg_daily_views, 2),
+                         days_since_joining=days_since_joining,
+                         sort_type=sort_type)
+            
+@app.route('/status/<int:status_id>/viewers')
+@login_required
+def status_viewers(status_id):
+    """Get list of users who viewed the status"""
+    status = Status.query.get_or_404(status_id)
+    
+    if status.user_id != current_user.id:
+        flash('You can only see viewers of your own status.', 'danger')
+        return redirect(url_for('feed'))
+    
+    viewers = User.query.join(StatusView).filter(
+        StatusView.status_id == status_id
+    ).order_by(StatusView.viewed_at.desc()).all()
+    
+    return render_template('status/viewers.html', status=status, viewers=viewers)
+
+@app.route('/status/<int:status_id>/delete', methods=['POST'])
+@login_required
+def delete_status(status_id):
+    """Delete a status"""
+    try:
+        status = Status.query.get_or_404(status_id)
+        
+        if status.user_id != current_user.id:
+            return jsonify({'error': 'You can only delete your own status'}), 403
+        
+        db.session.delete(status)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Status deleted successfully'})
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# ============ API ROUTES ============
+@app.route('/api/followers/status')
+@login_required
+def get_followers_status():
+    """Get active statuses from followed users"""
+    try:
+        followed_users = current_user.followed.all()
+        followed_ids = [u.id for u in followed_users]
+        
+        yesterday = datetime.utcnow() - timedelta(hours=24)
+        
+        statuses = Status.query.filter(
+            Status.user_id.in_(followed_ids),
+            Status.created_at > yesterday
+        ).order_by(Status.created_at.desc()).all()
+        
+        status_dict = {}
+        for status in statuses:
+            if status.user_id not in status_dict:
+                status_dict[status.user_id] = {
+                    'user': status.user,
+                    'statuses': [],
+                    'latest': status,
+                    'count': 0
+                }
+            status_dict[status.user_id]['statuses'].append(status)
+            status_dict[status.user_id]['count'] += 1
+        
+        viewed_status_ids = [sv.status_id for sv in 
+                           StatusView.query.filter_by(user_id=current_user.id).all()]
+        
+        result = []
+        for user_id, data in status_dict.items():
+            latest_status = data['statuses'][0]
+            result.append({
+                'id': latest_status.id,
+                'user': {
+                    'id': data['user'].id,
+                    'username': data['user'].username,
+                    'profile_picture': data['user'].profile_picture
+                },
+                'count': data['count'],
+                'created_at': latest_status.created_at.isoformat(),
+                'viewed': latest_status.id in viewed_status_ids
+            })
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/status/<int:status_id>')
+@login_required
+def get_status_api(status_id):
+    """Get status details"""
+    try:
+        status = Status.query.get_or_404(status_id)
+        
+        if status.expires_at < datetime.utcnow():
+            return jsonify({'error': 'Status has expired'}), 404
+        
+        user_statuses = Status.query.filter(
+            Status.user_id == status.user_id,
+            Status.expires_at > datetime.utcnow()
+        ).order_by(Status.created_at.desc()).all()
+        
+        status_data = {
+            'id': status.id,
+            'user': {
+                'id': status.user.id,
+                'username': status.user.username,
+                'profile_picture': status.user.profile_picture
+            },
+            'media_type': status.media_type,
+            'media_url': status.media_url,
+            'text': status.text,
+            'background_color': status.background_color,
+            'text_color': status.text_color,
+            'font_size': status.font_size,
+            'created_at': status.created_at.isoformat(),
+            'expires_at': status.expires_at.isoformat(),
+            'views_count': status.views_count,
+            'user_statuses': [
+                {
+                    'id': s.id,
+                    'media_type': s.media_type,
+                    'created_at': s.created_at.isoformat()
+                }
+                for s in user_statuses
+            ]
+        }
+        
+        return jsonify(status_data)
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/status/viewed/<int:status_id>', methods=['POST'])
+@login_required
+def mark_status_viewed_api(status_id):
+    """Mark a status as viewed"""
+    try:
+        status = Status.query.get_or_404(status_id)
+        
+        if status.expires_at < datetime.utcnow():
+            return jsonify({'error': 'Status has expired'}), 404
+        
+        existing_view = StatusView.query.filter_by(
+            user_id=current_user.id,
+            status_id=status_id
+        ).first()
+        
+        if not existing_view:
+            view = StatusView(user_id=current_user.id, status_id=status_id)
+            status.views_count += 1
+            db.session.add(view)
+            db.session.commit()
+        
+        return jsonify({'success': True, 'views_count': status.views_count})
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/reel/<int:reel_id>')
+@login_required
+def get_reel_api(reel_id):
+    """Get reel details"""
+    try:
+        reel = Reel.query.get_or_404(reel_id)
+        
+        if not current_user.can_interact_with(reel.user):
+            return jsonify({'error': 'Cannot view this reel'}), 403
+        
+        is_liked = ReelLike.query.filter_by(
+            user_id=current_user.id,
+            reel_id=reel_id
+        ).first() is not None
+        
+        reel_data = {
+            'id': reel.id,
+            'user': {
+                'id': reel.user.id,
+                'username': reel.user.username,
+                'profile_picture': reel.user.profile_picture
+            },
+            'video_url': reel.video_url,
+            'thumbnail_url': reel.thumbnail_url,
+            'caption': reel.caption,
+            'duration': reel.duration,
+            'music': reel.music,
+            'location': reel.location,
+            'views_count': reel.views_count,
+            'likes_count': reel.likes_count,
+            'comments_count': reel.comments_count,
+            'shares_count': reel.shares_count,
+            'created_at': reel.created_at.isoformat(),
+            'liked': is_liked
+        }
+        
+        return jsonify(reel_data)
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/reel/<int:reel_id>/viewed', methods=['POST'])
+@login_required
+def mark_reel_viewed_api(reel_id):
+    """Mark a reel as viewed"""
+    try:
+        reel = Reel.query.get_or_404(reel_id)
+        
+        existing_view = ReelView.query.filter_by(
+            user_id=current_user.id,
+            reel_id=reel_id
+        ).first()
+        
+        if not existing_view:
+            view = ReelView(user_id=current_user.id, reel_id=reel_id)
+            reel.views_count += 1
+            db.session.add(view)
+            db.session.commit()
+        
+        return jsonify({'success': True, 'views_count': reel.views_count})
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/reel/<int:reel_id>/comments')
+@login_required
+def get_reel_comments(reel_id):
+    """Get comments for a reel"""
+    try:
+        reel = Reel.query.get_or_404(reel_id)
+        
+        comments = ReelComment.query.filter_by(
+            reel_id=reel_id,
+            is_deleted=False
+        ).order_by(ReelComment.created_at.desc()).all()
+        
+        comments_data = []
+        for comment in comments:
+            comments_data.append({
+                'id': comment.id,
+                'content': comment.content,
+                'created_at': comment.created_at.isoformat(),
+                'user': {
+                    'id': comment.author.id,
+                    'username': comment.author.username,
+                    'profile_picture': comment.author.profile_picture
+                }
+            })
+        
+        return jsonify({'comments': comments_data})
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ============ UPDATED FEED ROUTE ============
+@app.route('/feed')
+@login_required
+def feed():
+    page = request.args.get('page', 1, type=int)
+    
+    followed_users = current_user.followed.all()
+    followed_ids = [u.id for u in followed_users] + [current_user.id]
+    
+    blocked_ids = [b.id for b in current_user.blocked.all()]
+    blocked_by_ids = [b.id for b in current_user.blocked_by.all()]
+    
+    posts_query = Post.query.filter(
+        Post.user_id.in_(followed_ids),
+        Post.is_deleted == False,
+        ~Post.user_id.in_(blocked_ids),
+        ~Post.user_id.in_(blocked_by_ids)
+    ).order_by(Post.created_at.desc())
+    
+    posts = posts_query.paginate(page=page, per_page=20, error_out=False)
+    
+    trending = Hashtag.query.order_by(Hashtag.count.desc(), Hashtag.last_used.desc()).limit(5).all()
+    
+    suggestions = User.query.filter(
+        User.id != current_user.id,
+        ~User.id.in_(followed_ids),
+        ~User.id.in_(blocked_ids),
+        ~User.id.in_(blocked_by_ids)
+    ).order_by(func.random()).limit(5).all()
+    
+    # Get status stories for feed
+    status_stories = get_status_stories_for_feed(current_user)
+    
+    # Calculate total active statuses count
+    total_active_statuses = 0
+    for story in status_stories:
+        total_active_statuses += story['count']
+    
+    # Check if we should show something special
+    show_special_status_section = total_active_statuses > 5
+    
+    return render_template('feed.html', 
+                         posts=posts, 
+                         trending=trending, 
+                         suggestions=suggestions,
+                         status_stories=status_stories,
+                         total_active_statuses=total_active_statuses,
+                         show_special_status_section=show_special_status_section)
+    
+def get_status_stories_for_feed(current_user):
+    """Helper function to get status stories"""
+    if not current_user or not current_user.is_authenticated:
+        return []
+    
+    followed_users = current_user.followed.all()
+    followed_ids = [u.id for u in followed_users] + [current_user.id]
+    
+    users_with_status = []
+    for user_id in followed_ids:
+        user = User.query.get(user_id)
+        if not user:
+            continue
+            
+        active_statuses = Status.query.filter(
+            Status.user_id == user_id,
+            Status.expires_at > datetime.utcnow()
+        ).order_by(Status.created_at.desc()).all()
+        
+        if active_statuses:
+            viewed_status_ids = [sv.status_id for sv in 
+                               StatusView.query.filter_by(user_id=current_user.id).all()]
+            
+            users_with_status.append({
+                'user': user,
+                'statuses': active_statuses,
+                'has_unviewed': any(s.id not in viewed_status_ids for s in active_statuses),
+                'count': len(active_statuses)
+            })
+    
+    return users_with_status
+
+# ============ TEMPLATE FILTERS ============
+@app.template_filter('process_content')
+def process_content_filter(content):
+    return process_content(content)
+
+@app.template_filter('time_ago')
+def time_ago_filter(dt):
+    now = datetime.utcnow()
+    diff = now - dt
+    
+    if diff.days > 365:
+        years = diff.days // 365
+        return f'{years}y'
+    elif diff.days > 30:
+        months = diff.days // 30
+        return f'{months}mo'
+    elif diff.days > 0:
+        return f'{diff.days}d'
+    elif diff.seconds > 3600:
+        hours = diff.seconds // 3600
+        return f'{hours}h'
+    elif diff.seconds > 60:
+        minutes = diff.seconds // 60
+        return f'{minutes}m'
+    else:
+        return 'Just now'
+
+@app.template_filter('format_datetime')
+def format_datetime_filter(dt):
+    return dt.strftime('%B %d, %Y at %I:%M %p')
+
+@app.template_filter('truncate')
+def truncate_filter(s, length=100):
+    if len(s) <= length:
+        return s
+    return s[:length] + '...'
+
 
 # Admin Panel Routes
 @app.route('/admin')
@@ -2015,14 +3345,13 @@ with app.app_context():
     if not admin:
         admin = User(
             username='admin', 
-            email='admin@twitterclone.com', 
+            email='admin@twit.com', 
             is_admin=True,
             is_verified=True
         )
         admin.set_password('Admin123!')
         db.session.add(admin)
         db.session.commit()
-        print("Default admin created: username='admin', password='Admin123!'")
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
