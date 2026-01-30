@@ -18,11 +18,15 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 
 
-# Create upload directories
+
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'profiles'), exist_ok=True)
 os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'posts'), exist_ok=True)
 os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'covers'), exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'statuses'), exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'reels'), exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'post_thumbnails'), exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'reel_thumbnails'), exist_ok=True)
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -631,41 +635,7 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-# @app.route('/feed')
-# @login_required
-# def feed():
-#     page = request.args.get('page', 1, type=int)
-    
-#     # Get users that current user follows
-#     followed_users = current_user.followed.all()
-#     followed_ids = [u.id for u in followed_users] + [current_user.id]
-    
-#     # Exclude blocked users
-#     blocked_users = [b.id for b in current_user.blocked.all()]
-#     blocked_by = [b.id for b in current_user.blocked_by.all()]
-    
-#     # Get posts from followed users, excluding blocked content
-#     posts_query = Post.query.filter(
-#         Post.user_id.in_(followed_ids),
-#         Post.is_deleted == False,
-#         ~Post.user_id.in_(blocked_users),
-#         ~Post.user_id.in_(blocked_by)
-#     ).order_by(Post.created_at.desc())
-    
-#     posts = posts_query.paginate(page=page, per_page=20, error_out=False)
-    
-#     # Get trending hashtags
-#     trending = Hashtag.query.order_by(Hashtag.count.desc(), Hashtag.last_used.desc()).limit(5).all()
-    
-#     # Get user suggestions (not followed, not blocked)
-#     suggestions = User.query.filter(
-#         User.id != current_user.id,
-#         ~User.id.in_(followed_ids),
-#         ~User.id.in_(blocked_users),
-#         ~User.id.in_(blocked_by)
-#     ).order_by(func.random()).limit(5).all()
-    
-#     return render_template('feed.html', posts=posts, trending=trending, suggestions=suggestions)
+
 
 @app.route('/post', methods=['POST'])
 @login_required
