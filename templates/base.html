@@ -442,7 +442,44 @@
             margin-left: 280px;
             padding: 20px;
         }
-        
+        .post-image img {
+            max-width: 100%;
+            max-height: 500px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        /* Profile pictures */
+        .profile-pic {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        /* Status images */
+        .status-image {
+            max-width: 100%;
+            max-height: 400px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+
+        /* For posts in feed */
+        .card img {
+            max-width: 100%;
+            max-height: 500px;
+            width: auto;
+            height: auto;
+            object-fit: cover;
+        }
         /* Responsive Design */
         @media (max-width: 768px) {
             .mobile-bottom-nav {
@@ -940,6 +977,59 @@
             color: rgba(255,255,255,0.8);
         }
         
+        .status-preview-image {
+            max-width: 100% !important;
+            max-height: 200px !important;
+            width: auto !important;
+            height: auto !important;
+            object-fit: cover !important;
+            border-radius: 8px;
+        }
+
+        .status-story-avatar {
+            width: 90px !important;
+            height: 90px !important;
+            object-fit: cover !important;
+        }
+
+        .profile-img-with-ring {
+            width: 48px !important;
+            height: 48px !important;
+            object-fit: cover !important;
+        }
+
+        /* Ensure all images in status sections are constrained */
+        .status-preview-card img {
+            max-width: 100% !important;
+            max-height: 200px !important;
+        }
+
+        /* For the single status view page */
+        .status-image-full {
+            max-width: 100% !important;
+            max-height: 500px !important;
+            width: auto !important;
+            height: auto !important;
+            object-fit: contain !important;
+            margin: 0 auto;
+            display: block;
+        }
+
+        /* For media statuses in grid */
+        .status-grid img {
+            max-width: 100% !important;
+            max-height: 200px !important;
+            object-fit: cover !important;
+        }
+
+        /* Force resize all images in status feed */
+        #status-feed img,
+        .status-stories-bar img,
+        .status-feed-container img {
+            max-width: 100% !important;
+            height: auto !important;
+        }
+
         /* Status Indicators */
         .has-status-indicator {
             position: relative;
@@ -2338,7 +2428,28 @@
             // Add any initialization code here
             console.log('Chatter initialized successfully');
         });
-        
+
+        // Handle image loading errors
+        document.addEventListener('DOMContentLoaded', function() {
+            const images = document.querySelectorAll('img');
+            
+            images.forEach(img => {
+                img.addEventListener('error', function() {
+                    // Replace broken image with placeholder
+                    if (this.classList.contains('profile-pic')) {
+                        this.src = 'https://ui-avatars.com/api/?name=' + (this.alt || 'User') + '&background=1d9bf0&color=fff&size=150';
+                    } else {
+                        this.src = '{{ url_for("static", filename="img/placeholder.jpg") }}';
+                    }
+                });
+                
+                // Lazy loading
+                if ('loading' in HTMLImageElement.prototype) {
+                    img.loading = 'lazy';
+                }
+            });
+        });
+                
     </script>
 
     {% block scripts %}{% endblock %}

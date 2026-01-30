@@ -1,0 +1,174 @@
+<!-- templates/sidebar.html -->
+<div class="sidebar">
+    <!-- Trending Section -->
+    {% if trending and trending|length > 0 %}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom">
+            <h6 class="mb-0 fw-bold">Trending Now</h6>
+        </div>
+        <div class="card-body p-0">
+            {% for hashtag in trending[:5] %}
+            <a href="{{ url_for('hashtag', tag=hashtag.tag) }}" 
+               class="d-block p-3 border-bottom text-decoration-none hover-bg">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="fw-bold text-dark">#{{ hashtag.tag }}</div>
+                        <small class="text-muted">{{ hashtag.count }} posts</small>
+                    </div>
+                    <i class="fas fa-chevron-right text-muted"></i>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Who to Follow -->
+    {% if suggestions and suggestions|length > 0 %}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom">
+            <h6 class="mb-0 fw-bold">Who to Follow</h6>
+        </div>
+        <div class="card-body p-0">
+            {% for user in suggestions[:3] %}
+            <div class="p-3 border-bottom">
+                <div class="d-flex align-items-center">
+                    <div class="position-relative me-3">
+                        <div class="status-ring small"></div>
+                        <img src="{{ get_user_avatar_url(user) }}" 
+                             class="rounded-circle"
+                             width="48"
+                             height="48"
+                             alt="{{ user.username }}"
+                             onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff&size=48'">
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold text-dark">{{ user.username }}</div>
+                                <small class="text-muted">@{{ user.username }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-outline-primary btn-sm follow-btn ms-2" 
+                            data-user-id="{{ user.id }}">Follow</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Links -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="d-grid gap-2">
+                <a href="{{ url_for('trending') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-chart-line me-2"></i>Trending
+                </a>
+                <a href="{{ url_for('lists') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-list me-2"></i>Lists
+                </a>
+                <a href="{{ url_for('bookmarks') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-bookmark me-2"></i>Bookmarks
+                </a>
+                <a href="{{ url_for('reels_feed') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-play-circle me-2"></i>Reels
+                </a>
+            </div>
+        </div>
+    </div>
+
+  
+</div>
+
+<style>
+.sidebar {
+    position: sticky;
+    top: 80px;
+    margin-left: 20px;
+}
+
+.status-ring.small {
+    width: 54px;
+    height: 54px;
+    top: -3px;
+    left: -3px;
+    border-width: 2px;
+}
+
+.hover-bg {
+    transition: background-color 0.15s ease;
+}
+
+.hover-bg:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.btn-outline-primary {
+    border-color: #1d9bf0;
+    color: #1d9bf0;
+}
+
+.btn-outline-primary:hover {
+    background-color: #1d9bf0;
+    border-color: #1d9bf0;
+}
+
+.card {
+    border-radius: 12px;
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 8px;
+}
+</style>
+
+<script>
+$(document).ready(function() {
+    $('.follow-btn').click(function(e) {
+        e.preventDefault();
+        const button = $(this);
+        const userId = button.data('user-id');
+        
+        // Disable button during request
+        button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>');
+        
+        $.ajax({
+            url: '/follow/' + userId,
+            method: 'POST',
+            contentType: 'application/json',
+            headers: {
+                'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                if (response.status === 'followed') {
+                    button.removeClass('btn-outline-primary')
+                          .addClass('btn-primary')
+                          .text('Following');
+                } else {
+                    button.removeClass('btn-primary')
+                          .addClass('btn-outline-primary')
+                          .text('Follow');
+                }
+            },
+            error: function(xhr) {
+                console.error('Follow error:', xhr);
+                button.removeClass('btn-primary')
+                      .addClass('btn-outline-primary')
+                      .text('Follow');
+                if (xhr.status === 403) {
+                    alert('You cannot follow this user.');
+                } else {
+                    alert('An error occurred. Please try again.');
+                }
+            },
+            complete: function() {
+                button.prop('disabled', false);
+            }
+        });
+    });
+});
+</script>

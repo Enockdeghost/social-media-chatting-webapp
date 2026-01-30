@@ -366,17 +366,7 @@
                         </div>
                     </div>
                     
-                    <div class="status-stats-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <small class="text-muted d-block">Avg Daily Views</small>
-                                <span class="status-stats-number">{{ avg_daily_views }}</span>
-                            </div>
-                            <div class="bg-warning bg-opacity-10 rounded-circle p-2">
-                                <i class="fas fa-calendar-alt text-warning"></i>
-                            </div>
-                        </div>
-                    </div>
+                    
                 </div>
                 <div class="card-footer bg-transparent text-center">
                     <a href="{{ url_for('create_status') }}" class="btn btn-primary btn-sm w-100">
@@ -641,7 +631,7 @@
             <!-- Quick Create -->
             <div class="card glass-effect mb-4">
                 <div class="card-header bg-transparent">
-                    <h5 class="mb-0"><i class="fas fa-bolt me-2 text-warning"></i>Quick Create</h5>
+                    <h5 class="mb-0">Quick Create</h5>
                 </div>
                 <div class="card-body">
                     <button class="btn btn-outline-primary w-100 mb-2" onclick="quickStatus('text')">
@@ -656,41 +646,7 @@
                 </div>
             </div>
             
-            <!-- Status Tips -->
-            <div class="card glass-effect mb-4">
-                <div class="card-header bg-transparent">
-                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2 text-warning"></i>Status Tips</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex mb-3">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-clock text-primary"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="small mb-1">24 Hour Limit</h6>
-                            <p class="text-muted small mb-0">Statuses disappear after 24 hours</p>
-                        </div>
-                    </div>
-                    <div class="d-flex mb-3">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-eye text-success"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="small mb-1">View Tracking</h6>
-                            <p class="text-muted small mb-0">See who viewed your status</p>
-                        </div>
-                    </div>
-                    <div class="d-flex">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-users text-info"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="small mb-1">Privacy First</h6>
-                            <p class="text-muted small mb-0">Only followers can see your status</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            
             
             <!-- Suggested Users with Status -->
             <div class="card glass-effect">
