@@ -902,6 +902,273 @@
         padding: 15px;
     }
 }
+/* Add these responsive styles at the end of your existing CSS */
+
+/* Phone-specific adjustments */
+@media (max-width: 768px) {
+    .feed-container {
+        padding: 0 10px;
+    }
+    
+    /* Reduce story sizes on mobile */
+    .stories-container {
+        padding: 15px 10px;
+    }
+    
+    .story-avatar {
+        width: 50px !important;
+        height: 50px !important;
+    }
+    
+    .story-image {
+        width: 100%;
+        height: 100%;
+    }
+    
+    .add-story {
+        width: 20px !important;
+        height: 20px !important;
+        font-size: 10px;
+    }
+    
+    .story-count {
+        font-size: 10px;
+        width: 18px;
+        height: 18px;
+        top: -3px;
+        right: -3px;
+    }
+    
+    .story-username {
+        font-size: 10px;
+        max-width: 50px;
+    }
+    
+    /* Reduce create post card size */
+    .create-post-card {
+        padding: 12px !important;
+    }
+    
+    .post-avatar img {
+        width: 40px !important;
+        height: 40px !important;
+    }
+    
+    .post-textarea {
+        font-size: 14px;
+        min-height: 50px;
+    }
+    
+    .action-buttons {
+        gap: 10px !important;
+    }
+    
+    .action-btn {
+        font-size: 16px !important;
+    }
+    
+    .char-counter {
+        font-size: 12px;
+        margin-right: 10px !important;
+    }
+    
+    .btn-primary {
+        padding: 6px 16px !important;
+        font-size: 14px;
+    }
+    
+    /* Reduce feed filter sizes */
+    .feed-filters .nav-link {
+        padding: 8px 12px !important;
+        font-size: 13px;
+    }
+    
+    .feed-sort .form-select {
+        max-width: 120px !important;
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+    
+    /* Adjust empty feed state */
+    .empty-feed {
+        padding: 30px 20px !important;
+    }
+    
+    .empty-feed .btn {
+        font-size: 14px;
+        padding: 8px 16px;
+    }
+    
+    /* Adjust post content padding */
+    .post-card {
+        padding: 12px !important;
+    }
+    
+    .post-header img {
+        width: 35px !important;
+        height: 35px !important;
+    }
+    
+    .post-username {
+        font-size: 14px !important;
+    }
+    
+    .post-time {
+        font-size: 11px !important;
+    }
+    
+    /* Reduce action button sizes in posts */
+    .post-actions .btn {
+        font-size: 12px !important;
+        padding: 4px 8px !important;
+    }
+    
+    .post-actions .btn i {
+        font-size: 14px !important;
+    }
+    
+    /* Adjust sticky sidebar for mobile */
+    .sticky-sidebar {
+        position: static !important;
+        height: auto !important;
+        padding-right: 0 !important;
+    }
+    
+    /* Reduce font sizes for better fit */
+    h5, h6 {
+        font-size: 0.9rem;
+    }
+    
+    p, span, small {
+        font-size: 0.85rem;
+    }
+}
+
+/* Extra small devices (phones less than 576px) */
+@media (max-width: 576px) {
+    .story-avatar {
+        width: 45px !important;
+        height: 45px !important;
+    }
+    
+    .stories-scroll {
+        gap: 12px !important;
+    }
+    
+    .post-avatar img {
+        width: 35px !important;
+        height: 35px !important;
+    }
+    
+    .post-textarea {
+        font-size: 13px;
+        min-height: 45px;
+    }
+    
+    .action-btn {
+        font-size: 14px !important;
+    }
+    
+    .feed-filters .nav-link {
+        padding: 6px 10px !important;
+        font-size: 12px;
+    }
+    
+    .feed-sort .form-select {
+        max-width: 100px !important;
+        font-size: 11px;
+    }
+    
+    /* Make load more button smaller */
+    .btn-outline-primary {
+        padding: 6px 20px !important;
+        font-size: 13px;
+    }
+    
+    /* Reduce margins and padding */
+    .mb-4 {
+        margin-bottom: 1rem !important;
+    }
+    
+    .p-3 {
+        padding: 1rem !important;
+    }
+    
+    .py-5 {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+    }
+    
+    /* Adjust gap between elements */
+    .gap-3 {
+        gap: 0.75rem !important;
+    }
+}
+
+/* Very small devices (phones less than 400px) */
+@media (max-width: 400px) {
+    .story-avatar {
+        width: 40px !important;
+        height: 40px !important;
+    }
+    
+    .stories-scroll {
+        gap: 10px !important;
+    }
+    
+    .story-username {
+        font-size: 9px;
+        max-width: 40px;
+    }
+    
+    .create-post-card {
+        padding: 10px !important;
+    }
+    
+    .post-avatar img {
+        width: 30px !important;
+        height: 30px !important;
+    }
+    
+    .post-textarea {
+        font-size: 12px;
+        min-height: 40px;
+    }
+    
+    .feed-filters .nav-link {
+        padding: 5px 8px !important;
+        font-size: 11px;
+    }
+    
+    .feed-sort .form-select {
+        max-width: 90px !important;
+        font-size: 10px;
+    }
+    
+    .empty-feed {
+        padding: 20px 15px !important;
+    }
+    
+    .empty-feed h5 {
+        font-size: 1rem;
+    }
+    
+    .empty-feed p {
+        font-size: 0.8rem;
+    }
+    
+    .empty-feed .btn {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+    
+    /* Stack buttons vertically on very small screens */
+    .d-flex.justify-content-center.gap-3 {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px !important;
+    }
+}
 </style>
 
 <script>
