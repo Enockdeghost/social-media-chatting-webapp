@@ -48,8 +48,7 @@
                 <div class="nav-card mb-4 glass-effect">
                     <h6 class="sidebar-title mb-3">Navigation</h6>
                     <div class="nav-menu">
-                        <a href="{{ url_for('profile', username=current_user.username) }}" 
-                           class="nav-item active hover-lift">
+                        <a href="{{ url_for('feed') }}" class="nav-item active hover-lift">
                             <i class="fas fa-home"></i>
                             <span>Home</span>
                         </a>
@@ -173,7 +172,7 @@
                              alt="{{ current_user.username }}">
                     </div>
                     <div class="post-content flex-grow-1">
-                        <form method="POST" action="{{ url_for('create_post') }}" enctype="multipart/form-data">
+                        <form method="POST" action="{{ url_for('create_post') }}" enctype="multipart/form-data" id="postForm">
                             <textarea name="content" 
                                       class="post-textarea" 
                                       placeholder="What's happening?" 
@@ -194,15 +193,9 @@
                                         <i class="fas fa-image text-primary"></i>
                                         <input type="file" name="image" id="image-input" accept="image/*" class="d-none" onchange="previewImage(event)">
                                     </label>
-                                    <label class="action-btn" data-bs-toggle="tooltip" title="Add GIF">
-                                        <i class="fas fa-film text-success"></i>
-                                    </label>
-                                    <label class="action-btn" data-bs-toggle="tooltip" title="Add Poll">
+                                    <button type="button" class="action-btn" data-bs-toggle="tooltip" title="Add Poll" onclick="togglePollCreator()">
                                         <i class="fas fa-chart-pie text-warning"></i>
-                                    </label>
-                                    <label class="action-btn" data-bs-toggle="tooltip" title="Add Emoji">
-                                        <i class="far fa-smile text-info"></i>
-                                    </label>
+                                    </button>
                                 </div>
                                 <div class="d-flex align-items-center">
                                     <span class="char-counter me-3">0/280</span>
@@ -212,6 +205,108 @@
                                 </div>
                             </div>
                         </form>
+
+                        <!-- Poll Creation Container (hidden by default) -->
+                        <div id="pollCreationContainer" class="d-none mt-3">
+                            <div class="border rounded-3 p-3 glass-effect">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Create Poll</h6>
+                                    <button type="button" class="btn-close btn-close-white" onclick="closePollCreator()"></button>
+                                </div>
+                                
+                                <!-- Poll Configuration -->
+                                <div class="poll-config mb-4">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Poll Title</label>
+                                            <input type="text" 
+                                                   class="form-control form-control-sm" 
+                                                   id="pollTitle"
+                                                   name="poll_title"
+                                                   placeholder="What's your poll about?"
+                                                   required>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-bold">Type</label>
+                                            <select class="form-select form-select-sm" id="pollType" name="poll_type">
+                                                <option value="single_choice">Single Choice</option>
+                                                <option value="multiple_choice">Multiple Choice</option>
+                                                <option value="quiz">Quiz</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-bold">Duration</label>
+                                            <select class="form-select form-select-sm" id="pollDuration" name="poll_duration">
+                                                <option value="1">1 hour</option>
+                                                <option value="3">3 hours</option>
+                                                <option value="6">6 hours</option>
+                                                <option value="12">12 hours</option>
+                                                <option value="24" selected>24 hours</option>
+                                                <option value="48">2 days</option>
+                                                <option value="72">3 days</option>
+                                                <option value="168">7 days</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-bold">Questions</label>
+                                            <select class="form-select form-select-sm" id="maxQuestions">
+                                                <option value="1">1 Question</option>
+                                                <option value="2" selected>2 Questions</option>
+                                                <option value="3">3 Questions</option>
+                                                <option value="4">4 Questions</option>
+                                                <option value="5">5 Questions</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-bold">Options per Q</label>
+                                            <select class="form-select form-select-sm" id="maxOptionsPerQuestion">
+                                                <option value="2">2 Options</option>
+                                                <option value="3">3 Options</option>
+                                                <option value="4" selected>4 Options</option>
+                                                <option value="5">5 Options</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">&nbsp;</label>
+                                            <div class="d-flex gap-2 mt-1">
+                                                <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1" onclick="addQuestion()">
+                                                    <i class="fas fa-plus me-1"></i>Add Question
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1" onclick="resetPollForm()">
+                                                    <i class="fas fa-redo me-1"></i>Reset
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Questions Container -->
+                                <div id="questionsContainer" class="mb-3">
+                                    <!-- Questions will be added here dynamically -->
+                                </div>
+                                
+                                <!-- Poll Actions -->
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="previewPoll()">
+                                        <i class="fas fa-eye me-1"></i>Preview
+                                    </button>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-sm btn-secondary" onclick="closePollCreator()">
+                                            Cancel
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="submitPollForm()">
+                                            <i class="fas fa-check me-1"></i>Add to Post
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Hidden field to indicate poll exists -->
+                                <input type="hidden" name="has_poll" id="hasPoll" value="false">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -376,6 +471,7 @@
                         <a href="#" class="text-muted small">Help Center</a>
                         <a href="#" class="text-muted small">Terms</a>
                         <a href="#" class="text-muted small">Privacy</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -669,11 +765,41 @@
     font-size: 18px;
     transition: transform 0.2s;
     color: var(--text-muted);
+    background: none;
+    border: none;
+    padding: 0;
 }
 
 .action-btn:hover {
     transform: scale(1.1);
     color: var(--primary-color);
+}
+
+/* Poll Container */
+#pollCreationContainer {
+    animation: slideInDown 0.3s ease;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.question-card {
+    border-left: 4px solid var(--primary-color);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.question-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 /* Trending, Follow, Online Cards */
@@ -901,277 +1027,45 @@
     .create-post-card {
         padding: 15px;
     }
-}
-/* Add these responsive styles at the end of your existing CSS */
-
-/* Phone-specific adjustments */
-@media (max-width: 768px) {
-    .feed-container {
-        padding: 0 10px;
-    }
-    
-    /* Reduce story sizes on mobile */
-    .stories-container {
-        padding: 15px 10px;
-    }
-    
-    .story-avatar {
-        width: 50px !important;
-        height: 50px !important;
-    }
-    
-    .story-image {
-        width: 100%;
-        height: 100%;
-    }
-    
-    .add-story {
-        width: 20px !important;
-        height: 20px !important;
-        font-size: 10px;
-    }
-    
-    .story-count {
-        font-size: 10px;
-        width: 18px;
-        height: 18px;
-        top: -3px;
-        right: -3px;
-    }
-    
-    .story-username {
-        font-size: 10px;
-        max-width: 50px;
-    }
-    
-    /* Reduce create post card size */
-    .create-post-card {
-        padding: 12px !important;
-    }
     
     .post-avatar img {
-        width: 40px !important;
-        height: 40px !important;
+        width: 40px;
+        height: 40px;
+    }
+    
+    .poll-config .row {
+        flex-direction: column;
+    }
+    
+    .poll-config .col-md-6,
+    .poll-config .col-md-3 {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 576px) {
+    .story-avatar {
+        width: 50px;
+        height: 50px;
     }
     
     .post-textarea {
         font-size: 14px;
-        min-height: 50px;
     }
     
     .action-buttons {
-        gap: 10px !important;
+        gap: 10px;
     }
     
     .action-btn {
-        font-size: 16px !important;
-    }
-    
-    .char-counter {
-        font-size: 12px;
-        margin-right: 10px !important;
-    }
-    
-    .btn-primary {
-        padding: 6px 16px !important;
-        font-size: 14px;
-    }
-    
-    /* Reduce feed filter sizes */
-    .feed-filters .nav-link {
-        padding: 8px 12px !important;
-        font-size: 13px;
-    }
-    
-    .feed-sort .form-select {
-        max-width: 120px !important;
-        font-size: 12px;
-        padding: 4px 8px;
-    }
-    
-    /* Adjust empty feed state */
-    .empty-feed {
-        padding: 30px 20px !important;
-    }
-    
-    .empty-feed .btn {
-        font-size: 14px;
-        padding: 8px 16px;
-    }
-    
-    /* Adjust post content padding */
-    .post-card {
-        padding: 12px !important;
-    }
-    
-    .post-header img {
-        width: 35px !important;
-        height: 35px !important;
-    }
-    
-    .post-username {
-        font-size: 14px !important;
-    }
-    
-    .post-time {
-        font-size: 11px !important;
-    }
-    
-    /* Reduce action button sizes in posts */
-    .post-actions .btn {
-        font-size: 12px !important;
-        padding: 4px 8px !important;
-    }
-    
-    .post-actions .btn i {
-        font-size: 14px !important;
-    }
-    
-    /* Adjust sticky sidebar for mobile */
-    .sticky-sidebar {
-        position: static !important;
-        height: auto !important;
-        padding-right: 0 !important;
-    }
-    
-    /* Reduce font sizes for better fit */
-    h5, h6 {
-        font-size: 0.9rem;
-    }
-    
-    p, span, small {
-        font-size: 0.85rem;
-    }
-}
-
-/* Extra small devices (phones less than 576px) */
-@media (max-width: 576px) {
-    .story-avatar {
-        width: 45px !important;
-        height: 45px !important;
-    }
-    
-    .stories-scroll {
-        gap: 12px !important;
-    }
-    
-    .post-avatar img {
-        width: 35px !important;
-        height: 35px !important;
-    }
-    
-    .post-textarea {
-        font-size: 13px;
-        min-height: 45px;
-    }
-    
-    .action-btn {
-        font-size: 14px !important;
-    }
-    
-    .feed-filters .nav-link {
-        padding: 6px 10px !important;
-        font-size: 12px;
-    }
-    
-    .feed-sort .form-select {
-        max-width: 100px !important;
-        font-size: 11px;
-    }
-    
-    /* Make load more button smaller */
-    .btn-outline-primary {
-        padding: 6px 20px !important;
-        font-size: 13px;
-    }
-    
-    /* Reduce margins and padding */
-    .mb-4 {
-        margin-bottom: 1rem !important;
-    }
-    
-    .p-3 {
-        padding: 1rem !important;
-    }
-    
-    .py-5 {
-        padding-top: 2rem !important;
-        padding-bottom: 2rem !important;
-    }
-    
-    /* Adjust gap between elements */
-    .gap-3 {
-        gap: 0.75rem !important;
-    }
-}
-
-/* Very small devices (phones less than 400px) */
-@media (max-width: 400px) {
-    .story-avatar {
-        width: 40px !important;
-        height: 40px !important;
-    }
-    
-    .stories-scroll {
-        gap: 10px !important;
-    }
-    
-    .story-username {
-        font-size: 9px;
-        max-width: 40px;
-    }
-    
-    .create-post-card {
-        padding: 10px !important;
-    }
-    
-    .post-avatar img {
-        width: 30px !important;
-        height: 30px !important;
-    }
-    
-    .post-textarea {
-        font-size: 12px;
-        min-height: 40px;
-    }
-    
-    .feed-filters .nav-link {
-        padding: 5px 8px !important;
-        font-size: 11px;
-    }
-    
-    .feed-sort .form-select {
-        max-width: 90px !important;
-        font-size: 10px;
-    }
-    
-    .empty-feed {
-        padding: 20px 15px !important;
-    }
-    
-    .empty-feed h5 {
-        font-size: 1rem;
-    }
-    
-    .empty-feed p {
-        font-size: 0.8rem;
-    }
-    
-    .empty-feed .btn {
-        font-size: 12px;
-        padding: 6px 12px;
-    }
-    
-    /* Stack buttons vertically on very small screens */
-    .d-flex.justify-content-center.gap-3 {
-        flex-direction: column;
-        align-items: center;
-        gap: 10px !important;
+        font-size: 16px;
     }
 }
 </style>
 
 <script>
+// Basic Post Functions
 function previewImage(event) {
     const input = event.target;
     const preview = document.getElementById('preview-image');
@@ -1249,95 +1143,50 @@ document.querySelectorAll('.follow-btn').forEach(button => {
     });
 });
 
+// Show toast notification
 function showToast(message, type = 'info') {
-    // Create toast element
     const toast = document.createElement('div');
-    toast.className = `toast-alert toast-${type}`;
-    toast.textContent = message;
-    
-    // Style toast
+    toast.className = 'toast-notification';
     toast.style.cssText = `
         position: fixed;
-        top: 20px;
+        top: 80px;
         right: 20px;
         padding: 12px 20px;
         border-radius: 8px;
+        background: ${type === 'success' ? 'var(--primary-color)' : type === 'error' ? '#f4212e' : type === 'warning' ? '#ffa502' : 'var(--primary-color)'};
         color: white;
         z-index: 10000;
         animation: slideIn 0.3s ease;
         font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     `;
     
-    if (type === 'success') {
-        toast.style.background = 'var(--primary-color)';
-    } else if (type === 'error') {
-        toast.style.background = '#f4212e';
-    } else {
-        toast.style.background = 'var(--primary-color)';
-    }
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+        ${message}
+    `;
     
     document.body.appendChild(toast);
     
-    // Add animation
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // Remove after 3 seconds
     setTimeout(() => {
         toast.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => {
-            toast.remove();
-            style.remove();
-        }, 300);
+        setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
 
-// Tab switching for feed filters
-document.querySelectorAll('.feed-filters .nav-link').forEach(tab => {
-    tab.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        // Remove active class from all tabs
-        document.querySelectorAll('.feed-filters .nav-link').forEach(t => {
-            t.classList.remove('active');
-        });
-        
-        // Add active class to clicked tab
-        this.classList.add('active');
-        
-        // Here you would typically load different feed content
-        const feedType = this.dataset.feedType;
-        console.log(`Switching to ${feedType} feed`);
-        
-        // You would make an AJAX call here to load the appropriate feed
-        // loadFeed(feedType);
-    });
-});
-
-// Search functionality
-const searchInput = document.querySelector('.search-box input');
-if (searchInput) {
-    let searchTimeout;
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            if (this.value.length > 2) {
-                // You can add live search functionality here
-                console.log(`Searching for: ${this.value}`);
-            }
-        }, 500);
-    });
-}
+// Add animation keyframes
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
 
 // Auto-resize textarea
 function autoResize(textarea) {
@@ -1345,14 +1194,448 @@ function autoResize(textarea) {
     textarea.style.height = textarea.scrollHeight + 'px';
 }
 
-const postTextarea = document.querySelector('.post-textarea');
-if (postTextarea) {
-    postTextarea.addEventListener('input', function() {
+if (textarea) {
+    textarea.addEventListener('input', function() {
         autoResize(this);
     });
+    autoResize(textarea);
+}
+
+// ============ POLL FUNCTIONALITY ============
+let currentQuestions = 2;
+let maxQuestions = 10;
+let maxOptions = 4;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Generate initial questions
+    generateQuestions();
     
-    // Initial resize
-    autoResize(postTextarea);
+    // Listen for configuration changes
+    document.getElementById('maxQuestions').addEventListener('change', function() {
+        maxQuestions = parseInt(this.value);
+        generateQuestions();
+    });
+    
+    document.getElementById('maxOptionsPerQuestion').addEventListener('change', function() {
+        maxOptions = parseInt(this.value);
+        updateOptionLimits();
+    });
+});
+
+// Toggle poll creator visibility
+function togglePollCreator() {
+    const pollContainer = document.getElementById('pollCreationContainer');
+    const hasPollInput = document.getElementById('hasPoll');
+    
+    if (pollContainer.classList.contains('d-none')) {
+        pollContainer.classList.remove('d-none');
+        hasPollInput.value = 'true';
+        
+        // Scroll to poll section
+        setTimeout(() => {
+            pollContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    } else {
+        closePollCreator();
+    }
+}
+
+function closePollCreator() {
+    document.getElementById('pollCreationContainer').classList.add('d-none');
+    document.getElementById('hasPoll').value = 'false';
+}
+
+// Generate initial questions
+function generateQuestions() {
+    const container = document.getElementById('questionsContainer');
+    const questionCount = parseInt(document.getElementById('maxQuestions').value);
+    container.innerHTML = '';
+    
+    for (let i = 1; i <= questionCount; i++) {
+        container.appendChild(createQuestionCard(i));
+    }
+    currentQuestions = questionCount;
+}
+
+// Create a question card
+function createQuestionCard(questionNumber) {
+    const maxOptions = parseInt(document.getElementById('maxOptionsPerQuestion').value);
+    
+    const questionCard = document.createElement('div');
+    questionCard.className = 'question-card card border-0 mb-3';
+    questionCard.innerHTML = `
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <span class="badge bg-primary me-2">Q${questionNumber}</span>
+                <h6 class="mb-0">Question ${questionNumber}</h6>
+            </div>
+            ${questionNumber > 1 ? `
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeQuestion(${questionNumber})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            ` : ''}
+        </div>
+        
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Question Text</label>
+                <input type="text" 
+                       class="form-control form-control-sm question-text" 
+                       name="question_${questionNumber}_text"
+                       placeholder="Enter your question..."
+                       maxlength="500"
+                       required>
+            </div>
+            
+            <div class="options-container" id="optionsContainer_${questionNumber}">
+                <label class="form-label small fw-bold">Options</label>
+            </div>
+            
+            <button type="button" 
+                    class="btn btn-sm btn-outline-primary mt-2"
+                    onclick="addOption(${questionNumber})">
+                <i class="fas fa-plus me-1"></i>Add Option
+            </button>
+        </div>
+    `;
+    
+    // Add initial options
+    const optionsContainer = questionCard.querySelector(`#optionsContainer_${questionNumber}`);
+    for (let i = 1; i <= Math.min(2, maxOptions); i++) {
+        optionsContainer.appendChild(createOptionInput(questionNumber, i));
+    }
+    
+    return questionCard;
+}
+
+// Create option input
+function createOptionInput(questionNumber, optionNumber) {
+    const optionDiv = document.createElement('div');
+    optionDiv.className = 'input-group input-group-sm mb-2';
+    optionDiv.innerHTML = `
+        <input type="text" 
+               class="form-control" 
+               name="question_${questionNumber}_options[]"
+               placeholder="Option ${optionNumber}"
+               maxlength="500"
+               required>
+        ${optionNumber > 2 ? `
+            <button class="btn btn-outline-danger" type="button" onclick="removeOption(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        ` : ''}
+    `;
+    
+    return optionDiv;
+}
+
+// Add a new question
+function addQuestion() {
+    if (currentQuestions >= maxQuestions) {
+        showToast(`Maximum ${maxQuestions} questions allowed`, 'warning');
+        return;
+    }
+    
+    currentQuestions++;
+    document.getElementById('maxQuestions').value = currentQuestions;
+    const container = document.getElementById('questionsContainer');
+    container.appendChild(createQuestionCard(currentQuestions));
+}
+
+// Remove a question
+function removeQuestion(questionNumber) {
+    if (currentQuestions <= 1) {
+        showToast('Poll must have at least 1 question', 'warning');
+        return;
+    }
+    
+    const questionCards = document.querySelectorAll('.question-card');
+    if (questionCards[questionNumber - 1]) {
+        questionCards[questionNumber - 1].remove();
+        currentQuestions--;
+        document.getElementById('maxQuestions').value = currentQuestions;
+        updateQuestionNumbers();
+    }
+}
+
+// Update question numbers
+function updateQuestionNumbers() {
+    const questionCards = document.querySelectorAll('.question-card');
+    questionCards.forEach((card, index) => {
+        const questionNum = index + 1;
+        const badge = card.querySelector('.badge');
+        const title = card.querySelector('h6');
+        
+        badge.textContent = `Q${questionNum}`;
+        title.textContent = `Question ${questionNum}`;
+        
+        // Update input names
+        const inputs = card.querySelectorAll('input');
+        inputs.forEach(input => {
+            const oldName = input.name;
+            const newName = oldName.replace(/question_\d+/, `question_${questionNum}`);
+            input.name = newName;
+        });
+    });
+}
+
+// Add option to a question
+function addOption(questionNumber) {
+    const container = document.getElementById(`optionsContainer_${questionNumber}`);
+    const optionCount = container.querySelectorAll('.input-group').length;
+    
+    if (optionCount >= maxOptions) {
+        showToast(`Maximum ${maxOptions} options per question`, 'warning');
+        return;
+    }
+    
+    container.appendChild(createOptionInput(questionNumber, optionCount + 1));
+    updateOptionNumbers(questionNumber);
+}
+
+// Remove an option
+function removeOption(button) {
+    const container = button.closest('.options-container');
+    const optionCount = container.querySelectorAll('.input-group').length;
+    
+    if (optionCount <= 2) {
+        showToast('Each question must have at least 2 options', 'warning');
+        return;
+    }
+    
+    button.closest('.input-group').remove();
+    
+    // Find question number
+    const containerId = container.id;
+    const questionNumber = parseInt(containerId.replace('optionsContainer_', ''));
+    updateOptionNumbers(questionNumber);
+}
+
+// Update option numbers
+function updateOptionNumbers(questionNumber) {
+    const container = document.getElementById(`optionsContainer_${questionNumber}`);
+    const options = container.querySelectorAll('.input-group');
+    
+    options.forEach((option, index) => {
+        const input = option.querySelector('input');
+        input.placeholder = `Option ${index + 1}`;
+        
+        // Show/hide remove button
+        const removeBtn = option.querySelector('.btn-outline-danger');
+        if (removeBtn) {
+            removeBtn.style.display = index >= 2 ? 'block' : 'none';
+        }
+    });
+}
+
+// Update option limits
+function updateOptionLimits() {
+    const questionCards = document.querySelectorAll('.question-card');
+    questionCards.forEach(card => {
+        const container = card.querySelector('.options-container');
+        const options = container.querySelectorAll('.input-group');
+        
+        if (options.length > maxOptions) {
+            // Remove excess options
+            for (let i = maxOptions; i < options.length; i++) {
+                options[i].remove();
+            }
+        }
+    });
+}
+
+// Reset poll form
+function resetPollForm() {
+    if (confirm('Are you sure you want to reset the poll? All data will be lost.')) {
+        document.getElementById('pollTitle').value = '';
+        document.getElementById('maxQuestions').value = 2;
+        document.getElementById('pollDuration').value = 24;
+        document.getElementById('pollType').value = 'single_choice';
+        document.getElementById('maxOptionsPerQuestion').value = 4;
+        
+        currentQuestions = 2;
+        generateQuestions();
+    }
+}
+
+// Preview poll
+function previewPoll() {
+    const pollData = collectPollData();
+    
+    if (!validatePollData(pollData)) {
+        return;
+    }
+    
+    // Create preview modal
+    const modalHtml = `
+        <div class="modal fade" id="pollPreviewModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content glass-effect">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title">
+                            <i class="fas fa-eye me-2"></i>
+                            Poll Preview
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="poll-preview">
+                            <h4 class="mb-3">${pollData.title}</h4>
+                            <p class="text-muted mb-4">
+                                <i class="fas fa-clock me-1"></i>
+                                Duration: ${pollData.duration} hours | 
+                                <i class="fas fa-list-alt me-1"></i>
+                                ${pollData.questions.length} question(s)
+                            </p>
+                            
+                            ${pollData.questions.map((question, qIndex) => `
+                                <div class="question-preview mb-4">
+                                    <h5 class="mb-3">
+                                        <span class="badge bg-primary me-2">Q${qIndex + 1}</span>
+                                        ${question.text}
+                                        ${question.allowMultiple ? '<span class="badge bg-warning ms-2">Multiple Choice</span>' : ''}
+                                    </h5>
+                                    
+                                    <div class="options-preview">
+                                        ${question.options.map((option, oIndex) => `
+                                            <div class="option-preview mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" 
+                                                           type="${question.allowMultiple ? 'checkbox' : 'radio'}" 
+                                                           name="preview_q${qIndex}" 
+                                                           id="preview_q${qIndex}_o${oIndex}">
+                                                    <label class="form-check-label" for="preview_q${qIndex}_o${oIndex}">
+                                                        ${option}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-edit me-1"></i>Edit Poll
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="submitPollForm()">
+                            <i class="fas fa-check me-1"></i>Create Poll
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal
+    const existingModal = document.getElementById('pollPreviewModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add new modal
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('pollPreviewModal'));
+    modal.show();
+}
+
+// Collect poll data
+function collectPollData() {
+    const pollData = {
+        title: document.getElementById('pollTitle').value,
+        type: document.getElementById('pollType').value,
+        duration: parseInt(document.getElementById('pollDuration').value),
+        maxQuestions: parseInt(document.getElementById('maxQuestions').value),
+        maxOptions: parseInt(document.getElementById('maxOptionsPerQuestion').value),
+        questions: []
+    };
+    
+    const questionCards = document.querySelectorAll('.question-card');
+    questionCards.forEach((card, index) => {
+        const questionNum = index + 1;
+        const questionText = card.querySelector('.question-text').value;
+        
+        if (questionText) {
+            const question = {
+                number: questionNum,
+                text: questionText,
+                options: []
+            };
+            
+            const options = card.querySelectorAll('.input-group input');
+            options.forEach((input, optIndex) => {
+                const optionText = input.value;
+                if (optionText) {
+                    question.options.push(optionText);
+                }
+            });
+            
+            pollData.questions.push(question);
+        }
+    });
+    
+    return pollData;
+}
+
+// Validate poll data
+function validatePollData(pollData) {
+    if (!pollData.title.trim()) {
+        showToast('Poll title is required', 'warning');
+        return false;
+    }
+    
+    if (pollData.questions.length === 0) {
+        showToast('Poll must have at least 1 question', 'warning');
+        return false;
+    }
+    
+    for (let i = 0; i < pollData.questions.length; i++) {
+        const question = pollData.questions[i];
+        
+        if (!question.text.trim()) {
+            showToast(`Question ${i + 1} text is required`, 'warning');
+            return false;
+        }
+        
+        if (question.options.length < 2) {
+            showToast(`Question ${i + 1} must have at least 2 options`, 'warning');
+            return false;
+        }
+        
+        // Check for duplicate options
+        const optionTexts = question.options.map(opt => opt.toLowerCase().trim()).filter(t => t);
+        const uniqueTexts = [...new Set(optionTexts)];
+        if (optionTexts.length !== uniqueTexts.length) {
+            showToast(`Question ${i + 1} has duplicate text options`, 'warning');
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Submit poll form
+function submitPollForm() {
+    const pollData = collectPollData();
+    
+    if (!validatePollData(pollData)) {
+        return;
+    }
+    
+    // Set the has_poll field to true
+    document.getElementById('hasPoll').value = 'true';
+    
+    // Close the preview modal if open
+    const modal = bootstrap.Modal.getInstance(document.getElementById('pollPreviewModal'));
+    if (modal) {
+        modal.hide();
+    }
+    
+    showToast('Poll added to post! Click "Post" to publish.', 'success');
 }
 </script>
 {% endblock %}

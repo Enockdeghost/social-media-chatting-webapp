@@ -1,0 +1,122 @@
+<!-- Poll Creation Modal/Form -->
+<div class="poll-creation-container d-none" id="pollCreationContainer">
+    <div class="card glass-effect border-0 mb-3">
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-poll me-2 text-primary"></i>
+                Create Poll
+            </h5>
+            <button type="button" class="btn-close btn-close-white" onclick="closePollCreator()"></button>
+        </div>
+        
+        <div class="card-body">
+            <!-- Poll Configuration -->
+            <div class="poll-config mb-4">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">
+                            <i class="fas fa-heading me-1"></i>Poll Title
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="pollTitle" 
+                               name="poll_title"
+                               placeholder="What's your poll about?"
+                               maxlength="500"
+                               required>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">
+                            <i class="fas fa-list-alt me-1"></i>Questions
+                        </label>
+                        <select class="form-select" id="maxQuestions" name="max_questions">
+                            <option value="1">1 Question</option>
+                            <option value="2" selected>2 Questions</option>
+                            <option value="3">3 Questions</option>
+                            <option value="4">4 Questions</option>
+                            <option value="5">5 Questions</option>
+                            <option value="6">6 Questions</option>
+                            <option value="7">7 Questions</option>
+                            <option value="8">8 Questions</option>
+                            <option value="9">9 Questions</option>
+                            <option value="10">10 Questions</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">
+                            <i class="fas fa-clock me-1"></i>Duration
+                        </label>
+                        <select class="form-select" id="pollDuration" name="poll_duration">
+                            <option value="1">1 Hour</option>
+                            <option value="3">3 Hours</option>
+                            <option value="6">6 Hours</option>
+                            <option value="12">12 Hours</option>
+                            <option value="24" selected>24 Hours</option>
+                            <option value="48">2 Days</option>
+                            <option value="72">3 Days</option>
+                            <option value="168">7 Days</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">
+                            <i class="fas fa-tasks me-1"></i>Poll Type
+                        </label>
+                        <select class="form-select" id="pollType" name="poll_type">
+                            <option value="single_choice">Single Choice</option>
+                            <option value="multiple_choice">Multiple Choice</option>
+                            <option value="quiz">Quiz</option>
+                            <option value="ranked">Ranked Choice</option>
+                            <option value="image_poll">Image Poll</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">
+                            <i class="fas fa-sliders-h me-1"></i>Options per Question
+                        </label>
+                        <select class="form-select" id="maxOptionsPerQuestion" name="max_options_per_question">
+                            <option value="2">2 Options</option>
+                            <option value="3">3 Options</option>
+                            <option value="4" selected>4 Options</option>
+                            <option value="5">5 Options</option>
+                            <option value="6">6 Options</option>
+                            <option value="7">7 Options</option>
+                            <option value="8">8 Options</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Questions Container -->
+            <div class="questions-container" id="questionsContainer">
+                <!-- Questions will be dynamically generated here -->
+            </div>
+            
+            <!-- Actions -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addQuestion()">
+                        <i class="fas fa-plus-circle me-1"></i>Add Question
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm ms-2" onclick="previewPoll()">
+                        <i class="fas fa-eye me-1"></i>Preview
+                    </button>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="resetPollForm()">
+                        <i class="fas fa-redo me-1"></i>Reset
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm ms-2" onclick="closePollCreator()">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden input to track poll creation -->
+<input type="hidden" name="has_poll" id="hasPoll" value="false">
