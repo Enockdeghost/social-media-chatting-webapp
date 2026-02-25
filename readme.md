@@ -3,8 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://python.org)
 [![Flask](https://img.shields.io/badge/flask-2.3.3-green)](https://flask.palletsprojects.com)
 [![License](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](https://github.com/enockdeghost/social-media-chatting-webapp
-Public)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](https://github.com/enockdeghost/social-media-chatting-webapp)
 
 Chatter is a full‑featured social media web application inspired by Twitter/X, Instagram, and TikTok. It allows users to share text posts, images, short videos (reels), ephemeral status updates, create polls, follow friends, send messages, and more – all in a sleek, dark‑themed interface.
 
