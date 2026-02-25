@@ -11,7 +11,7 @@
                 <!-- User Profile Card -->
                 <div class="profile-card mb-4 glass-effect">
                     <div class="profile-header">
-                        <div class="profile-banner" style="background: var(--card-color);">
+                        <div class="profile-banner" style="background: linear-gradient(135deg, var(--primary-color), #0c7abf);">
                             <div class="profile-avatar-wrapper">
                                 <img src="{{ get_user_avatar_url(current_user) }}" 
                                      class="profile-avatar-large"
@@ -78,6 +78,10 @@
                         <a href="{{ url_for('lists') }}" class="nav-item hover-lift">
                             <i class="fas fa-list"></i>
                             <span>Lists</span>
+                        </a>
+                        <a href="{{ url_for('import_contacts') }}" class="nav-item hover-lift">
+                            <i class="fas fa-address-book"></i>
+                            <span>Find Friends</span>
                         </a>
                         <a href="{{ url_for('trending') }}" class="nav-item hover-lift">
                             <i class="fas fa-chart-line"></i>
@@ -176,7 +180,7 @@
                             <textarea name="content" 
                                       class="post-textarea" 
                                       placeholder="What's happening?" 
-                                      rows="2"></textarea>
+                                      rows="2" maxlength="280"></textarea>
                             
                             <!-- Image Preview -->
                             <div id="image-preview" class="image-preview d-none mb-2">
@@ -185,6 +189,9 @@
                                     <button type="button" class="btn-close remove-image" onclick="removeImage()"></button>
                                 </div>
                             </div>
+                            
+                            <!-- Poll Preview (hidden until poll is created) -->
+                            <div id="poll-preview" class="poll-preview d-none mb-2 p-3 rounded-3" style="background: var(--card-hover);"></div>
                             
                             <!-- Post Actions -->
                             <div class="post-actions d-flex justify-content-between align-items-center mt-3">
@@ -204,164 +211,109 @@
                                     </button>
                                 </div>
                             </div>
+
+                            <!-- Hidden field for poll -->
+                            <input type="hidden" name="has_poll" id="hasPoll" value="false">
                         </form>
 
-                        <!-- Poll Creation Container (hidden by default) -->
+                        <!-- Poll Creation Container -->
                         <div id="pollCreationContainer" class="d-none mt-3">
-                            <div class="border rounded-3 p-3 glass-effect">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Create Poll</h6>
-                                    <button type="button" class="btn-close btn-close-white" onclick="closePollCreator()"></button>
+                            {% include 'components/poll_creator.html' %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feed Tabs -->
+            <div class="feed-tabs mb-4">
+                <ul class="nav nav-tabs border-0" id="feedTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="for-you-tab" data-bs-toggle="tab" data-bs-target="#for-you" type="button" role="tab">For You</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="trending-tab" data-bs-toggle="tab" data-bs-target="#trending" type="button" role="tab">Trending</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="reels-tab" data-bs-toggle="tab" data-bs-target="#reels" type="button" role="tab">Reels</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="latest-tab" data-bs-toggle="tab" data-bs-target="#latest" type="button" role="tab">Latest</button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="feedTabContent">
+                <!-- For You Tab -->
+                <div class="tab-pane fade show active" id="for-you" role="tabpanel">
+                    <div class="posts-feed" id="for-you-feed">
+                        {% if posts.items %}
+                            {% for post in posts.items %}
+                                {% include 'components/post_card.html' %}
+                            {% endfor %}
+                            
+                            <!-- Load More -->
+                            {% if posts.has_next %}
+                            <div class="text-center mt-4">
+                                <button class="btn btn-outline-primary rounded-pill px-4 load-more" data-page="{{ posts.next_num }}" data-tab="for-you">
+                                    <i class="fas fa-sync me-2"></i>Load More
+                                </button>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            <!-- Improved empty state with two options -->
+                            <div class="empty-feed text-center py-5">
+                                <i class="fas fa-newspaper fa-4x text-muted mb-3"></i>
+                                <h5 class="mb-3">No posts yet</h5>
+                                <p class="text-muted mb-4">Follow people or find friends from your contacts to see their posts here.</p>
+                                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                                    <a href="{{ url_for('search') }}" class="btn btn-primary">
+                                        <i class="fas fa-search me-2"></i>Find People
+                                    </a>
+                                    <a href="{{ url_for('import_contacts') }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-address-book me-2"></i>Find Friends from Contacts
+                                    </a>
                                 </div>
-                                
-                                <!-- Poll Configuration -->
-                                <div class="poll-config mb-4">
-                                    <div class="row mb-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label small fw-bold">Poll Title</label>
-                                            <input type="text" 
-                                                   class="form-control form-control-sm" 
-                                                   id="pollTitle"
-                                                   name="poll_title"
-                                                   placeholder="What's your poll about?"
-                                                   required>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label small fw-bold">Type</label>
-                                            <select class="form-select form-select-sm" id="pollType" name="poll_type">
-                                                <option value="single_choice">Single Choice</option>
-                                                <option value="multiple_choice">Multiple Choice</option>
-                                                <option value="quiz">Quiz</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label small fw-bold">Duration</label>
-                                            <select class="form-select form-select-sm" id="pollDuration" name="poll_duration">
-                                                <option value="1">1 hour</option>
-                                                <option value="3">3 hours</option>
-                                                <option value="6">6 hours</option>
-                                                <option value="12">12 hours</option>
-                                                <option value="24" selected>24 hours</option>
-                                                <option value="48">2 days</option>
-                                                <option value="72">3 days</option>
-                                                <option value="168">7 days</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="row mb-3">
-                                        <div class="col-md-3">
-                                            <label class="form-label small fw-bold">Questions</label>
-                                            <select class="form-select form-select-sm" id="maxQuestions">
-                                                <option value="1">1 Question</option>
-                                                <option value="2" selected>2 Questions</option>
-                                                <option value="3">3 Questions</option>
-                                                <option value="4">4 Questions</option>
-                                                <option value="5">5 Questions</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label small fw-bold">Options per Q</label>
-                                            <select class="form-select form-select-sm" id="maxOptionsPerQuestion">
-                                                <option value="2">2 Options</option>
-                                                <option value="3">3 Options</option>
-                                                <option value="4" selected>4 Options</option>
-                                                <option value="5">5 Options</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label small fw-bold">&nbsp;</label>
-                                            <div class="d-flex gap-2 mt-1">
-                                                <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1" onclick="addQuestion()">
-                                                    <i class="fas fa-plus me-1"></i>Add Question
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1" onclick="resetPollForm()">
-                                                    <i class="fas fa-redo me-1"></i>Reset
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Questions Container -->
-                                <div id="questionsContainer" class="mb-3">
-                                    <!-- Questions will be added here dynamically -->
-                                </div>
-                                
-                                <!-- Poll Actions -->
-                                <div class="d-flex justify-content-between">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="previewPoll()">
-                                        <i class="fas fa-eye me-1"></i>Preview
-                                    </button>
-                                    <div class="d-flex gap-2">
-                                        <button type="button" class="btn btn-sm btn-secondary" onclick="closePollCreator()">
-                                            Cancel
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-primary" onclick="submitPollForm()">
-                                            <i class="fas fa-check me-1"></i>Add to Post
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Hidden field to indicate poll exists -->
-                                <input type="hidden" name="has_poll" id="hasPoll" value="false">
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Trending Tab -->
+                <div class="tab-pane fade" id="trending" role="tabpanel">
+                    <div class="posts-feed" id="trending-feed">
+                        <!-- Loaded via AJAX -->
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Feed Filters -->
-            <div class="feed-filters mb-4">
-                <div class="d-flex justify-content-between border-bottom">
-                    <div class="nav nav-tabs border-0">
-                        <button class="nav-link" data-feed-type="following">For You</button>
-                        <button class="nav-link" data-feed-type="trending">Trending</button>
-                        <button class="nav-link" data-feed-type="reels">Reels</button>
-                    </div>
-                    <div class="feed-sort">
-                        <select class="form-select form-select-sm" style="max-width: 150px;">
-                            <option value="latest">Latest</option>
-                            <option value="most_liked">Most Liked</option>
-                            <option value="most_commented">Most Commented</option>
-                        </select>
+                <!-- Reels Tab -->
+                <div class="tab-pane fade" id="reels" role="tabpanel">
+                    <div class="reels-container" id="reels-feed">
+                        <!-- Loaded via AJAX -->
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Posts Feed -->
-            <div class="posts-feed">
-                {% if posts.items %}
-                    {% for post in posts.items %}
-                        {% include 'components/post_card.html' %}
-                    {% endfor %}
-                    
-                    <!-- Load More -->
-                    {% if posts.has_next %}
-                    <div class="text-center mt-4">
-                        <a href="{{ url_for('feed', page=posts.next_num, type=request.args.get('type', 'following'), sort=request.args.get('sort', 'latest')) }}" class="btn btn-outline-primary rounded-pill px-4">
-                            <i class="fas fa-sync me-2"></i>Load More
-                        </a>
-                    </div>
-                    {% endif %}
-                {% else %}
-                    <!-- Empty Feed State -->
-                    <div class="empty-feed text-center py-5">
-                        <div class="empty-icon mb-3">
-                            <i class="fas fa-comments fa-3x text-muted"></i>
-                        </div>
-                        <h5 class="mb-2">Welcome to Chatter!</h5>
-                        <p class="text-muted mb-4">Start by posting something or following other users</p>
-                        <div class="d-flex justify-content-center gap-3">
-                            <a href="{{ url_for('create_post') }}" class="btn btn-primary">
-                                <i class="fas fa-plus me-2"></i>Create First Post
-                            </a>
-                            <a href="{{ url_for('search') }}" class="btn btn-outline-primary">
-                                <i class="fas fa-user-plus me-2"></i>Find People
-                            </a>
+                <!-- Latest Tab -->
+                <div class="tab-pane fade" id="latest" role="tabpanel">
+                    <div class="posts-feed" id="latest-feed">
+                        <!-- Loaded via AJAX -->
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
                         </div>
                     </div>
-                {% endif %}
+                </div>
             </div>
         </div>
 
@@ -378,8 +330,7 @@
                                class="form-control border-start-0" 
                                placeholder="Search Chatter..."
                                id="searchInput"
-                               onfocus="this.parentElement.classList.add('focused')"
-                               onblur="this.parentElement.classList.remove('focused')">
+                               onkeypress="if(event.key==='Enter') window.location.href='/search?q='+encodeURIComponent(this.value)">
                     </div>
                 </div>
 
@@ -490,6 +441,7 @@
     height: calc(100vh - 80px);
     overflow-y: auto;
     padding-right: 10px;
+    scrollbar-width: thin;
 }
 
 /* Profile Card */
@@ -503,7 +455,6 @@
 .profile-banner {
     height: 100px;
     position: relative;
-    background: linear-gradient(135deg, var(--primary-color), #0c7abf);
 }
 
 .profile-avatar-wrapper {
@@ -608,6 +559,7 @@
     gap: 20px;
     overflow-x: auto;
     padding-bottom: 10px;
+    scrollbar-width: thin;
 }
 
 .story-item {
@@ -754,53 +706,83 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    border: none;
 }
 
+/* ============ IMPROVED ACTION BUTTONS ============ */
 .action-buttons {
     display: flex;
-    gap: 15px;
+    gap: 20px;
 }
 
 .action-btn {
     cursor: pointer;
-    font-size: 18px;
-    transition: transform 0.2s;
+    font-size: 20px;
+    transition: all 0.2s;
     color: var(--text-muted);
     background: none;
     border: none;
-    padding: 0;
+    padding: 8px 12px;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .action-btn:hover {
     transform: scale(1.1);
     color: var(--primary-color);
+    background: rgba(29, 155, 240, 0.1);
 }
 
-/* Poll Container */
-#pollCreationContainer {
-    animation: slideInDown 0.3s ease;
+.action-btn i {
+    font-size: 22px;
 }
 
-@keyframes slideInDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* For like/bookmark buttons in post cards (if used) */
+.post-actions .action-btn {
+    font-size: 18px;
+    padding: 6px 10px;
 }
 
-.question-card {
-    border-left: 4px solid var(--primary-color);
-    border-radius: 8px;
-    transition: all 0.3s ease;
+/* Ensure counts are visible */
+.action-count {
+    font-size: 14px;
+    font-weight: 500;
+    margin-left: 4px;
 }
 
-.question-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+/* For the like button in post_card, ensure it's larger */
+.like-btn {
+    font-size: 18px;
+    padding: 8px 12px;
+}
+
+.like-btn i {
+    font-size: 20px;
+}
+
+/* Feed Tabs */
+.feed-tabs .nav-tabs {
+    border-bottom: 1px solid var(--border-light);
+}
+
+.feed-tabs .nav-link {
+    color: var(--text-muted);
+    border: none;
+    padding: 12px 20px;
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.feed-tabs .nav-link:hover {
+    color: var(--primary-color);
+}
+
+.feed-tabs .nav-link.active {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    background: transparent;
 }
 
 /* Trending, Follow, Online Cards */
@@ -925,12 +907,6 @@
     transition: all 0.2s;
 }
 
-.search-box .input-group.focused {
-    background: var(--card-color);
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(29, 155, 240, 0.2);
-}
-
 .search-box .form-control {
     background: transparent;
     border: none;
@@ -941,53 +917,11 @@
     box-shadow: none;
 }
 
-.search-box .form-control::placeholder {
-    color: var(--text-muted);
-}
-
-/* Buttons */
-.btn-primary {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-.btn-primary:hover {
-    background: var(--primary-hover);
-    border-color: var(--primary-hover);
-}
-
-.btn-outline-primary {
-    color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-.btn-outline-primary:hover {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-/* Feed Filters */
-.feed-filters .nav-link {
-    color: var(--text-muted);
-    border: none;
-    padding: 10px 20px;
-}
-
-.feed-filters .nav-link.active {
-    color: var(--primary-color);
-    border-bottom: 2px solid var(--primary-color);
-    background: transparent;
-}
-
-.feed-filters .nav-link:hover {
-    color: var(--primary-color);
-}
-
 /* Empty Feed */
 .empty-feed {
     background: var(--card-color);
     border-radius: 16px;
-    padding: 40px;
+    padding: 60px 20px;
     border: 1px solid var(--border-light);
 }
 
@@ -1034,14 +968,13 @@
         height: 40px;
     }
     
-    .poll-config .row {
-        flex-direction: column;
+    .action-btn {
+        font-size: 18px;
+        padding: 6px 10px;
     }
     
-    .poll-config .col-md-6,
-    .poll-config .col-md-3 {
-        width: 100%;
-        margin-bottom: 10px;
+    .action-btn i {
+        font-size: 20px;
     }
 }
 
@@ -1065,166 +998,11 @@
 }
 </style>
 
+{% endblock %}
+
+{% block scripts %}
 <script>
-// Basic Post Functions
-function previewImage(event) {
-    const input = event.target;
-    const preview = document.getElementById('preview-image');
-    const previewContainer = document.getElementById('image-preview');
-    
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            preview.src = e.target.result;
-            previewContainer.classList.remove('d-none');
-        }
-        
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
-function removeImage() {
-    document.getElementById('image-input').value = '';
-    document.getElementById('image-preview').classList.add('d-none');
-}
-
-// Character counter
-const textarea = document.querySelector('.post-textarea');
-if (textarea) {
-    textarea.addEventListener('input', function() {
-        const counter = document.querySelector('.char-counter');
-        if (counter) {
-            const count = this.value.length;
-            counter.textContent = `${count}/280`;
-            
-            if (count > 280) {
-                counter.style.color = '#f4212e';
-            } else if (count > 250) {
-                counter.style.color = '#ffa502';
-            } else {
-                counter.style.color = 'var(--text-muted)';
-            }
-        }
-    });
-}
-
-// Follow button functionality
-document.querySelectorAll('.follow-btn').forEach(button => {
-    button.addEventListener('click', async function() {
-        const userId = this.dataset.userId;
-        const originalText = this.textContent;
-        
-        try {
-            const response = await fetch(`/follow/${userId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-            
-            const data = await response.json();
-            
-            if (data.status === 'followed') {
-                this.classList.remove('btn-outline-primary');
-                this.classList.add('btn-primary');
-                this.textContent = 'Following';
-                showToast(`Started following ${data.message.split(' ').pop()}`, 'success');
-            } else {
-                this.classList.remove('btn-primary');
-                this.classList.add('btn-outline-primary');
-                this.textContent = 'Follow';
-                showToast(`Unfollowed ${data.message.split(' ').pop()}`, 'info');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            this.textContent = originalText;
-            showToast('Error processing request', 'error');
-        }
-    });
-});
-
-// Show toast notification
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = 'toast-notification';
-    toast.style.cssText = `
-        position: fixed;
-        top: 80px;
-        right: 20px;
-        padding: 12px 20px;
-        border-radius: 8px;
-        background: ${type === 'success' ? 'var(--primary-color)' : type === 'error' ? '#f4212e' : type === 'warning' ? '#ffa502' : 'var(--primary-color)'};
-        color: white;
-        z-index: 10000;
-        animation: slideIn 0.3s ease;
-        font-size: 14px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    `;
-    
-    toast.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
-        ${message}
-    `;
-    
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
-// Add animation keyframes
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-    }
-`;
-document.head.appendChild(style);
-
-// Auto-resize textarea
-function autoResize(textarea) {
-    textarea.style.height = 'auto';
-    textarea.style.height = textarea.scrollHeight + 'px';
-}
-
-if (textarea) {
-    textarea.addEventListener('input', function() {
-        autoResize(this);
-    });
-    autoResize(textarea);
-}
-
-// ============ POLL FUNCTIONALITY ============
-let currentQuestions = 2;
-let maxQuestions = 10;
-let maxOptions = 4;
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Generate initial questions
-    generateQuestions();
-    
-    // Listen for configuration changes
-    document.getElementById('maxQuestions').addEventListener('change', function() {
-        maxQuestions = parseInt(this.value);
-        generateQuestions();
-    });
-    
-    document.getElementById('maxOptionsPerQuestion').addEventListener('change', function() {
-        maxOptions = parseInt(this.value);
-        updateOptionLimits();
-    });
-});
-
-// Toggle poll creator visibility
+// Poll Functions
 function togglePollCreator() {
     const pollContainer = document.getElementById('pollCreationContainer');
     const hasPollInput = document.getElementById('hasPoll');
@@ -1232,463 +1010,88 @@ function togglePollCreator() {
     if (pollContainer.classList.contains('d-none')) {
         pollContainer.classList.remove('d-none');
         hasPollInput.value = 'true';
-        
-        // Scroll to poll section
-        setTimeout(() => {
-            pollContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 100);
+        setTimeout(() => pollContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
     } else {
-        closePollCreator();
+        pollContainer.classList.add('d-none');
+        hasPollInput.value = 'false';
     }
 }
 
-function closePollCreator() {
-    document.getElementById('pollCreationContainer').classList.add('d-none');
-    document.getElementById('hasPoll').value = 'false';
-}
-
-// Generate initial questions
-function generateQuestions() {
-    const container = document.getElementById('questionsContainer');
-    const questionCount = parseInt(document.getElementById('maxQuestions').value);
-    container.innerHTML = '';
+// Load feed tabs via AJAX
+function loadTabContent(tabId) {
+    const container = document.getElementById(tabId + '-feed');
+    if (!container) return;
     
-    for (let i = 1; i <= questionCount; i++) {
-        container.appendChild(createQuestionCard(i));
-    }
-    currentQuestions = questionCount;
-}
-
-// Create a question card
-function createQuestionCard(questionNumber) {
-    const maxOptions = parseInt(document.getElementById('maxOptionsPerQuestion').value);
+    // Show loading
+    container.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
     
-    const questionCard = document.createElement('div');
-    questionCard.className = 'question-card card border-0 mb-3';
-    questionCard.innerHTML = `
-        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <span class="badge bg-primary me-2">Q${questionNumber}</span>
-                <h6 class="mb-0">Question ${questionNumber}</h6>
-            </div>
-            ${questionNumber > 1 ? `
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeQuestion(${questionNumber})">
-                    <i class="fas fa-trash"></i>
-                </button>
-            ` : ''}
-        </div>
-        
-        <div class="card-body">
-            <div class="mb-3">
-                <label class="form-label small fw-bold">Question Text</label>
-                <input type="text" 
-                       class="form-control form-control-sm question-text" 
-                       name="question_${questionNumber}_text"
-                       placeholder="Enter your question..."
-                       maxlength="500"
-                       required>
-            </div>
-            
-            <div class="options-container" id="optionsContainer_${questionNumber}">
-                <label class="form-label small fw-bold">Options</label>
-            </div>
-            
-            <button type="button" 
-                    class="btn btn-sm btn-outline-primary mt-2"
-                    onclick="addOption(${questionNumber})">
-                <i class="fas fa-plus me-1"></i>Add Option
-            </button>
-        </div>
-    `;
+    let url = '';
+    if (tabId === 'trending') url = '/api/feed/trending';
+    else if (tabId === 'reels') url = '/api/feed/reels';
+    else if (tabId === 'latest') url = '/api/feed/latest';
     
-    // Add initial options
-    const optionsContainer = questionCard.querySelector(`#optionsContainer_${questionNumber}`);
-    for (let i = 1; i <= Math.min(2, maxOptions); i++) {
-        optionsContainer.appendChild(createOptionInput(questionNumber, i));
-    }
-    
-    return questionCard;
-}
-
-// Create option input
-function createOptionInput(questionNumber, optionNumber) {
-    const optionDiv = document.createElement('div');
-    optionDiv.className = 'input-group input-group-sm mb-2';
-    optionDiv.innerHTML = `
-        <input type="text" 
-               class="form-control" 
-               name="question_${questionNumber}_options[]"
-               placeholder="Option ${optionNumber}"
-               maxlength="500"
-               required>
-        ${optionNumber > 2 ? `
-            <button class="btn btn-outline-danger" type="button" onclick="removeOption(this)">
-                <i class="fas fa-times"></i>
-            </button>
-        ` : ''}
-    `;
-    
-    return optionDiv;
-}
-
-// Add a new question
-function addQuestion() {
-    if (currentQuestions >= maxQuestions) {
-        showToast(`Maximum ${maxQuestions} questions allowed`, 'warning');
-        return;
-    }
-    
-    currentQuestions++;
-    document.getElementById('maxQuestions').value = currentQuestions;
-    const container = document.getElementById('questionsContainer');
-    container.appendChild(createQuestionCard(currentQuestions));
-}
-
-// Remove a question
-function removeQuestion(questionNumber) {
-    if (currentQuestions <= 1) {
-        showToast('Poll must have at least 1 question', 'warning');
-        return;
-    }
-    
-    const questionCards = document.querySelectorAll('.question-card');
-    if (questionCards[questionNumber - 1]) {
-        questionCards[questionNumber - 1].remove();
-        currentQuestions--;
-        document.getElementById('maxQuestions').value = currentQuestions;
-        updateQuestionNumbers();
-    }
-}
-
-// Update question numbers
-function updateQuestionNumbers() {
-    const questionCards = document.querySelectorAll('.question-card');
-    questionCards.forEach((card, index) => {
-        const questionNum = index + 1;
-        const badge = card.querySelector('.badge');
-        const title = card.querySelector('h6');
-        
-        badge.textContent = `Q${questionNum}`;
-        title.textContent = `Question ${questionNum}`;
-        
-        // Update input names
-        const inputs = card.querySelectorAll('input');
-        inputs.forEach(input => {
-            const oldName = input.name;
-            const newName = oldName.replace(/question_\d+/, `question_${questionNum}`);
-            input.name = newName;
-        });
-    });
-}
-
-// Add option to a question
-function addOption(questionNumber) {
-    const container = document.getElementById(`optionsContainer_${questionNumber}`);
-    const optionCount = container.querySelectorAll('.input-group').length;
-    
-    if (optionCount >= maxOptions) {
-        showToast(`Maximum ${maxOptions} options per question`, 'warning');
-        return;
-    }
-    
-    container.appendChild(createOptionInput(questionNumber, optionCount + 1));
-    updateOptionNumbers(questionNumber);
-}
-
-// Remove an option
-function removeOption(button) {
-    const container = button.closest('.options-container');
-    const optionCount = container.querySelectorAll('.input-group').length;
-    
-    if (optionCount <= 2) {
-        showToast('Each question must have at least 2 options', 'warning');
-        return;
-    }
-    
-    button.closest('.input-group').remove();
-    
-    // Find question number
-    const containerId = container.id;
-    const questionNumber = parseInt(containerId.replace('optionsContainer_', ''));
-    updateOptionNumbers(questionNumber);
-}
-
-// Update option numbers
-function updateOptionNumbers(questionNumber) {
-    const container = document.getElementById(`optionsContainer_${questionNumber}`);
-    const options = container.querySelectorAll('.input-group');
-    
-    options.forEach((option, index) => {
-        const input = option.querySelector('input');
-        input.placeholder = `Option ${index + 1}`;
-        
-        // Show/hide remove button
-        const removeBtn = option.querySelector('.btn-outline-danger');
-        if (removeBtn) {
-            removeBtn.style.display = index >= 2 ? 'block' : 'none';
-        }
-    });
-}
-
-// Update option limits
-function updateOptionLimits() {
-    const questionCards = document.querySelectorAll('.question-card');
-    questionCards.forEach(card => {
-        const container = card.querySelector('.options-container');
-        const options = container.querySelectorAll('.input-group');
-        
-        if (options.length > maxOptions) {
-            // Remove excess options
-            for (let i = maxOptions; i < options.length; i++) {
-                options[i].remove();
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            if (data.html) {
+                container.innerHTML = data.html;
+            } else {
+                container.innerHTML = '<p class="text-muted text-center py-5">No posts found</p>';
             }
+        })
+        .catch(err => {
+            console.error('Error loading feed:', err);
+            container.innerHTML = '<p class="text-danger text-center py-5">Failed to load content</p>';
+        });
+}
+
+// Handle tab clicks
+document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+    tab.addEventListener('shown.bs.tab', (e) => {
+        const targetId = e.target.getAttribute('data-bs-target').replace('#', '');
+        if (targetId !== 'for-you') {
+            loadTabContent(targetId);
         }
     });
-}
+});
 
-// Reset poll form
-function resetPollForm() {
-    if (confirm('Are you sure you want to reset the poll? All data will be lost.')) {
-        document.getElementById('pollTitle').value = '';
-        document.getElementById('maxQuestions').value = 2;
-        document.getElementById('pollDuration').value = 24;
-        document.getElementById('pollType').value = 'single_choice';
-        document.getElementById('maxOptionsPerQuestion').value = 4;
+// Load more posts (infinite scroll or button)
+document.querySelectorAll('.load-more').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const page = this.dataset.page;
+        const tab = this.dataset.tab;
+        const container = document.getElementById(tab + '-feed');
         
-        currentQuestions = 2;
-        generateQuestions();
-    }
-}
-
-// Preview poll
-function previewPoll() {
-    const pollData = collectPollData();
-    
-    if (!validatePollData(pollData)) {
-        return;
-    }
-    
-    // Create preview modal
-    const modalHtml = `
-        <div class="modal fade" id="pollPreviewModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content glass-effect">
-                    <div class="modal-header border-0">
-                        <h5 class="modal-title">
-                            <i class="fas fa-eye me-2"></i>
-                            Poll Preview
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="poll-preview">
-                            <h4 class="mb-3">${pollData.title}</h4>
-                            <p class="text-muted mb-4">
-                                <i class="fas fa-clock me-1"></i>
-                                Duration: ${pollData.duration} hours | 
-                                <i class="fas fa-list-alt me-1"></i>
-                                ${pollData.questions.length} question(s)
-                            </p>
-                            
-                            ${pollData.questions.map((question, qIndex) => `
-                                <div class="question-preview mb-4">
-                                    <h5 class="mb-3">
-                                        <span class="badge bg-primary me-2">Q${qIndex + 1}</span>
-                                        ${question.text}
-                                        ${question.allowMultiple ? '<span class="badge bg-warning ms-2">Multiple Choice</span>' : ''}
-                                    </h5>
-                                    
-                                    <div class="options-preview">
-                                        ${question.options.map((option, oIndex) => `
-                                            <div class="option-preview mb-2">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" 
-                                                           type="${question.allowMultiple ? 'checkbox' : 'radio'}" 
-                                                           name="preview_q${qIndex}" 
-                                                           id="preview_q${qIndex}_o${oIndex}">
-                                                    <label class="form-check-label" for="preview_q${qIndex}_o${oIndex}">
-                                                        ${option}
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    <div class="modal-footer border-0">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="fas fa-edit me-1"></i>Edit Poll
-                        </button>
-                        <button type="button" class="btn btn-primary" onclick="submitPollForm()">
-                            <i class="fas fa-check me-1"></i>Create Poll
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Remove existing modal
-    const existingModal = document.getElementById('pollPreviewModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    // Add new modal
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('pollPreviewModal'));
-    modal.show();
-}
-
-// Collect poll data
-function collectPollData() {
-    const pollData = {
-        title: document.getElementById('pollTitle').value,
-        type: document.getElementById('pollType').value,
-        duration: parseInt(document.getElementById('pollDuration').value),
-        maxQuestions: parseInt(document.getElementById('maxQuestions').value),
-        maxOptions: parseInt(document.getElementById('maxOptionsPerQuestion').value),
-        questions: []
-    };
-    
-    const questionCards = document.querySelectorAll('.question-card');
-    questionCards.forEach((card, index) => {
-        const questionNum = index + 1;
-        const questionText = card.querySelector('.question-text').value;
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
         
-        if (questionText) {
-            const question = {
-                number: questionNum,
-                text: questionText,
-                options: []
-            };
-            
-            const options = card.querySelectorAll('.input-group input');
-            options.forEach((input, optIndex) => {
-                const optionText = input.value;
-                if (optionText) {
-                    question.options.push(optionText);
+        fetch(`/api/feed/${tab}?page=${page}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.html) {
+                    container.insertAdjacentHTML('beforeend', data.html);
                 }
+                if (data.has_next) {
+                    this.dataset.page = data.next_page;
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-sync me-2"></i>Load More';
+                } else {
+                    this.remove();
+                }
+            })
+            .catch(err => {
+                console.error('Error loading more posts:', err);
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-sync me-2"></i>Load More';
             });
-            
-            pollData.questions.push(question);
-        }
     });
-    
-    return pollData;
-}
+});
 
-// Validate poll data
-function validatePollData(pollData) {
-    if (!pollData.title.trim()) {
-        showToast('Poll title is required', 'warning');
-        return false;
-    }
-    
-    if (pollData.questions.length === 0) {
-        showToast('Poll must have at least 1 question', 'warning');
-        return false;
-    }
-    
-    for (let i = 0; i < pollData.questions.length; i++) {
-        const question = pollData.questions[i];
-        
-        if (!question.text.trim()) {
-            showToast(`Question ${i + 1} text is required`, 'warning');
-            return false;
-        }
-        
-        if (question.options.length < 2) {
-            showToast(`Question ${i + 1} must have at least 2 options`, 'warning');
-            return false;
-        }
-        
-        // Check for duplicate options
-        const optionTexts = question.options.map(opt => opt.toLowerCase().trim()).filter(t => t);
-        const uniqueTexts = [...new Set(optionTexts)];
-        if (optionTexts.length !== uniqueTexts.length) {
-            showToast(`Question ${i + 1} has duplicate text options`, 'warning');
-            return false;
-        }
-    }
-    
-    return true;
-}
-
-// Submit poll form
-function submitPollForm() {
-    const pollData = collectPollData();
-    
-    if (!validatePollData(pollData)) {
-        return;
-    }
-    
-    // Set the has_poll field to true
-    document.getElementById('hasPoll').value = 'true';
-    
-    // Close the preview modal if open
-    const modal = bootstrap.Modal.getInstance(document.getElementById('pollPreviewModal'));
-    if (modal) {
-        modal.hide();
-    }
-    
-    showToast('Poll added to post! Click "Post" to publish.', 'success');
-}
-
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Get current URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const feedType = urlParams.get('type') || 'following';
-    const sort = urlParams.get('sort') || 'latest';
-    
-    // Set active filter button
-    const filterButtons = document.querySelectorAll('[data-feed-type]');
-    filterButtons.forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.dataset.feedType === feedType) {
-            btn.classList.add('active');
-        }
-    });
-    
-    // Set sort dropdown
-    const sortSelect = document.querySelector('.feed-sort select');
-    if (sortSelect) {
-        sortSelect.value = sort;
-    }
-    
-    // Add click handlers to filter buttons
-    filterButtons.forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const type = this.dataset.feedType;
-            const currentSort = document.querySelector('.feed-sort select').value;
-            window.location.href = `/feed?type=${type}&sort=${currentSort}`;
-        });
-    });
-    
-    // Add change handler to sort dropdown
-    if (sortSelect) {
-        sortSelect.addEventListener('change', function() {
-            const currentType = document.querySelector('[data-feed-type].active')?.dataset.feedType || 'following';
-            window.location.href = `/feed?type=${currentType}&sort=${this.value}`;
-        });
-    }
-    
-    // Search functionality
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const query = this.value.trim();
-                if (query) {
-                    window.location.href = `/search?q=${encodeURIComponent(query)}`;
-                }
-            }
-        });
+    // If reels tab is active by default, load its content
+    if (document.querySelector('#reels-tab.active')) {
+        loadTabContent('reels');
     }
 });
 </script>

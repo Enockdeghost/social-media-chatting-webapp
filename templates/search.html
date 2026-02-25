@@ -4,15 +4,42 @@
 
 {% block content %}
 <div class="container-fluid px-4 px-lg-5">
-    <!-- Search Header -->
+    <!-- Search Bar Section -->
+    <div class="row justify-content-center mb-5">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm rounded-4" style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                <div class="card-body p-4">
+                    <form method="GET" action="{{ url_for('search') }}" id="searchForm">
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control form-control-lg bg-transparent text-light border-0" 
+                                   name="q" 
+                                   placeholder="Search for users, posts, hashtags..."
+                                   value="{{ query }}"
+                                   autofocus>
+                            <button class="btn btn-primary px-4" type="submit">
+                                <i class="fas fa-search me-2"></i>Search
+                            </button>
+                        </div>
+                        <!-- Preserve search type when submitting -->
+                        <input type="hidden" name="type" value="{{ search_type }}">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Results Header -->
     <div class="mb-5">
         <div class="row align-items-center">
             <div class="col-md-8">
                 <h1 class="fw-bold mb-3">Search Results</h1>
+                {% if query %}
                 <div class="d-flex align-items-center gap-2">
                     <span class="text-muted">Results for:</span>
                     <span class="fw-bold text-primary">"{{ query }}"</span>
                 </div>
+                {% endif %}
             </div>
             <div class="col-md-4">
                 <!-- Search Type Tabs -->
@@ -128,7 +155,7 @@
             {% endif %}
             
             <!-- No Results Message -->
-            {% if not users and not posts and not lists %}
+            {% if query and not users and not posts and not lists %}
             <div class="text-center py-5">
                 <div class="mb-4">
                     <i class="fas fa-search fa-4x text-muted opacity-50"></i>
@@ -179,10 +206,15 @@
             <div class="card border-0 shadow-sm rounded-4" 
                  style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
                 <div class="card-body p-4">
-                    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
-                        <i class="fas fa-history text-primary"></i>
-                        <span>Recent Searches</span>
-                    </h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                            <i class="fas fa-history text-primary"></i>
+                            <span>Recent Searches</span>
+                        </h6>
+                        <button class="btn btn-sm btn-outline-danger" onclick="clearAllSearches()">
+                            Clear All
+                        </button>
+                    </div>
                     
                     <div id="recent-searches">
                         <!-- Will be populated by JavaScript -->
@@ -251,7 +283,7 @@
                 const searchItem = document.createElement('div');
                 searchItem.className = 'd-flex justify-content-between align-items-center mb-2';
                 searchItem.innerHTML = `
-                    <a href="{{ url_for('search') }}?q=${encodeURIComponent(search)}" 
+                    <a href="{{ url_for('search') }}?q=${encodeURIComponent(search)}&type={{ search_type }}" 
                        class="text-decoration-none text-primary">
                         <i class="fas fa-search me-2"></i>
                         ${search}
@@ -263,6 +295,8 @@
                 `;
                 container.appendChild(searchItem);
             });
+        } else {
+            container.innerHTML = '<p class="text-muted small mb-0">No recent searches</p>';
         }
     }
     
@@ -273,7 +307,6 @@
         displayRecentSearches();
     }
     
-    // Clear all searches
     function clearAllSearches() {
         if (confirm('Clear all recent searches?')) {
             localStorage.removeItem('recentSearches');

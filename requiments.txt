@@ -14,11 +14,13 @@ h11==0.16.0
 itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.3
+pillow==12.1.1
 psycopg2==2.9.11
 psycopg2-binary==2.9.11
 pycparser==2.23
 python-engineio==4.12.3
 python-socketio==5.14.2
+qrcode==8.2
 simple-websocket==1.1.0
 SQLAlchemy==2.0.44
 typing_extensions==4.15.0

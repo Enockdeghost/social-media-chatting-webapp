@@ -1,324 +1,535 @@
 {% extends "base.html" %}
 
-{% block title %}Settings - {{ user.username }}{% endblock %}
+{% block title %}{{ user.username }} - Profile - Chatter{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row">
-        <!-- Sidebar -->
-        <div class="col-lg-3 mb-4">
-            <div class="card border-0 shadow-sm rounded-4 sticky-top" style="top: 80px; background: var(--card-color);">
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush bg-transparent" id="settings-tabs" role="tablist">
-                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3 active" 
-                           id="account-tab" data-bs-toggle="list" href="#account" role="tab">
-                            <i class="fas fa-user-circle fs-5" style="width: 24px;"></i>
-                            <span>Account</span>
-                        </a>
-                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3" 
-                           id="privacy-tab" data-bs-toggle="list" href="#privacy" role="tab">
-                            <i class="fas fa-lock fs-5" style="width: 24px;"></i>
-                            <span>Privacy & Safety</span>
-                        </a>
-                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3" 
-                           id="notifications-tab" data-bs-toggle="list" href="#notifications" role="tab">
-                            <i class="fas fa-bell fs-5" style="width: 24px;"></i>
-                            <span>Notifications</span>
-                        </a>
-                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3" 
-                           id="security-tab" data-bs-toggle="list" href="#security" role="tab">
-                            <i class="fas fa-shield-alt fs-5" style="width: 24px;"></i>
-                            <span>Security</span>
-                        </a>
-                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3" 
-                           id="content-tab" data-bs-toggle="list" href="#content" role="tab">
-                            <i class="fas fa-paint-brush fs-5" style="width: 24px;"></i>
-                            <span>Content & Display</span>
-                        </a>
-                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3" 
-                           id="data-tab" data-bs-toggle="list" href="#data" role="tab">
-                            <i class="fas fa-database fs-5" style="width: 24px;"></i>
-                            <span>Data & Storage</span>
-                        </a>
-                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3" 
-                           id="blocked-tab" data-bs-toggle="list" href="#blocked" role="tab">
-                            <i class="fas fa-ban fs-5" style="width: 24px;"></i>
-                            <span>Blocked Users</span>
-                        </a>
-                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3" 
-                           id="support-tab" data-bs-toggle="list" href="#support" role="tab">
-                            <i class="fas fa-question-circle fs-5" style="width: 24px;"></i>
-                            <span>Help & Support</span>
-                        </a>
+<div class="container-fluid px-0">
+    <!-- Enhanced Cover & Profile Section -->
+    <div class="profile-cover-section position-relative">
+        <!-- Cover Photo -->
+        <div class="cover-container position-relative" style="height: 400px;">
+            <div class="cover-image w-100 h-100 position-relative">
+                {% if user.cover_picture and user.cover_picture != 'default_cover.jpg' %}
+                <img src="{{ url_for('static', filename='uploads/covers/' + user.cover_picture) }}" 
+                     class="w-100 h-100" 
+                     style="object-fit: cover;">
+                {% else %}
+                <div class="w-100 h-100" 
+                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                {% endif %}
+                
+                <!-- Gradient Overlay -->
+                <div class="position-absolute top-0 start-0 w-100 h-100" 
+                     style="background: linear-gradient(to bottom, transparent 40%, var(--background-color) 100%);"></div>
+            </div>
+        </div>
+        
+        <!-- Profile Card Overlay -->
+        <div class="profile-card-container position-absolute start-0 w-100" style="bottom: -100px;">
+            <div class="container-fluid px-4 px-lg-5">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="profile-card glass-effect shadow-lg border-0 rounded-4" 
+                             style="border: 1px solid rgba(255,255,255,0.1) !important; backdrop-filter: blur(20px);">
+                            <div class="p-4 p-lg-5">
+                                <div class="row align-items-center">
+                                    <!-- Profile Picture & Basic Info -->
+                                    <div class="col-lg-8">
+                                        <div class="d-flex align-items-start">
+                                            <!-- Profile Picture -->
+                                            <div class="position-relative me-4 me-lg-5">
+                                                <div class="position-relative">
+                                                    <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+                                                         class="rounded-circle border-4 border-dark shadow-lg" 
+                                                         style="width: 160px; height: 160px; object-fit: cover;"
+                                                         onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff&size=160'">
+                                                    
+                                                    <!-- Online Status -->
+                                                    {% if user.is_online %}
+                                                    <div class="position-absolute bottom-3 end-3 bg-success rounded-circle border-3 border-dark" 
+                                                         style="width: 24px; height: 24px;"></div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- User Info -->
+                                            <div class="flex-grow-1">
+                                                <div class="mb-3">
+                                                    <div class="d-flex align-items-center flex-wrap mb-2">
+                                                        <h1 class="fw-bold me-3 mb-2">{{ user.username }}</h1>
+                                                        
+                                                        <!-- Badges -->
+                                                        <div class="d-flex flex-wrap gap-2 mb-2">
+                                                            {% if user.is_verified %}
+                                                            <span class="verified-badge d-inline-flex align-items-center gap-1 px-3 py-1 rounded-pill" 
+                                                                  style="background: rgba(29, 155, 240, 0.15); border: 1px solid rgba(29, 155, 240, 0.3);">
+                                                                <i class="fas fa-check-circle text-primary fs-6"></i>
+                                                                <small class="text-primary fw-semibold">Verified</small>
+                                                            </span>
+                                                            {% endif %}
+                                                            
+                                                            {% if user.is_admin %}
+                                                            <span class="admin-badge d-inline-flex align-items-center gap-1 px-3 py-1 rounded-pill" 
+                                                                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                                                <i class="fas fa-crown text-white fs-6"></i>
+                                                                <small class="text-white fw-semibold">Admin</small>
+                                                            </span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <p class="text-muted mb-3 fs-5">@{{ user.username }}</p>
+                                                    
+                                                    {% if user.bio %}
+                                                    <p class="mb-4" style="font-size: 1.1rem; line-height: 1.6; max-width: 600px;">{{ user.bio }}</p>
+                                                    {% endif %}
+                                                    
+                                                    <!-- Quick Stats -->
+                                                    <div class="d-flex flex-wrap gap-4 mb-4">
+                                                        <div>
+                                                            <span class="fw-bold fs-4 d-block">{{ total_following }}</span>
+                                                            <span class="text-muted">Following</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="fw-bold fs-4 d-block">{{ total_followers }}</span>
+                                                            <span class="text-muted">Followers</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="fw-bold fs-4 d-block">{{ total_posts }}</span>
+                                                            <span class="text-muted">Posts</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="fw-bold fs-4 d-block">{{ total_likes }}</span>
+                                                            <span class="text-muted">Likes</span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Profile Details -->
+                                                    <div class="d-flex flex-wrap gap-3">
+                                                        {% if user.location %}
+                                                        <span class="d-flex align-items-center gap-2 text-muted">
+                                                            <i class="fas fa-map-marker-alt"></i>
+                                                            <span>{{ user.location }}</span>
+                                                        </span>
+                                                        {% endif %}
+                                                        
+                                                        {% if user.website %}
+                                                        <span class="d-flex align-items-center gap-2">
+                                                            <i class="fas fa-link"></i>
+                                                            <a href="{{ user.website }}" target="_blank" 
+                                                               class="text-primary text-decoration-none">
+                                                                {{ user.website|replace('https://', '')|replace('http://', '')|truncate(30) }}
+                                                            </a>
+                                                        </span>
+                                                        {% endif %}
+                                                        
+                                                        <span class="d-flex align-items-center gap-2 text-muted">
+                                                            <i class="fas fa-calendar"></i>
+                                                            <span>Joined {{ user.created_at.strftime('%B %Y') }}</span>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Action Buttons -->
+                                    <div class="col-lg-4">
+                                        <div class="d-flex flex-column align-items-end h-100">
+                                            {% if current_user.id == user.id %}
+                                            <div class="d-flex gap-2 mb-4">
+                                                <a href="{{ url_for('edit_profile') }}" 
+                                                   class="btn btn-outline-light rounded-pill px-4 d-flex align-items-center gap-2">
+                                                    <i class="fas fa-edit"></i>
+                                                    <span>Edit Profile</span>
+                                                </a>
+                                            </div>
+                                            {% else %}
+                                            <div class="d-flex gap-2 mb-4">
+                                                <button class="btn {% if is_following %}btn-primary{% else %}btn-outline-primary{% endif %} rounded-pill px-4 d-flex align-items-center gap-2 follow-btn" 
+                                                        data-user-id="{{ user.id }}">
+                                                    <i class="fas {% if is_following %}fa-user-check{% else %}fa-user-plus{% endif %}"></i>
+                                                    <span>{% if is_following %}Following{% else %}Follow{% endif %}</span>
+                                                </button>
+                                                
+                                                <a href="{{ url_for('conversation', user_id=user.id) }}" 
+                                                   class="btn btn-outline-light rounded-pill px-4 d-flex align-items-center gap-2">
+                                                    <i class="fas fa-envelope"></i>
+                                                    <span>Message</span>
+                                                </a>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            <!-- Additional Actions -->
+                                            <div class="d-flex flex-wrap gap-2">
+                                                {% if mutual_followers and current_user.id != user.id %}
+                                                <div class="bg-dark bg-opacity-50 rounded-pill px-3 py-2">
+                                                    <small class="text-light">
+                                                        <i class="fas fa-users me-1"></i>
+                                                        {{ mutual_followers|length }} mutual connections
+                                                    </small>
+                                                </div>
+                                                {% endif %}
+                                                
+                                                <div class="dropdown">
+                                                    <button class="btn btn-outline-light rounded-circle" 
+                                                            type="button" 
+                                                            data-bs-toggle="dropdown"
+                                                            style="width: 40px; height: 40px;">
+                                                        <i class="fas fa-ellipsis-h"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end shadow-lg">
+                                                        <!-- QR Code – visible to everyone (including self) -->
+                                                        <li>
+                                                            <a class="dropdown-item d-flex align-items-center gap-3 py-3" 
+                                                               href="#" onclick="showQRCode('{{ user.username }}')">
+                                                                <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                                                     style="width: 36px; height: 36px; background: rgba(29, 155, 240, 0.1);">
+                                                                    <i class="fas fa-qrcode text-primary"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <small class="fw-bold d-block">QR Code</small>
+                                                                    <small class="text-muted">Scan to follow @{{ user.username }}</small>
+                                                                </div>
+                                                            </a>
+                                                        </li>
+
+                                                        <!-- Scan QR – only for the logged-in user (their own profile) -->
+                                                        {% if current_user.is_authenticated and current_user.id == user.id %}
+                                                        <li>
+                                                            <a class="dropdown-item d-flex align-items-center gap-3 py-3" 
+                                                               href="#" onclick="openScanner()">
+                                                                <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                                                     style="width: 36px; height: 36px; background: rgba(0, 186, 124, 0.1);">
+                                                                    <i class="fas fa-camera text-success"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <small class="fw-bold d-block">Scan QR</small>
+                                                                    <small class="text-muted">Scan another user's QR code</small>
+                                                                </div>
+                                                            </a>
+                                                        </li>
+                                                        
+                                                        <!-- Settings – only for the logged-in user (their own profile) -->
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <a class="dropdown-item d-flex align-items-center gap-3 py-3" 
+                                                               href="{{ url_for('settings') }}">
+                                                                <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                                                     style="width: 36px; height: 36px; background: rgba(108, 117, 125, 0.1);">
+                                                                    <i class="fas fa-cog text-secondary"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <small class="fw-bold d-block">Settings</small>
+                                                                    <small class="text-muted">Manage your account</small>
+                                                                </div>
+                                                            </a>
+                                                        </li>
+                                                        {% endif %}
+
+                                                        <!-- Items only for other users -->
+                                                        {% if current_user.id != user.id %}
+                                                        <li>
+                                                            <a class="dropdown-item d-flex align-items-center gap-3 py-3" 
+                                                               href="#" onclick="addToList('{{ user.id }}')">
+                                                                <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                                                     style="width: 36px; height: 36px; background: rgba(0, 186, 124, 0.1);">
+                                                                    <i class="fas fa-list text-success"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <small class="fw-bold d-block">Add to List</small>
+                                                                    <small class="text-muted">Add to a custom list</small>
+                                                                </div>
+                                                            </a>
+                                                        </li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <button class="dropdown-item d-flex align-items-center gap-3 py-3 {% if is_blocked %}text-warning{% else %}text-danger{% endif %}"
+                                                                    data-user-id="{{ user.id }}">
+                                                                <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                                                     style="width: 36px; height: 36px; background: rgba(244, 33, 46, 0.1);">
+                                                                    <i class="fas fa-ban"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <small class="fw-bold d-block">
+                                                                        {% if is_blocked %}Unblock{% else %}Block{% endif %} @{{ user.username }}
+                                                                    </small>
+                                                                    <small class="text-muted">
+                                                                        {% if is_blocked %}Remove block restrictions{% else %}Block this user{% endif %}
+                                                                    </small>
+                                                                </div>
+                                                            </button>
+                                                        </li>
+                                                        <li>
+                                                            <button class="dropdown-item d-flex align-items-center gap-3 py-3 text-danger report-btn" 
+                                                                    data-user-id="{{ user.id }}"
+                                                                    data-username="{{ user.username }}">
+                                                                <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                                                     style="width: 36px; height: 36px; background: rgba(244, 33, 46, 0.1);">
+                                                                    <i class="fas fa-flag"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <small class="fw-bold d-block">Report User</small>
+                                                                    <small class="text-muted">Report abusive behavior</small>
+                                                                </div>
+                                                            </button>
+                                                        </li>
+                                                        {% endif %}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Settings Panels -->
-        <div class="col-lg-9">
-            <div class="card border-0 shadow-sm rounded-4" style="background: var(--card-color);">
-                <div class="card-body p-4">
-                    <div class="tab-content" id="settingsTabContent">
-                        <!-- Account Panel -->
-                        <div class="tab-pane fade show active" id="account" role="tabpanel">
-                            <h4 class="fw-bold mb-4">Account Settings</h4>
-                            <form method="POST" action="{{ url_for('update_account') }}" enctype="multipart/form-data">
-                                <div class="mb-4">
-                                    <label class="form-label fw-semibold">Profile Picture</label>
-                                    <div class="d-flex align-items-center gap-3">
-                                        <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
-                                             class="rounded-circle border" style="width: 80px; height: 80px; object-fit: cover;"
-                                             onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
-                                        <input type="file" class="form-control bg-dark text-light border-secondary" name="profile_picture" accept="image/*">
-                                    </div>
+    </div>
+    
+    <!-- Main Content Area -->
+    <div class="main-content-area mt-5 pt-5">
+        <div class="container-fluid px-4 px-lg-5">
+            <div class="row">
+                <!-- Left Column - User Details & Connections -->
+                <div class="col-lg-4">
+                    <!-- Activity Status Card -->
+                    <div class="card border-0 shadow-sm rounded-4 mb-4" 
+                         style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                                <i class="fas fa-signal text-primary"></i>
+                                <span>Activity Status</span>
+                            </h6>
+                            
+                            {% if user.is_online %}
+                            <div class="d-flex align-items-center justify-content-between p-3 rounded-3 mb-3" 
+                                 style="background: rgba(0, 186, 124, 0.1); border: 1px solid rgba(0, 186, 124, 0.2);">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="bg-success rounded-circle" style="width: 10px; height: 10px;"></div>
+                                    <span class="fw-semibold text-success">Online now</span>
                                 </div>
-                                <div class="mb-4">
-                                    <label class="form-label fw-semibold">Cover Picture</label>
-                                    <div class="d-flex align-items-center gap-3">
-                                        <img src="{{ url_for('static', filename='uploads/covers/' + user.cover_picture) }}" 
-                                             class="rounded border" style="width: 150px; height: 80px; object-fit: cover;">
-                                        <input type="file" class="form-control bg-dark text-light border-secondary" name="cover_picture" accept="image/*">
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="username" class="form-label fw-semibold">Username</label>
-                                    <input type="text" class="form-control bg-dark text-light border-secondary" id="username" name="username" value="{{ user.username }}" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="email" class="form-label fw-semibold">Email</label>
-                                    <input type="email" class="form-control bg-dark text-light border-secondary" id="email" name="email" value="{{ user.email }}" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="bio" class="form-label fw-semibold">Bio</label>
-                                    <textarea class="form-control bg-dark text-light border-secondary" id="bio" name="bio" rows="3">{{ user.bio or '' }}</textarea>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Save Changes</button>
-                            </form>
-                        </div>
-
-                        <!-- Privacy Panel -->
-                        <div class="tab-pane fade" id="privacy" role="tabpanel">
-                            <h4 class="fw-bold mb-4">Privacy & Safety</h4>
-                            <form method="POST" action="{{ url_for('update_privacy') }}">
-                                <div class="mb-4">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="is_private" id="is_private" {% if user.is_private %}checked{% endif %}>
-                                        <label class="form-check-label fw-semibold" for="is_private">Private Account</label>
-                                        <div class="small text-muted">When your account is private, only followers can see your posts and stories.</div>
-                                    </div>
-                                </div>
-                                <div class="mb-4">
-                                    <label class="fw-semibold mb-2">Who can message you?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="allow_messages_from" id="msg_everyone" value="everyone" {% if user.allow_messages_from == 'everyone' %}checked{% endif %}>
-                                        <label class="form-check-label" for="msg_everyone">Everyone</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="allow_messages_from" id="msg_followers" value="followers" {% if user.allow_messages_from == 'followers' %}checked{% endif %}>
-                                        <label class="form-check-label" for="msg_followers">Followers only</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="allow_messages_from" id="msg_none" value="none" {% if user.allow_messages_from == 'none' %}checked{% endif %}>
-                                        <label class="form-check-label" for="msg_none">No one</label>
-                                    </div>
-                                </div>
-                                <div class="mb-4">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="allow_tagging" id="allow_tagging" {% if user.allow_tagging %}checked{% endif %}>
-                                        <label class="form-check-label fw-semibold" for="allow_tagging">Allow tagging</label>
-                                        <div class="small text-muted">Allow others to tag you in posts and comments.</div>
-                                    </div>
-                                </div>
-                                <div class="mb-4">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="show_activity_status" id="show_activity_status" {% if user.show_activity_status %}checked{% endif %}>
-                                        <label class="form-check-label fw-semibold" for="show_activity_status">Show activity status</label>
-                                        <div class="small text-muted">Let others see when you're online.</div>
-                                    </div>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Save Privacy Settings</button>
-                            </form>
-                        </div>
-
-                        <!-- Notifications Panel -->
-                        <div class="tab-pane fade" id="notifications" role="tabpanel">
-                            <h4 class="fw-bold mb-4">Notification Settings</h4>
-                            <form method="POST" action="{{ url_for('update_notifications') }}">
-                                <div class="mb-3">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="notify_likes" id="notify_likes" {% if user.notify_likes %}checked{% endif %}>
-                                        <label class="form-check-label fw-semibold" for="notify_likes">Likes</label>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="notify_comments" id="notify_comments" {% if user.notify_comments %}checked{% endif %}>
-                                        <label class="form-check-label fw-semibold" for="notify_comments">Comments</label>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="notify_follows" id="notify_follows" {% if user.notify_follows %}checked{% endif %}>
-                                        <label class="form-check-label fw-semibold" for="notify_follows">Follows</label>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="notify_messages" id="notify_messages" {% if user.notify_messages %}checked{% endif %}>
-                                        <label class="form-check-label fw-semibold" for="notify_messages">Messages</label>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="notify_mentions" id="notify_mentions" {% if user.notify_mentions %}checked{% endif %}>
-                                        <label class="form-check-label fw-semibold" for="notify_mentions">Mentions</label>
-                                    </div>
-                                </div>
-                                <div class="mb-4">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="email_notifications" id="email_notifications" {% if user.email_notifications %}checked{% endif %}>
-                                        <label class="form-check-label fw-semibold" for="email_notifications">Email Notifications</label>
-                                        <div class="small text-muted">Receive email summaries of your activity.</div>
-                                    </div>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Save Notification Settings</button>
-                            </form>
-                        </div>
-
-                        <!-- Security Panel -->
-                        <div class="tab-pane fade" id="security" role="tabpanel">
-                            <h4 class="fw-bold mb-4">Security</h4>
-                            <form method="POST" action="{{ url_for('update_security') }}">
-                                <div class="mb-3">
-                                    <label for="current_password" class="form-label fw-semibold">Current Password</label>
-                                    <input type="password" class="form-control bg-dark text-light border-secondary" id="current_password" name="current_password" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="new_password" class="form-label fw-semibold">New Password</label>
-                                    <input type="password" class="form-control bg-dark text-light border-secondary" id="new_password" name="new_password" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="confirm_password" class="form-label fw-semibold">Confirm New Password</label>
-                                    <input type="password" class="form-control bg-dark text-light border-secondary" id="confirm_password" name="confirm_password" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Change Password</button>
-                            </form>
-                            <hr class="my-4">
-                            <h5 class="fw-semibold mb-3">Two-Factor Authentication (2FA)</h5>
-                            <p class="text-muted small">Add an extra layer of security to your account. Once set up, you'll need your phone to generate a code when logging in.</p>
-                            <form method="POST" action="{{ url_for('enable_2fa') }}">
-                                <button type="submit" class="btn btn-outline-primary" {% if user.two_factor_enabled %}disabled{% endif %}>
-                                    {% if user.two_factor_enabled %}Enabled{% else %}Enable 2FA{% endif %}
-                                </button>
-                            </form>
-                        </div>
-
-                        <!-- Content & Display Panel -->
-                        <div class="tab-pane fade" id="content" role="tabpanel">
-                            <h4 class="fw-bold mb-4">Content & Display</h4>
-                            <form method="POST" action="{{ url_for('update_content') }}">
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold">Theme</label>
-                                    <select class="form-select bg-dark text-light border-secondary" name="theme">
-                                        <option value="dark" {% if user.theme == 'dark' %}selected{% endif %}>Dark</option>
-                                        <option value="light" {% if user.theme == 'light' %}selected{% endif %}>Light</option>
-                                        <option value="auto" {% if user.theme == 'auto' %}selected{% endif %}>Auto (follow system)</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold">Language</label>
-                                    <select class="form-select bg-dark text-light border-secondary" name="language">
-                                        <option value="en" {% if user.language == 'en' %}selected{% endif %}>English</option>
-                                        <option value="es" {% if user.language == 'es' %}selected{% endif %}>Español</option>
-                                        <option value="fr" {% if user.language == 'fr' %}selected{% endif %}>Français</option>
-                                        <option value="de" {% if user.language == 'de' %}selected{% endif %}>Deutsch</option>
-                                        <option value="pt" {% if user.language == 'pt' %}selected{% endif %}>Português</option>
-                                        <option value="ru" {% if user.language == 'ru' %}selected{% endif %}>Русский</option>
-                                        <option value="ja" {% if user.language == 'ja' %}selected{% endif %}>日本語</option>
-                                        <option value="zh" {% if user.language == 'zh' %}selected{% endif %}>中文</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="autoplay_videos" id="autoplay_videos" {% if user.autoplay_videos %}checked{% endif %}>
-                                        <label class="form-check-label fw-semibold" for="autoplay_videos">Autoplay videos</label>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold">Media quality</label>
-                                    <select class="form-select bg-dark text-light border-secondary" name="media_quality">
-                                        <option value="auto" {% if user.media_quality == 'auto' %}selected{% endif %}>Auto (recommended)</option>
-                                        <option value="low" {% if user.media_quality == 'low' %}selected{% endif %}>Low (save data)</option>
-                                        <option value="high" {% if user.media_quality == 'high' %}selected{% endif %}>High (best quality)</option>
-                                    </select>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Save Display Settings</button>
-                            </form>
-                        </div>
-
-                        <!-- Data & Storage Panel -->
-                        <div class="tab-pane fade" id="data" role="tabpanel">
-                            <h4 class="fw-bold mb-4">Data & Storage</h4>
-                            <div class="mb-4">
-                                <h5 class="fw-semibold">Download your data</h5>
-                                <p class="text-muted small">Get a copy of your posts, comments, and profile information.</p>
-                                <form method="POST" action="{{ url_for('download_data') }}">
-                                    <button type="submit" class="btn btn-outline-primary">Request Data Download</button>
-                                </form>
+                                <small class="text-success">Active</small>
                             </div>
-                            <div class="mb-4">
-                                <h5 class="fw-semibold">Clear cache</h5>
-                                <p class="text-muted small">Remove temporarily stored data from this device.</p>
-                                <form method="POST" action="{{ url_for('clear_cache') }}">
-                                    <button type="submit" class="btn btn-outline-warning">Clear Cache</button>
-                                </form>
+                            {% else %}
+                            <div class="d-flex align-items-center justify-content-between p-3 rounded-3 mb-3" 
+                                 style="background: rgba(108, 117, 125, 0.1); border: 1px solid var(--border-light);">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="far fa-clock text-muted"></i>
+                                    <span class="fw-semibold">Last active</span>
+                                </div>
+                                <small class="text-muted">{{ user.last_seen|time_ago }}</small>
                             </div>
-                            <div>
-                                <h5 class="fw-semibold">Storage used</h5>
-                                <p class="text-muted small">You are using <strong>~0 MB</strong> of storage.</p>
+                            {% endif %}
+                            
+                            <div class="small text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                {% if user.is_online %}
+                                Currently active and available for conversations
+                                {% else %}
+                                Usually responds within a few hours
+                                {% endif %}
                             </div>
                         </div>
-
-                        <!-- Blocked Users Panel -->
-                        <div class="tab-pane fade" id="blocked" role="tabpanel">
-                            <h4 class="fw-bold mb-4">Blocked Users</h4>
-                            {% set blocked_list = user.blocked.all() %}
-                            {% if blocked_list %}
-                                <div class="list-group">
-                                    {% for blocked in blocked_list %}
-                                    <div class="list-group-item bg-transparent border-light d-flex justify-content-between align-items-center">
-                                        <div class="d-flex align-items-center gap-3">
-                                            <img src="{{ url_for('static', filename='uploads/profiles/' + blocked.profile_picture) }}" 
-                                                 class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;"
-                                                 onerror="this.src='https://ui-avatars.com/api/?name={{ blocked.username }}&background=1d9bf0&color=fff'">
-                                            <div>
-                                                <strong>{{ blocked.username }}</strong>
-                                                <small class="text-muted d-block">@{{ blocked.username }}</small>
+                    </div>
+                    
+                    <!-- Mutual Connections -->
+                    {% if mutual_followers and current_user.id != user.id %}
+                    <div class="card border-0 shadow-sm rounded-4 mb-4" 
+                         style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                                    <i class="fas fa-users text-primary"></i>
+                                    <span>Mutual Connections</span>
+                                </h6>
+                                <span class="badge bg-primary rounded-pill">{{ mutual_followers|length }}</span>
+                            </div>
+                            
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                {% for mutual in mutual_followers[:12] %}
+                                <a href="{{ url_for('profile', username=mutual.username) }}" 
+                                   class="position-relative" 
+                                   data-bs-toggle="tooltip" 
+                                   title="@{{ mutual.username }}"
+                                   style="transition: transform 0.2s ease;">
+                                    <img src="{{ url_for('static', filename='uploads/profiles/' + mutual.profile_picture) }}" 
+                                         class="rounded-circle border-2 border-dark"
+                                         style="width: 42px; height: 42px; object-fit: cover;"
+                                         onerror="this.src='https://ui-avatars.com/api/?name={{ mutual.username }}&background=1d9bf0&color=fff'">
+                                </a>
+                                {% endfor %}
+                            </div>
+                            
+                            <a href="{{ url_for('profile_followers', username=user.username) }}" 
+                               class="btn btn-outline-primary btn-sm w-100">
+                                View All Connections
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- User Lists -->
+                    {% set user_lists = user.created_lists.limit(4).all() %}
+                    {% if user_lists %}
+                    <div class="card border-0 shadow-sm rounded-4 mb-4" 
+                         style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                                    <i class="fas fa-list text-success"></i>
+                                    <span>Lists</span>
+                                </h6>
+                                {% if current_user.id == user.id %}
+                                <a href="{{ url_for('lists') }}" class="btn btn-sm btn-outline-primary rounded-circle" 
+                                   style="width: 32px; height: 32px;">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                            
+                            {% for list in user_lists %}
+                            <a href="{{ url_for('view_list', list_id=list.id) }}" 
+                               class="d-block text-decoration-none p-3 rounded-3 mb-2 hover-lift" 
+                               style="background: var(--card-hover);">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold mb-1">{{ list.name }}</div>
+                                        <small class="text-muted">{{ list.members.count() }} members • {{ 'Private' if list.is_private else 'Public' }}</small>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-muted"></i>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Center Column - Media & Activity -->
+                <div class="col-lg-8">
+                    <!-- Media Gallery -->
+                    {% if posts_with_images %}
+                    <div class="card border-0 shadow-sm rounded-4 mb-4" 
+                         style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div>
+                                    <h6 class="fw-bold mb-1 d-flex align-items-center gap-2">
+                                        <i class="fas fa-images text-accent"></i>
+                                        <span>Media Gallery</span>
+                                    </h6>
+                                    <small class="text-muted">{{ posts_with_images|length }} photos and videos</small>
+                                </div>
+                                <a href="{{ url_for('profile_media', username=user.username) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    View All
+                                </a>
+                            </div>
+                            
+                            <div class="row g-3">
+                                {% for post in posts_with_images[:6] %}
+                                <div class="col-md-4 col-sm-6">
+                                    <div class="position-relative media-item rounded-3 overflow-hidden" 
+                                         style="aspect-ratio: 1; cursor: pointer;"
+                                         onclick="window.location.href='{{ url_for('view_post', post_id=post.id) }}'">
+                                        <img src="{{ url_for('static', filename='uploads/posts/' + post.image) }}" 
+                                             class="w-100 h-100 object-fit-cover"
+                                             style="transition: transform 0.3s ease;">
+                                        
+                                        <!-- Hover Overlay -->
+                                        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50 opacity-0"
+                                             style="transition: opacity 0.3s ease;">
+                                            <div class="text-center p-3">
+                                                <i class="fas fa-expand text-white fs-4 mb-2"></i>
+                                                <p class="text-white mb-0 small">{{ post.content|truncate(30) }}</p>
                                             </div>
                                         </div>
-                                        <form method="POST" action="{{ url_for('unblock_from_settings', user_id=blocked.id) }}" class="d-inline">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">Unblock</button>
-                                        </form>
                                     </div>
-                                    {% endfor %}
                                 </div>
-                            {% else %}
-                                <p class="text-muted">You haven't blocked anyone.</p>
-                            {% endif %}
+                                {% endfor %}
+                            </div>
                         </div>
-
-                        <!-- Help & Support Panel -->
-                        <div class="tab-pane fade" id="support" role="tabpanel">
-                            <h4 class="fw-bold mb-4">Help & Support</h4>
-                            <p>Need assistance? Visit our <a href="#" class="text-primary">Help Center</a> or contact us directly.</p>
-                            <form method="POST" action="#">
-                                <div class="mb-3">
-                                    <label for="support_message" class="form-label fw-semibold">Describe your issue</label>
-                                    <textarea class="form-control bg-dark text-light border-secondary" id="support_message" rows="4" placeholder="What's happening?"></textarea>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Recent Activity -->
+                    <div class="card border-0 shadow-sm rounded-4" 
+                         style="background: var(--card-color); border: 1px solid var(--border-light) !important;">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+                                <i class="fas fa-history text-primary"></i>
+                                <span>Recent Activity</span>
+                            </h6>
+                            
+                            {% if posts %}
+                            <div class="activity-timeline">
+                                {% for post in posts[:3] %}
+                                <div class="activity-item mb-4 pb-4" 
+                                     style="border-bottom: 1px solid var(--border-light);">
+                                    <div class="d-flex">
+                                        <!-- Activity Icon -->
+                                        <div class="flex-shrink-0 me-3">
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                                 style="width: 48px; height: 48px; background: rgba(29, 155, 240, 0.1);">
+                                                <i class="fas fa-comment text-primary"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Activity Content -->
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <span class="fw-bold">Posted an update</span>
+                                                    <small class="text-muted ms-2">{{ post.created_at|time_ago }}</small>
+                                                </div>
+                                                <a href="{{ url_for('view_post', post_id=post.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    View
+                                                </a>
+                                            </div>
+                                            
+                                            <p class="mb-3" style="line-height: 1.5;">{{ post.content|truncate(150) }}</p>
+                                            
+                                            <!-- Post Stats -->
+                                            <div class="d-flex align-items-center gap-3">
+                                                <small class="d-flex align-items-center gap-1 text-muted">
+                                                    <i class="fas fa-heart"></i>
+                                                    {{ post.like_count() }}
+                                                </small>
+                                                <small class="d-flex align-items-center gap-1 text-muted">
+                                                    <i class="fas fa-comment"></i>
+                                                    {{ post.comment_count() }}
+                                                </small>
+                                                <small class="d-flex align-items-center gap-1 text-muted">
+                                                    <i class="fas fa-share"></i>
+                                                    {{ post.bookmark_count() }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button type="submit" class="btn btn-primary">Send Message</button>
-                            </form>
+                                {% endfor %}
+                                
+                                <!-- View More -->
+                                <div class="text-center pt-2">
+                                    <a href="{{ url_for('profile', username=user.username) }}#posts" 
+                                       class="btn btn-outline-primary">
+                                        View All Activity
+                                    </a>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <div class="mb-3">
+                                    <i class="fas fa-comments fa-3x text-muted opacity-50"></i>
+                                </div>
+                                <h6 class="fw-bold text-muted mb-2">No recent activity</h6>
+                                <p class="text-muted small">When {{ user.username }} becomes active, updates will appear here.</p>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -327,21 +538,408 @@
     </div>
 </div>
 
+<!-- QR Code Display Modal -->
+<div class="modal fade" id="qrCodeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="background: var(--card-color);">
+            <div class="modal-header border-bottom border-light">
+                <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
+                    <i class="fas fa-qrcode text-primary"></i>
+                    <span>Scan to Follow</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div class="qr-container p-3 mb-3">
+                    <img id="qrCodeImage" src="" alt="QR Code" class="img-fluid" style="max-width: 300px;">
+                </div>
+                <p class="text-muted mb-2">Scan this QR code with your phone to instantly follow <span id="qrUsername"></span>.</p>
+                <p class="small text-muted">You'll be redirected to their profile and automatically follow them.</p>
+            </div>
+            <div class="modal-footer border-top border-light justify-content-center">
+                <a id="downloadQrLink" href="#" download="qrcode.png" class="btn btn-outline-primary">
+                    <i class="fas fa-download me-2"></i>Download QR Code
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QR Code Scanner Modal -->
+<div class="modal fade" id="qrScannerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="background: var(--card-color);">
+            <div class="modal-header border-bottom border-light">
+                <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
+                    <i class="fas fa-camera text-primary"></i>
+                    <span>Scan QR Code</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="scanner-container position-relative mb-3" style="min-height: 300px;">
+                    <video id="qr-scanner-video" style="width: 100%; border-radius: 12px;"></video>
+                    <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center pointer-events-none">
+                        <div class="scanner-frame" style="width: 200px; height: 200px; border: 3px solid rgba(29, 161, 242, 0.8); border-radius: 16px;"></div>
+                    </div>
+                </div>
+                <div id="scan-status" class="text-center small text-muted">
+                    <i class="fas fa-info-circle me-1"></i>Position the QR code inside the frame
+                </div>
+            </div>
+            <div class="modal-footer border-top border-light justify-content-center">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
-    .list-group-item {
-        transition: all 0.2s ease;
-        border-left: 3px solid transparent;
+    .profile-cover-section {
+        padding-bottom: 120px;
     }
-    .list-group-item:hover {
-        background: rgba(255,255,255,0.05) !important;
+    
+    .cover-container {
+        overflow: hidden;
     }
-    .list-group-item.active {
-        background: rgba(29, 155, 240, 0.1) !important;
-        border-left-color: #1d9bf0 !important;
-        color: white !important;
+    
+    .cover-image img {
+        transition: transform 0.5s ease;
     }
-    .sticky-top {
-        z-index: 100;
+    
+    .cover-container:hover .cover-image img {
+        transform: scale(1.02);
+    }
+    
+    .profile-card {
+        background: rgba(22, 24, 28, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    .media-item:hover img {
+        transform: scale(1.1);
+    }
+    
+    .media-item:hover .bg-opacity-50 {
+        opacity: 1 !important;
+    }
+    
+    .hover-lift {
+        transition: all 0.3s ease;
+    }
+    
+    .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+    
+    .activity-item {
+        transition: all 0.3s ease;
+    }
+    
+    .activity-item:hover {
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 12px;
+        padding-left: 10px;
+        padding-right: 10px;
+        margin-left: -10px;
+        margin-right: -10px;
+    }
+    
+    .object-fit-cover {
+        object-fit: cover;
+    }
+    
+    /* Smooth animations */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .profile-card {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    /* Professional scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: var(--card-color);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: var(--border-light);
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-secondary);
+    }
+    
+    /* QR container styling */
+    .qr-container {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        transition: transform 0.2s ease;
+    }
+    .qr-container:hover {
+        transform: scale(1.02);
+    }
+    
+    /* Scanner styles */
+    .scanner-container video {
+        transform: scaleX(-1); /* mirror for natural feel */
+    }
+    .pointer-events-none {
+        pointer-events: none;
     }
 </style>
+
+<!-- Include Instascan library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/instascan/1.0.0/instascan.min.js"></script>
+
+<script>
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        tooltips.forEach(tooltip => new bootstrap.Tooltip(tooltip));
+        
+        // Add hover effect to profile picture
+        const profilePic = document.querySelector('.profile-avatar');
+        if (profilePic) {
+            profilePic.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.05)';
+            });
+            profilePic.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        }
+        
+        // Animate stats counter (optional)
+        animateStats();
+    });
+    
+    // Smooth scroll to sections
+    function scrollToSection(sectionId) {
+        const element = document.getElementById(sectionId);
+        if (element) {
+            window.scrollTo({
+                top: element.offsetTop - 100,
+                behavior: 'smooth'
+            });
+        }
+    }
+    
+    // Add to List function
+    function addToList(userId) {
+        fetch('/api/user/lists')
+            .then(response => response.json())
+            .then(lists => {
+                if (lists.length === 0) {
+                    showToast('Create a list first to organize connections!', 'info');
+                    return;
+                }
+                
+                const modalHtml = `
+                    <div class="modal fade" id="addToListModal" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow-lg" style="background: var(--card-color);">
+                                <div class="modal-header border-bottom border-light">
+                                    <h5 class="modal-title fw-bold">Add to List</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body p-4">
+                                    <p class="text-muted mb-4">Select a list to add @{{ user.username }} to:</p>
+                                    <div id="lists-container">
+                                        ${lists.map(list => `
+                                            <div class="list-item d-flex align-items-center justify-content-between p-3 rounded-3 mb-2 hover-lift" 
+                                                 style="background: var(--card-hover); cursor: pointer;"
+                                                 onclick="addUserToList(${list.id}, ${userId})">
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                                         style="width: 40px; height: 40px; background: rgba(0, 186, 124, 0.1);">
+                                                        <i class="fas fa-list text-success"></i>
+                                                    </div>
+                                                    <div>
+                                                        <strong class="d-block">${list.name}</strong>
+                                                        <small class="text-muted">${list.member_count || list.members?.count() || 0} members</small>
+                                                    </div>
+                                                </div>
+                                                <i class="fas fa-plus text-primary"></i>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-top border-light">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <a href="{{ url_for('lists') }}" class="btn btn-primary">
+                                        <i class="fas fa-plus me-2"></i>Create New List
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                const modal = new bootstrap.Modal(document.getElementById('addToListModal'));
+                modal.show();
+                
+                // Clean up modal on close
+                document.getElementById('addToListModal').addEventListener('hidden.bs.modal', function() {
+                    this.remove();
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Failed to load lists. Please try again.', 'danger');
+            });
+    }
+    
+    function addUserToList(listId, userId) {
+        fetch(`/lists/${listId}/add_member`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `username={{ user.username }}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Successfully added to list!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('addToListModal')).hide();
+            } else {
+                showToast(data.error || 'Failed to add user to list', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.', 'danger');
+        });
+    }
+    
+    // QR Code display function
+    function showQRCode(username) {
+        const qrImage = document.getElementById('qrCodeImage');
+        qrImage.src = `/profile/${username}/qr?t=${Date.now()}`; // cache‑bust
+        document.getElementById('qrUsername').textContent = '@' + username;
+        
+        const downloadLink = document.getElementById('downloadQrLink');
+        downloadLink.href = `/profile/${username}/qr`;
+        
+        const modal = new bootstrap.Modal(document.getElementById('qrCodeModal'));
+        modal.show();
+    }
+    
+    // QR Scanner logic
+    let scanner = null;
+    let activeScan = false;
+
+    function startScanner() {
+        const video = document.getElementById('qr-scanner-video');
+        if (!video) return;
+
+        Instascan.Camera.getCameras().then(cameras => {
+            if (cameras.length > 0) {
+                const backCamera = cameras.find(cam => cam.name.toLowerCase().includes('back')) || cameras[0];
+                
+                scanner = new Instascan.Scanner({ video: video, mirror: false, scanPeriod: 5 });
+                scanner.addListener('scan', function(content) {
+                    handleScannedCode(content);
+                });
+                
+                scanner.start(backCamera).then(() => {
+                    activeScan = true;
+                    document.getElementById('scan-status').innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>Scanning...';
+                }).catch(err => {
+                    console.error('Scanner start error:', err);
+                    document.getElementById('scan-status').innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-1"></i>Failed to start camera';
+                });
+            } else {
+                document.getElementById('scan-status').innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-1"></i>No cameras found';
+            }
+        }).catch(err => {
+            console.error('Camera access error:', err);
+            document.getElementById('scan-status').innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-1"></i>Camera permission denied';
+        });
+    }
+
+    function stopScanner() {
+        if (scanner) {
+            scanner.stop();
+            scanner = null;
+            activeScan = false;
+        }
+    }
+
+    function handleScannedCode(url) {
+        stopScanner();
+        
+        const modalEl = document.getElementById('qrScannerModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+
+        if (url.includes('/follow-qr/')) {
+            try {
+                const urlObj = new URL(url);
+                const path = urlObj.pathname;
+                window.location.href = path;
+            } catch (e) {
+                if (url.startsWith('/follow-qr/')) {
+                    window.location.href = url;
+                } else {
+                    alert('Invalid QR code. Please scan a valid Chatter follow QR.');
+                }
+            }
+        } else {
+            alert('This QR code is not a valid Chatter follow code.');
+        }
+    }
+
+    // Modal events: start scanner when modal opens, stop when closes
+    document.getElementById('qrScannerModal').addEventListener('shown.bs.modal', function () {
+        startScanner();
+    });
+
+    document.getElementById('qrScannerModal').addEventListener('hidden.bs.modal', function () {
+        stopScanner();
+    });
+
+    // Function to open scanner
+    function openScanner() {
+        const modal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
+        modal.show();
+    }
+    
+    // Optional: Animate stats counter
+    function animateStats() {
+        const stats = document.querySelectorAll('.fs-4');
+        stats.forEach(stat => {
+            const target = parseInt(stat.textContent);
+            let current = 0;
+            const increment = target / 30;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                stat.textContent = Math.floor(current);
+            }, 50);
+        });
+    }
+</script>
 {% endblock %}

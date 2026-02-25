@@ -1,62 +1,79 @@
 {% extends "base.html" %}
 
-{% block title %}Reels{% endblock %}
+{% block title %}Reels - Chatter{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid py-4">
     <div class="row">
-        <!-- Left Sidebar -->
+        <!-- Left Sidebar – left empty for consistency (sidebar included via base) -->
         <div class="col-lg-3 d-none d-lg-block">
-            {% include 'sidebar.html' %}
+            <!-- Left sidebar content is handled by base.html, no need to duplicate -->
         </div>
-        
-        <!-- Main Content -->
+
+        <!-- Main Content – Reels Grid -->
         <div class="col-lg-6 col-md-12">
-            <!-- Header -->
-            <div class="sticky-top bg-dark py-3 mb-3" style="z-index: 100;">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h3 class="mb-0"><i class="fas fa-film me-2"></i>Reels</h3>
-                        <small class="text-muted">Short videos from people you follow</small>
-                    </div>
-                    <a href="{{ url_for('upload_reel') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-1"></i> Upload Reel
-                    </a>
+            <!-- Header with navigation -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="mb-1"><i class="fas fa-film me-2 text-primary"></i>Reels</h4>
+                    <p class="text-muted small mb-0">Short videos from people you follow</p>
                 </div>
-                
-                <!-- Reels Navigation -->
-                <div class="d-flex gap-3 mt-3">
-                    <a href="{{ url_for('reels_feed') }}" class="btn btn-sm {% if request.endpoint == 'reels_feed' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                        <i class="fas fa-home me-1"></i> For You
-                    </a>
-                    <a href="?sort=trending" class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-fire me-1"></i> Trending
-                    </a>
-                    <a href="?sort=following" class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-user-friends me-1"></i> Following
-                    </a>
-                    <a href="?sort=new" class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-star me-1"></i> New
-                    </a>
-                </div>
+                <a href="{{ url_for('upload_reel') }}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle me-2"></i>Upload Reel
+                </a>
             </div>
-            
+
+            <!-- Filter tabs -->
+            <div class="feed-tabs mb-4">
+                <ul class="nav nav-tabs border-0" id="reelsTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link {% if request.args.get('sort') == 'for_you' or not request.args.get('sort') %}active{% endif %}" 
+                           href="{{ url_for('reels_feed', sort='for_you') }}">
+                            <i class="fas fa-home me-1"></i> For You
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link {% if request.args.get('sort') == 'trending' %}active{% endif %}" 
+                           href="{{ url_for('reels_feed', sort='trending') }}">
+                            <i class="fas fa-fire me-1"></i> Trending
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link {% if request.args.get('sort') == 'following' %}active{% endif %}" 
+                           href="{{ url_for('reels_feed', sort='following') }}">
+                            <i class="fas fa-user-friends me-1"></i> Following
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link {% if request.args.get('sort') == 'new' %}active{% endif %}" 
+                           href="{{ url_for('reels_feed', sort='new') }}">
+                            <i class="fas fa-star me-1"></i> New
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
             <!-- Reels Grid -->
-            {% if reels.items %}
-            <div class="reels-container fade-in">
+            {% if reels and reels.items %}
+            <div class="reels-grid">
                 {% for reel in reels.items %}
                 <div class="reel-card" data-reel-id="{{ reel.id }}">
                     <div class="reel-thumbnail">
-                        <img src="{{ url_for('static', filename='uploads/reel_thumbnails/' + reel.thumbnail_url) if reel.thumbnail_url else url_for('static', filename='images/reel_placeholder.jpg') }}" 
+                        {% if reel.thumbnail_url %}
+                        <img src="{{ url_for('static', filename='uploads/reel_thumbnails/' + reel.thumbnail_url) }}" 
                              alt="Reel thumbnail"
-                             onerror="this.src='https://via.placeholder.com/300x533/16181c/ffffff?text=REEL'">
+                             onerror="this.src='{{ url_for('static', filename='img/reel-placeholder.jpg') }}'">
+                        {% else %}
+                        <div class="reel-thumbnail-placeholder">
+                            <i class="fas fa-video fa-3x text-muted"></i>
+                        </div>
+                        {% endif %}
                         <div class="reel-overlay">
-                            <div class="reel-stats">
-                                <i class="fas fa-play"></i> {{ reel.views_count or 0 }}
-                            </div>
-                            <div class="reel-stats">
-                                <i class="fas fa-heart"></i> {{ reel.likes_count or 0 }}
-                            </div>
+                            <span class="reel-stat"><i class="fas fa-play"></i> {{ reel.views_count or 0 }}</span>
+                            <span class="reel-stat"><i class="fas fa-heart"></i> {{ reel.likes_count or 0 }}</span>
+                            {% if reel.duration %}
+                            <span class="reel-duration">{{ reel.duration }}s</span>
+                            {% endif %}
                         </div>
                     </div>
                     <div class="reel-info">
@@ -67,165 +84,428 @@
                                 {% endif %}
                                 <img src="{{ get_user_avatar_url(reel.user) }}" 
                                      class="profile-img-with-ring avatar-sm"
+                                     alt="{{ reel.user.username }}"
                                      onerror="this.src='https://ui-avatars.com/api/?name={{ reel.user.username }}&background=1d9bf0&color=fff'">
                             </div>
                             <div class="flex-grow-1">
-                                <h6 class="mb-0">{{ reel.user.username }}</h6>
+                                <h6 class="mb-0">@{{ reel.user.username }}</h6>
                                 <small class="text-muted">{{ reel.created_at|time_ago }}</small>
                             </div>
-                            <div class="reel-action-btn">
-                                <button class="btn btn-sm btn-outline-primary" onclick="shareReel({{ reel.id }})">
-                                    <i class="fas fa-share"></i>
-                                </button>
-                            </div>
+                            <button class="btn btn-sm btn-outline-primary share-btn" onclick="shareReel({{ reel.id }})">
+                                <i class="fas fa-share"></i>
+                            </button>
                         </div>
                         <div class="reel-caption">
-                            {{ reel.caption|truncate(100) if reel.caption else 'No caption' }}
+                            {{ reel.caption|truncate(80) if reel.caption else 'No caption' }}
                         </div>
                         <div class="reel-meta">
-                            <div>
-                                {% if reel.music %}
-                                <i class="fas fa-music text-muted"></i>
-                                <small class="text-muted">{{ reel.music|truncate(20) }}</small>
-                                {% endif %}
-                                {% if reel.location %}
-                                <i class="fas fa-map-marker-alt text-muted ms-2"></i>
-                                <small class="text-muted">{{ reel.location|truncate(20) }}</small>
-                                {% endif %}
-                            </div>
-                            <div>
-                                <small class="text-muted">{{ reel.duration or 15 }}s</small>
-                            </div>
+                            {% if reel.music %}
+                            <span><i class="fas fa-music"></i> {{ reel.music|truncate(20) }}</span>
+                            {% endif %}
+                            {% if reel.location %}
+                            <span><i class="fas fa-map-marker-alt"></i> {{ reel.location|truncate(20) }}</span>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
                 {% endfor %}
             </div>
-            
+
             <!-- Pagination -->
             {% if reels.pages > 1 %}
-            <nav class="mt-4">
+            <nav class="mt-5">
                 <ul class="pagination justify-content-center">
                     {% if reels.has_prev %}
                     <li class="page-item">
-                        <a class="page-link" href="{{ url_for('reels_feed', page=reels.prev_num) }}">Previous</a>
+                        <a class="page-link" href="{{ url_for('reels_feed', page=reels.prev_num, sort=request.args.get('sort', 'for_you')) }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="fas fa-chevron-left"></i></span>
                     </li>
                     {% endif %}
-                    
-                    {% for page_num in reels.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+
+                    {% for page_num in reels.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
                         {% if page_num %}
                             <li class="page-item {% if page_num == reels.page %}active{% endif %}">
-                                <a class="page-link" href="{{ url_for('reels_feed', page=page_num) }}">{{ page_num }}</a>
+                                <a class="page-link" href="{{ url_for('reels_feed', page=page_num, sort=request.args.get('sort', 'for_you')) }}">{{ page_num }}</a>
                             </li>
                         {% else %}
-                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                            <li class="page-item disabled"><span class="page-link">…</span></li>
                         {% endif %}
                     {% endfor %}
-                    
+
                     {% if reels.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="{{ url_for('reels_feed', page=reels.next_num) }}">Next</a>
+                        <a class="page-link" href="{{ url_for('reels_feed', page=reels.next_num, sort=request.args.get('sort', 'for_you')) }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="fas fa-chevron-right"></i></span>
                     </li>
                     {% endif %}
                 </ul>
             </nav>
             {% endif %}
-            
+
             {% else %}
             <!-- Empty State -->
-            <div class="text-center py-5">
-                <div class="reel-thumbnail mx-auto mb-3" style="max-width: 300px;">
-                    <div class="d-flex align-items-center justify-content-center h-100" style="background: var(--card-color); border-radius: 16px;">
-                        <i class="fas fa-film fa-4x text-muted"></i>
-                    </div>
+            <div class="empty-feed text-center py-5">
+                <div class="empty-icon mb-3">
+                    <i class="fas fa-film fa-4x text-muted"></i>
                 </div>
-                <h3 class="mb-3">No reels yet</h3>
-                <p class="text-muted mb-4">Upload your first reel or follow more people to see their reels</p>
+                <h5 class="mb-2">No reels yet</h5>
+                <p class="text-muted mb-4">Upload your first reel or follow more people to see their reels.</p>
                 <div class="d-flex justify-content-center gap-3">
                     <a href="{{ url_for('upload_reel') }}" class="btn btn-primary">
-                        <i class="fas fa-video me-1"></i> Upload Reel
+                        <i class="fas fa-plus-circle me-2"></i>Upload Reel
                     </a>
                     <a href="{{ url_for('search') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-user-plus me-1"></i> Find People
+                        <i class="fas fa-search me-2"></i>Find People
                     </a>
                 </div>
             </div>
             {% endif %}
         </div>
-        
-        <!-- Right Sidebar -->
+
+        <!-- Right Sidebar – Trending Reels -->
         <div class="col-lg-3 d-none d-lg-block">
-            <!-- Trending Reels -->
-            <div class="card glass-effect mb-3">
-                <div class="card-header bg-transparent border-bottom">
-                    <h6 class="mb-0"><i class="fas fa-fire me-2 text-warning"></i>Trending Reels</h6>
-                </div>
-                <div class="card-body">
-                    {% if trending_reels and trending_reels|length > 0 %}
-                    {% for reel in trending_reels[:5] %}
-                    <a href="{{ url_for('view_reel', reel_id=reel.id) }}" class="text-decoration-none text-reset d-block mb-3">
-                        <div class="d-flex align-items-center">
-                            <div class="position-relative me-3">
-                                <img src="{{ url_for('static', filename='uploads/reel_thumbnails/' + reel.thumbnail_url) if reel.thumbnail_url else url_for('static', filename='images/reel_placeholder.jpg') }}" 
-                                     class="rounded" width="60" height="106"
-                                     onerror="this.src='https://via.placeholder.com/60x106/16181c/ffffff?text=REEL'">
-                                <span class="position-absolute bottom-0 start-0 bg-dark bg-opacity-75 text-white px-1">
-                                    <i class="fas fa-play fa-xs"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1">
-                                <small class="d-block text-truncate" style="max-width: 150px;">
-                                    {{ reel.caption|default('Reel', true)|truncate(30) }}
-                                </small>
-                                <small class="text-muted">@{{ reel.user.username }}</small>
-                                <div class="small text-muted">
-                                    <i class="fas fa-eye"></i> {{ reel.views_count or 0 }}
-                                    <i class="fas fa-heart ms-2"></i> {{ reel.likes_count or 0 }}
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                    {% endfor %}
-                    {% else %}
-                    <div class="text-center py-3">
-                        <small class="text-muted">No trending reels yet</small>
+            <div class="sticky-sidebar" style="top: 80px;">
+                <div class="trending-card mb-4 glass-effect rounded-3">
+                    <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-fire me-2 text-warning"></i>Trending Reels</h5>
+                        <a href="{{ url_for('reels_feed', sort='trending') }}" class="text-decoration-none small">See all</a>
                     </div>
-                    {% endif %}
+                    <div class="trending-list">
+                        {% if trending_reels and trending_reels|length > 0 %}
+                            {% for reel in trending_reels[:5] %}
+                            <div class="trending-item">
+                                <a href="{{ url_for('view_reel', reel_id=reel.id) }}" class="trending-link hover-lift">
+                                    <div class="trending-rank">{{ loop.index }}</div>
+                                    <div class="trending-content">
+                                        <div class="trending-tag">{{ reel.user.username }}</div>
+                                        <div class="trending-count">
+                                            <i class="fas fa-eye"></i> {{ reel.views_count or 0 }}
+                                            <i class="fas fa-heart ms-2"></i> {{ reel.likes_count or 0 }}
+                                        </div>
+                                    </div>
+                                    <i class="fas fa-chevron-right trending-arrow"></i>
+                                </a>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted text-center py-3">No trending reels yet</p>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
-            
-           
         </div>
     </div>
 </div>
+
+<style>
+/* Reels Grid Layout */
+.reels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+}
+
+.reel-card {
+    background: var(--card-color);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-light);
+    cursor: pointer;
+}
+
+.reel-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary-color);
+    box-shadow: 0 10px 25px rgba(29, 155, 240, 0.2);
+}
+
+.reel-thumbnail {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 9/16;
+    overflow: hidden;
+    background: #000;
+}
+
+.reel-thumbnail img,
+.reel-thumbnail-placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.reel-thumbnail-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card-hover);
+}
+
+.reel-card:hover .reel-thumbnail img {
+    transform: scale(1.05);
+}
+
+.reel-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    padding: 15px 10px 8px;
+    display: flex;
+    gap: 12px;
+    color: white;
+    font-size: 13px;
+}
+
+.reel-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 4px 8px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+}
+
+.reel-duration {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    backdrop-filter: blur(4px);
+}
+
+.reel-info {
+    padding: 12px;
+}
+
+.reel-user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.reel-user-info h6 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.reel-user-info .small {
+    font-size: 11px;
+}
+
+.reel-caption {
+    font-size: 13px;
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    color: var(--text-secondary);
+}
+
+.reel-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.reel-meta i {
+    margin-right: 4px;
+}
+
+/* Feed Tabs */
+.feed-tabs .nav-tabs {
+    border-bottom: 1px solid var(--border-light);
+}
+
+.feed-tabs .nav-link {
+    color: var(--text-muted);
+    border: none;
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.feed-tabs .nav-link:hover {
+    color: var(--primary-color);
+}
+
+.feed-tabs .nav-link.active {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    background: transparent;
+}
+
+/* Trending Sidebar */
+.trending-card {
+    background: var(--card-color);
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid var(--border-light);
+}
+
+.trending-list {
+    margin-top: 8px;
+}
+
+.trending-item {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.trending-item:last-child {
+    border-bottom: none;
+}
+
+.trending-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: var(--text-primary);
+    padding: 6px 8px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.trending-link:hover {
+    background: var(--card-hover);
+}
+
+.trending-rank {
+    font-weight: bold;
+    color: var(--text-muted);
+    margin-right: 12px;
+    font-size: 14px;
+}
+
+.trending-tag {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.trending-count {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.trending-arrow {
+    margin-left: auto;
+    color: var(--text-muted);
+}
+
+/* Pagination */
+.pagination .page-link {
+    background: var(--card-color);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    padding: 8px 14px;
+}
+
+.pagination .page-link:hover {
+    background: var(--card-hover);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.pagination .page-item.active .page-link {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.pagination .page-item.disabled .page-link {
+    background: var(--card-color);
+    border-color: var(--border-light);
+    color: var(--text-muted);
+}
+
+/* Empty state */
+.empty-feed {
+    background: var(--card-color);
+    border-radius: 16px;
+    padding: 60px 20px;
+    border: 1px solid var(--border-light);
+}
+
+.empty-icon {
+    color: var(--text-muted);
+}
+
+/* Share button */
+.share-btn {
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.share-btn:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    $(document).ready(function() {
-        // Initialize reel cards
-        $('.reel-card').hover(
-            function() {
-                $(this).css('transform', 'translateY(-5px)');
-            },
-            function() {
-                $(this).css('transform', 'translateY(0)');
-            }
-        );
-        
-        // View reel on click
-        $(document).on('click', '.reel-card', function(e) {
-            if (!$(e.target).closest('.reel-action-btn').length) {
-                const reelId = $(this).data('reel-id');
-                viewReel(reelId);
+    // Share reel
+    window.shareReel = function(reelId) {
+        const shareUrl = `${window.location.origin}/reel/${reelId}`;
+        if (navigator.share) {
+            navigator.share({
+                title: 'Check out this reel on Chatter',
+                url: shareUrl
+            }).catch(err => console.log('Share cancelled'));
+        } else {
+            copyToClipboard(shareUrl, 'Reel link copied to clipboard!');
+        }
+    };
+
+    // Copy to clipboard helper
+    function copyToClipboard(text, successMessage) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast(successMessage, 'success');
+        }).catch(err => {
+            console.error('Copy failed:', err);
+            showToast('Failed to copy link', 'danger');
+        });
+    }
+
+    // View reel on card click (except share button)
+    document.querySelectorAll('.reel-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            if (!e.target.closest('.share-btn')) {
+                const reelId = this.dataset.reelId;
+                window.location.href = `/reel/${reelId}`;
             }
         });
-        
-        // Share reel
-        window.shareReel = function(reelId) {
-            const shareUrl = `${window.location.origin}/reel/${reelId}`;
-            copyToClipboard(shareUrl, 'Reel link copied to clipboard!');
-        };
     });
 </script>
 {% endblock %}

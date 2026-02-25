@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Friend Suggestions - Chatter{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm rounded-4" style="background: var(--card-color);">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-4"><i class="fas fa-users me-2"></i>Friends on Chatter</h4>
+
+                    {% if suggestions %}
+                    <p class="text-muted mb-3">We found <strong>{{ suggestions|length }}</strong> friends from your contacts. Select the ones you'd like to follow:</p>
+
+                    <form method="POST" action="{{ url_for('follow_multiple') }}">
+                        <div class="list-group mb-4">
+                            {% for user in suggestions %}
+                            <div class="list-group-item bg-transparent border-light d-flex align-items-center">
+                                <input class="form-check-input me-3" type="checkbox" name="user_ids" value="{{ user.id }}" id="user_{{ user.id }}">
+                                <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}"
+                                     class="rounded-circle me-3" style="width: 45px; height: 45px; object-fit: cover;"
+                                     onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">{{ user.username }}</div>
+                                    <small class="text-muted">{{ user.email }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-user-plus me-2"></i>Follow Selected
+                            </button>
+                            <a href="{{ url_for('feed') }}" class="btn btn-outline-secondary">Maybe Later</a>
+                        </div>
+                    </form>
+
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-smile-wink fa-4x text-muted mb-3"></i>
+                        <h5>No friends found</h5>
+                        <p class="text-muted">We couldn't find any Chatter users from your contacts. Invite them to join!</p>
+                        <a href="{{ url_for('import_contacts') }}" class="btn btn-primary me-2">Try another file</a>
+                        <a href="{{ url_for('feed') }}" class="btn btn-outline-secondary">Go to Feed</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

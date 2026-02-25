@@ -10,13 +10,35 @@ import secrets
 import re
 from sqlalchemy import or_, func, desc, and_
 from sqlalchemy.orm import joinedload
+import qrcode
+import hmac
+import hashlib
+from io import BytesIO
+from flask import send_file
+import qrcode.constants
+import hmac
+import hashlib
+from io import BytesIO
+from PIL import Image, ImageDraw, ImageFont
+from flask import send_file
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = secrets.token_hex(32)
+DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///twitter_clone.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 
+
+app.config['SESSION_COOKIE_SECURE'] = not DEBUG     
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+app.config['REMEMBER_COOKIE_SECURE'] = not DEBUG
+app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+app.config['REMEMBER_COOKIE_SAMESITE'] = 'Lax'
+app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
 
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -76,7 +98,7 @@ class User(UserMixin, db.Model):
     created_lists = db.relationship('UserList', backref='creator', lazy='dynamic', cascade='all, delete-orphan')
     list_subscriptions = db.relationship('ListSubscriber', backref='subscriber', lazy='dynamic', cascade='all, delete-orphan')
     list_memberships = db.relationship('ListMember', backref='member', lazy='dynamic', cascade='all, delete-orphan')
-    
+
     # Reels & Status relationships
     reels = db.relationship('Reel', backref='user', lazy='dynamic', cascade='all, delete-orphan')
     reel_likes = db.relationship('ReelLike', backref='liker', lazy='dynamic', cascade='all, delete-orphan')
@@ -84,6 +106,28 @@ class User(UserMixin, db.Model):
     reel_views = db.relationship('ReelView', backref='viewer', lazy='dynamic', cascade='all, delete-orphan')
     statuses = db.relationship('Status', backref='user', lazy='dynamic', cascade='all, delete-orphan')
     status_views = db.relationship('StatusView', backref='viewer', lazy='dynamic', cascade='all, delete-orphan')
+
+    email_notifications = db.Column(db.Boolean, default=True)
+    language = db.Column(db.String(10), default='en')
+    theme = db.Column(db.String(20), default='dark')          
+    autoplay_videos = db.Column(db.Boolean, default=True)
+    media_quality = db.Column(db.String(10), default='auto')  
+    
+    is_private = db.Column(db.Boolean, default=False)
+    allow_messages_from = db.Column(db.String(20), default='everyone')
+    allow_tagging = db.Column(db.Boolean, default=True)
+    show_activity_status = db.Column(db.Boolean, default=True)
+    
+    # Notifications
+    notify_likes = db.Column(db.Boolean, default=True)
+    notify_comments = db.Column(db.Boolean, default=True)
+    notify_follows = db.Column(db.Boolean, default=True)
+    notify_messages = db.Column(db.Boolean, default=True)
+    notify_mentions = db.Column(db.Boolean, default=True)
+    phone = db.Column(db.String(20), unique=True, nullable=True)
+    
+    two_factor_enabled = db.Column(db.Boolean, default=False)
+    last_password_change = db.Column(db.DateTime)
     
     # Many-to-many relationships
     followed = db.relationship(
@@ -484,6 +528,77 @@ class StatusView(db.Model):
     viewed_at = db.Column(db.DateTime, default=datetime.utcnow)
     __table_args__ = (db.UniqueConstraint('user_id', 'status_id', name='unique_status_view'),)
 
+
+class Poll(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False, unique=True)
+    title = db.Column(db.String(500), nullable=False)  # Poll title/description
+    poll_type = db.Column(db.String(20), default='single_choice')  # single_choice, multiple_choice, ranked, quiz
+    duration_hours = db.Column(db.Integer, default=24)
+    ends_at = db.Column(db.DateTime, nullable=False)
+    total_votes = db.Column(db.Integer, default=0)
+    max_questions = db.Column(db.Integer, default=4)  # Maximum questions user can add
+    max_options_per_question = db.Column(db.Integer, default=4)  # Maximum options per question
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_archived = db.Column(db.Boolean, default=False)
+    
+    # Relationships
+    questions = db.relationship('PollQuestion', backref='poll', lazy='dynamic', cascade='all, delete-orphan')
+    votes = db.relationship('PollVote', backref='poll', lazy='dynamic', cascade='all, delete-orphan')
+
+class PollQuestion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    poll_id = db.Column(db.Integer, db.ForeignKey('poll.id'), nullable=False)
+    question_text = db.Column(db.String(500), nullable=False)
+    question_type = db.Column(db.String(20), default='text')  # text, image, video, gif
+    media_url = db.Column(db.String(500))
+    is_required = db.Column(db.Boolean, default=True)
+    allow_multiple_choices = db.Column(db.Boolean, default=False)
+    max_selections = db.Column(db.Integer, default=1)
+    display_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    options = db.relationship('PollOption', backref='question', lazy='dynamic', cascade='all, delete-orphan')
+    votes = db.relationship('PollVote', backref='question', lazy='dynamic', cascade='all, delete-orphan')
+
+class PollOption(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    question_id = db.Column(db.Integer, db.ForeignKey('poll_question.id'), nullable=False)
+    option_text = db.Column(db.String(500), nullable=False)
+    option_type = db.Column(db.String(20), default='text')  # text, image, emoji
+    media_url = db.Column(db.String(500))
+    emoji = db.Column(db.String(10))  # For emoji options
+    is_correct = db.Column(db.Boolean, default=False)  # For quiz polls
+    vote_count = db.Column(db.Integer, default=0)
+    display_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    votes = db.relationship('PollVote', backref='option', lazy='dynamic', cascade='all, delete-orphan')
+
+class PollVote(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    poll_id = db.Column(db.Integer, db.ForeignKey('poll.id'), nullable=False)
+    question_id = db.Column(db.Integer, db.ForeignKey('poll_question.id'), nullable=False)
+    option_id = db.Column(db.Integer, db.ForeignKey('poll_option.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    selected_text = db.Column(db.String(500))  # For custom answer
+    rank_position = db.Column(db.Integer)  # For ranked polls
+    voted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (db.UniqueConstraint('poll_id', 'question_id', 'user_id', name='unique_poll_question_vote'),)
+
+# Add this for quiz polls results
+class PollResult(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    poll_id = db.Column(db.Integer, db.ForeignKey('poll.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    score = db.Column(db.Integer, default=0)
+    total_questions = db.Column(db.Integer, default=0)
+    completed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (db.UniqueConstraint('poll_id', 'user_id', name='unique_poll_result'),)
 # Helper functions
 @login_manager.user_loader
 def load_user(user_id):
@@ -517,8 +632,8 @@ def process_content(content):
 
 def validate_password(password):
     """Validate password strength"""
-    if len(password) < 8:
-        return "Password must be at least 8 characters long"
+    if len(password) < 5:
+        return "Password must be at least 6 characters long"
     if not re.search(r'[A-Z]', password):
         return "Password must contain at least one uppercase letter"
     if not re.search(r'[a-z]', password):
@@ -547,8 +662,17 @@ def update_last_seen():
 @app.before_request
 def check_blocked():
     if current_user.is_authenticated:
-        # Check if viewing a blocked user's content
+        # Check if viewing a blocked user's content COMING SOON
         pass
+
+"""offline issues"""
+@app.after_request
+def add_cache_headers(response):
+    if response.mimetype in ['image/png', 'image/jpeg', 'image/gif', 'video/mp4', 'video/quicktime']:
+        response.cache_control.max_age = 604800  # 7 days
+        response.cache_control.public = True
+    return response
+
 
 # Routes
 @app.route('/')
@@ -637,13 +761,23 @@ def logout():
 
 
 
-@app.route('/post', methods=['POST'])
+@app.route('/post', methods=['POST','GET'])
 @login_required
 def create_post():
     content = request.form.get('content', '').strip()
     image = request.files.get('image')
     
-    if not content and not image:
+    # Check for poll data
+    has_poll = request.form.get('has_poll') == 'true'
+    poll_title = request.form.get('poll_title', '').strip()
+    poll_type = request.form.get('poll_type', 'single_choice')
+    poll_duration = request.form.get('poll_duration', '24', type=int)
+    
+    # Get poll configuration
+    max_questions = request.form.get('max_questions', 4, type=int)
+    max_options_per_question = request.form.get('max_options_per_question', 4, type=int)
+    
+    if not content and not image and not has_poll:
         flash('Post cannot be empty.', 'danger')
         return redirect(url_for('feed'))
     
@@ -651,20 +785,161 @@ def create_post():
         flash('Post cannot exceed 280 characters.', 'danger')
         return redirect(url_for('feed'))
     
+    # Validate poll
+    if has_poll:
+        if not poll_title or len(poll_title.strip()) == 0:
+            flash('Poll title cannot be empty.', 'danger')
+            return redirect(url_for('feed'))
+        
+        # Validate poll configuration
+        if max_questions < 1 or max_questions > 10:
+            flash('You can add 1-10 questions in a poll.', 'danger')
+            return redirect(url_for('feed'))
+        
+        if max_options_per_question < 2 or max_options_per_question > 8:
+            flash('Each question can have 2-8 options.', 'danger')
+            return redirect(url_for('feed'))
+        
+        if poll_duration not in [1, 3, 6, 12, 24, 48, 72, 168]:
+            poll_duration = 24
+        
+        # Validate each question
+        for q_num in range(1, max_questions + 1):
+            question_text = request.form.get(f'question_{q_num}_text', '').strip()
+            
+            # Skip empty questions
+            if not question_text and q_num == 1:
+                flash('First question cannot be empty.', 'danger')
+                return redirect(url_for('feed'))
+            elif not question_text:
+                max_questions = q_num - 1  # Adjust max questions based on actual filled questions
+                break
+            
+            # Validate options for this question
+            question_options = request.form.getlist(f'question_{q_num}_options[]')
+            valid_options = [opt.strip() for opt in question_options if opt.strip()]
+            
+            if len(valid_options) < 2:
+                flash(f'Question {q_num} must have at least 2 options.', 'danger')
+                return redirect(url_for('feed'))
+            
+            if len(valid_options) > max_options_per_question:
+                flash(f'Question {q_num} can have at most {max_options_per_question} options.', 'danger')
+                return redirect(url_for('feed'))
+            
+            # Check for duplicate options in this question
+            if len(valid_options) != len(set(valid_options)):
+                flash(f'Question {q_num} has duplicate options.', 'danger')
+                return redirect(url_for('feed'))
+    
+    # Create post
     post = Post(content=content, user_id=current_user.id)
     
     if image and allowed_file(image.filename):
         filename = secure_filename(f"{secrets.token_hex(8)}_{image.filename}")
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'posts', filename)
+        
+        # Prevent overwriting
+        counter = 1
+        while os.path.exists(filepath):
+            name, ext = os.path.splitext(filename)
+            filename = f"{name}_{counter}{ext}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'posts', filename)
+            counter += 1
+        
         image.save(filepath)
         post.image = filename
     
     db.session.add(post)
     db.session.flush()
     
+    # Create poll with multiple questions
+    if has_poll and max_questions > 0:
+        ends_at = datetime.utcnow() + timedelta(hours=poll_duration)
+        
+        poll = Poll(
+            post_id=post.id,
+            title=poll_title,
+            poll_type=poll_type,
+            duration_hours=poll_duration,
+            ends_at=ends_at,
+            max_questions=max_questions,
+            max_options_per_question=max_options_per_question
+        )
+        db.session.add(poll)
+        db.session.flush()
+        
+        # Add questions and their options
+        for q_num in range(1, max_questions + 1):
+            question_text = request.form.get(f'question_{q_num}_text', '').strip()
+            question_type = request.form.get(f'question_{q_num}_type', 'text')
+            allow_multiple = request.form.get(f'question_{q_num}_allow_multiple', 'false') == 'true'
+            max_selections = request.form.get(f'question_{q_num}_max_selections', 1, type=int)
+            
+            # Skip if question is empty
+            if not question_text:
+                continue
+            
+            # Handle question media upload
+            question_media = request.files.get(f'question_{q_num}_media')
+            question_media_url = None
+            
+            if question_media and allowed_file(question_media.filename):
+                media_filename = secure_filename(f"poll_q{q_num}_{secrets.token_hex(4)}_{question_media.filename}")
+                media_path = os.path.join(app.config['UPLOAD_FOLDER'], 'polls', 'questions', media_filename)
+                question_media.save(media_path)
+                question_media_url = media_filename
+            
+            question = PollQuestion(
+                poll_id=poll.id,
+                question_text=question_text,
+                question_type=question_type,
+                media_url=question_media_url,
+                allow_multiple_choices=allow_multiple,
+                max_selections=max_selections if allow_multiple else 1,
+                display_order=q_num - 1
+            )
+            db.session.add(question)
+            db.session.flush()
+            
+            # Add options for this question
+            question_options = request.form.getlist(f'question_{q_num}_options[]')
+            option_media_files = request.files.getlist(f'question_{q_num}_option_media[]')
+            
+            for opt_num, (option_text, option_media) in enumerate(zip(question_options, option_media_files)):
+                option_text = option_text.strip()
+                if not option_text:
+                    continue
+                
+                option_type = request.form.get(f'question_{q_num}_option_{opt_num}_type', 'text')
+                is_correct = request.form.get(f'question_{q_num}_option_{opt_num}_correct', 'false') == 'true'
+                option_emoji = request.form.get(f'question_{q_num}_option_{opt_num}_emoji', '')
+                
+                option_media_url = None
+                if option_media and allowed_file(option_media.filename):
+                    opt_media_filename = secure_filename(f"poll_q{q_num}_opt{opt_num}_{secrets.token_hex(4)}_{option_media.filename}")
+                    opt_media_path = os.path.join(app.config['UPLOAD_FOLDER'], 'polls', 'options', opt_media_filename)
+                    option_media.save(opt_media_path)
+                    option_media_url = opt_media_filename
+                
+                option = PollOption(
+                    question_id=question.id,
+                    option_text=option_text,
+                    option_type=option_type,
+                    media_url=option_media_url,
+                    emoji=option_emoji,
+                    is_correct=is_correct,
+                    display_order=opt_num
+                )
+                db.session.add(option)
+    
     # Process hashtags
     hashtags = extract_hashtags(content)
-    for tag in hashtags[:10]:  # Limit to 10 hashtags per post
+    for tag in hashtags[:10]:
+        tag = tag.lower().strip()
+        if not tag:
+            continue
+            
         existing = Hashtag.query.filter_by(tag=tag).first()
         if existing:
             existing.count += 1
@@ -674,25 +949,72 @@ def create_post():
             db.session.add(existing)
             db.session.flush()
         
-        post_hashtag = PostHashtag(post_id=post.id, hashtag_id=existing.id)
-        db.session.add(post_hashtag)
+        existing_link = PostHashtag.query.filter_by(
+            post_id=post.id,
+            hashtag_id=existing.id
+        ).first()
+        
+        if not existing_link:
+            post_hashtag = PostHashtag(post_id=post.id, hashtag_id=existing.id)
+            db.session.add(post_hashtag)
     
     # Process mentions
     mentions = extract_mentions(content)
     for username in mentions:
         mentioned_user = User.query.filter_by(username=username).first()
         if mentioned_user and mentioned_user.id != current_user.id and current_user.can_interact_with(mentioned_user):
-            notif = Notification(
+            existing_notif = Notification.query.filter_by(
                 user_id=mentioned_user.id,
-                content=f"{current_user.username} mentioned you in a post",
-                link=f"/post/{post.id}",
-                notification_type='mention'
-            )
-            db.session.add(notif)
+                notification_type='mention',
+                link=f"/post/{post.id}"
+            ).first()
+            
+            if not existing_notif:
+                notif = Notification(
+                    user_id=mentioned_user.id,
+                    content=f"{current_user.username} mentioned you in a post",
+                    link=f"/post/{post.id}",
+                    notification_type='mention'
+                )
+                db.session.add(notif)
     
-    db.session.commit()
-    flash('Post created successfully!', 'success')
-    return redirect(url_for('feed'))
+    # Handle GIF if provided
+    gif_url = request.form.get('gif_url', '').strip()
+    if gif_url:
+        if not content:
+            content = f"<div class='gif-embed'><img src='{gif_url}' alt='GIF' class='img-fluid rounded'></div>"
+        else:
+            content += f"<div class='gif-embed'><img src='{gif_url}' alt='GIF' class='img-fluid rounded'></div>"
+        post.content = content
+    
+    try:
+        db.session.commit()
+        
+        # Send notification to followers for new poll post
+        if has_poll:
+            followers = current_user.followers.all()
+            for follower in followers[:50]:
+                if follower.id != current_user.id and current_user.can_interact_with(follower):
+                    notif = Notification(
+                        user_id=follower.id,
+                        content=f"{current_user.username} created a new poll: {poll_title}",
+                        link=f"/post/{post.id}",
+                        notification_type='poll'
+                    )
+                    db.session.add(notif)
+            
+            db.session.commit()
+            flash(f'Poll created with {max_questions} question(s)!', 'success')
+        else:
+            flash('Post created successfully!', 'success')
+        
+        return redirect(url_for('view_post', post_id=post.id))
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error creating post: {str(e)}")
+        flash('An error occurred while creating the post. Please try again.', 'danger')
+        return redirect(url_for('feed'))
 
 @app.route('/post/<int:post_id>')
 @login_required
@@ -849,6 +1171,244 @@ def bookmark_post(post_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/post/<int:post_id>/poll/vote', methods=['POST'])
+@login_required
+def vote_poll(post_id):
+    """Vote on a poll"""
+    try:
+        poll = Poll.query.filter_by(post_id=post_id).first()
+        if not poll:
+            return jsonify({'error': 'Poll not found'}), 404
+        
+        if poll.ends_at < datetime.utcnow():
+            return jsonify({'error': 'Poll has ended'}), 400
+        
+        option_id = request.json.get('option_id')
+        if not option_id:
+            return jsonify({'error': 'Option ID is required'}), 400
+        
+        option = PollOption.query.get(option_id)
+        if not option or option.poll_id != poll.id:
+            return jsonify({'error': 'Invalid option'}), 400
+        
+        # Check if already voted
+        existing_vote = PollVote.query.filter_by(
+            poll_id=poll.id,
+            user_id=current_user.id
+        ).first()
+        
+        if existing_vote:
+            # Change vote
+            old_option = PollOption.query.get(existing_vote.option_id)
+            old_option.vote_count -= 1
+            existing_vote.option_id = option_id
+            option.vote_count += 1
+        else:
+            # New vote
+            vote = PollVote(
+                poll_id=poll.id,
+                option_id=option_id,
+                user_id=current_user.id
+            )
+            db.session.add(vote)
+            option.vote_count += 1
+            poll.total_votes += 1
+        
+        db.session.commit()
+        
+        # Get updated poll data
+        poll_data = get_poll_data(poll)
+        
+        return jsonify({
+            'success': True,
+            'poll': poll_data,
+            'user_voted_option': option_id,
+            'message': 'Vote recorded successfully' if not existing_vote else 'Vote changed successfully'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/post/<int:post_id>/poll/results')
+@login_required
+def get_poll_results(post_id):
+    """Get detailed poll results"""
+    try:
+        poll = Poll.query.filter_by(post_id=post_id).first()
+        if not poll:
+            return jsonify({'error': 'Poll not found'}), 404
+        
+        poll_data = get_poll_data(poll)
+        
+        # Get voters for each option
+        options_with_voters = []
+        for option in poll.options.order_by(PollOption.id).all():
+            votes = PollVote.query.filter_by(option_id=option.id).order_by(PollVote.voted_at.desc()).limit(20).all()
+            
+            voters = []
+            for vote in votes:
+                user = User.query.get(vote.user_id)
+                if user:
+                    voters.append({
+                        'id': user.id,
+                        'username': user.username,
+                        'profile_picture': user.profile_picture,
+                        'voted_at': vote.voted_at.isoformat()
+                    })
+            
+            options_with_voters.append({
+                'id': option.id,
+                'text': option.option_text,
+                'vote_count': option.vote_count,
+                'percentage': round((option.vote_count / poll.total_votes * 100) if poll.total_votes > 0 else 0, 1),
+                'voters': voters
+            })
+        
+        return jsonify({
+            'poll': poll_data,
+            'options': options_with_voters,
+            'total_votes': poll.total_votes,
+            'time_left': get_time_remaining(poll.ends_at)
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/post/<int:post_id>/poll/end', methods=['POST'])
+@login_required
+def end_poll_early(post_id):
+    """End a poll early (only by post author or admin)"""
+    try:
+        poll = Poll.query.filter_by(post_id=post_id).first()
+        if not poll:
+            return jsonify({'error': 'Poll not found'}), 404
+        
+        post = Post.query.get(post_id)
+        if not post:
+            return jsonify({'error': 'Post not found'}), 404
+        
+        # Check permission
+        if post.user_id != current_user.id and not current_user.is_admin:
+            return jsonify({'error': 'Only the post author or admin can end the poll early'}), 403
+        
+        # End poll now
+        poll.ends_at = datetime.utcnow()
+        db.session.commit()
+        
+        poll_data = get_poll_data(poll)
+        
+        return jsonify({
+            'success': True,
+            'poll': poll_data,
+            'message': 'Poll ended successfully'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/poll/trending')
+@login_required
+def trending_polls():
+    """Get trending polls"""
+    try:
+        # Get active polls from followed users
+        followed_users = current_user.followed.all()
+        followed_ids = [u.id for u in followed_users] + [current_user.id]
+        
+        active_polls = Poll.query.join(Post).filter(
+            Post.user_id.in_(followed_ids),
+            Poll.ends_at > datetime.utcnow(),
+            Poll.is_archived == False
+        ).order_by(
+            Poll.total_votes.desc(),
+            Poll.created_at.desc()
+        ).limit(10).all()
+        
+        polls_data = []
+        for poll in active_polls:
+            user_voted = PollVote.query.filter_by(
+                poll_id=poll.id,
+                user_id=current_user.id
+            ).first() is not None
+            
+            polls_data.append({
+                'id': poll.id,
+                'post_id': poll.post_id,
+                'question': poll.question,
+                'ends_at': poll.ends_at.isoformat(),
+                'total_votes': poll.total_votes,
+                'time_left': get_time_remaining(poll.ends_at),
+                'user_voted': user_voted,
+                'author': {
+                    'id': poll.post.author.id,
+                    'username': poll.post.author.username,
+                    'profile_picture': poll.post.author.profile_picture
+                }
+            })
+        
+        return jsonify({'polls': polls_data})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def get_poll_data(poll):
+    """Helper function to get poll data for API responses"""
+    options = []
+    for option in poll.options.order_by(PollOption.id).all():
+        options.append({
+            'id': option.id,
+            'text': option.option_text,
+            'vote_count': option.vote_count,
+            'percentage': round((option.vote_count / poll.total_votes * 100) if poll.total_votes > 0 else 0, 1)
+        })
+    
+    user_voted_option = None
+    user_vote = PollVote.query.filter_by(
+        poll_id=poll.id,
+        user_id=current_user.id
+    ).first()
+    
+    if user_vote:
+        user_voted_option = user_vote.option_id
+    
+    return {
+        'id': poll.id,
+        'post_id': poll.post_id,
+        'question': poll.question,
+        'duration_hours': poll.duration_hours,
+        'ends_at': poll.ends_at.isoformat(),
+        'total_votes': poll.total_votes,
+        'is_active': poll.ends_at > datetime.utcnow(),
+        'time_left': get_time_remaining(poll.ends_at),
+        'options': options,
+        'user_voted': user_voted_option is not None,
+        'user_voted_option': user_voted_option,
+        'can_end_early': poll.post.author.id == current_user.id or current_user.is_admin
+    }
+
+def get_time_remaining(ends_at):
+    """Calculate time remaining for poll"""
+    now = datetime.utcnow()
+    if ends_at <= now:
+        return "Ended"
+    
+    diff = ends_at - now
+    
+    if diff.days > 0:
+        return f"{diff.days}d {diff.seconds // 3600}h"
+    elif diff.seconds >= 3600:
+        hours = diff.seconds // 3600
+        minutes = (diff.seconds % 3600) // 60
+        return f"{hours}h {minutes}m"
+    else:
+        minutes = diff.seconds // 60
+        if minutes > 0:
+            return f"{minutes}m"
+        else:
+            return "Less than a minute"
 
 @app.route('/bookmarks')
 @login_required
@@ -1018,35 +1578,7 @@ def profile(username):
                          mutual_followers=mutual_followers,
                          suggestions=suggestions,
                          recent_activity=recent_activity)
-# @app.route('/profile/<username>/followers')
-# @login_required
-# def profile_followers(username):
-#     user = User.query.filter_by(username=username).first_or_404()
-    
-#     if not current_user.can_interact_with(user):
-#         flash('You cannot view this profile.', 'danger')
-#         return redirect(url_for('feed'))
-    
-#     followers_list = user.followers.all()
-    
-#     return render_template('profile_followers.html', 
-#                          user=user, 
-#                          followers=followers_list)
-
-# @app.route('/profile/<username>/following')
-# @login_required
-# def profile_following(username):
-#     user = User.query.filter_by(username=username).first_or_404()
-    
-#     if not current_user.can_interact_with(user):
-#         flash('You cannot view this profile.', 'danger')
-#         return redirect(url_for('feed'))
-    
-#     following_list = user.followed.all()
-    
-#     return render_template('profile_following.html', 
-#                          user=user, 
-#                          following=following_list)
+#                    following=following_list)
 
 @app.route('/profile/<username>/media')
 @login_required
@@ -1152,6 +1684,85 @@ def pinned_posts(username):
                          user=user, 
                          posts=pinned_posts,
                          title=f"{user.username}'s Pinned Posts")
+
+
+def generate_follow_token(user_id):
+    secret = app.config['SECRET_KEY'].encode()
+    message = str(user_id).encode()
+    return hmac.new(secret, message, hashlib.sha256).hexdigest()
+
+def generate_qr_image(user_id):
+    token = generate_follow_token(user_id)
+    follow_url = url_for('handle_follow_qr', user_id=user_id, token=token, _external=True)
+    
+    qr = qrcode.QRCode(
+        version=1,
+        box_size=10,
+        border=5,
+        error_correction=qrcode.constants.ERROR_CORRECT_H
+    )
+    qr.add_data(follow_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white").convert('RGB')
+    
+    # Branded logo with "C"
+    logo_size = 60
+    logo = Image.new('RGBA', (logo_size, logo_size), (255,255,255,0))
+    draw = ImageDraw.Draw(logo)
+    draw.ellipse((0,0,logo_size-1,logo_size-1), fill=(29,161,242,255))
+    try:
+        font = ImageFont.truetype("arial.ttf", 40)
+    except:
+        font = ImageFont.load_default()
+    bbox = draw.textbbox((0,0), "C", font=font)
+    text_width = bbox[2]-bbox[0]; text_height = bbox[3]-bbox[1]
+    position = ((logo_size - text_width)//2, (logo_size - text_height)//2)
+    draw.text(position, "C", fill="white", font=font)
+    img.paste(logo, ((img.width - logo_size)//2, (img.height - logo_size)//2), logo)
+    
+    buffer = BytesIO()
+    img.save(buffer, format='PNG')
+    buffer.seek(0)
+    return buffer
+
+@app.route('/profile/qr')
+@login_required
+def profile_qr():
+    buffer = generate_qr_image(current_user.id)
+    return send_file(buffer, mimetype='image/png', download_name=f'follow_{current_user.username}.png')
+
+@app.route('/profile/<username>/qr')
+def profile_qr_view(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    buffer = generate_qr_image(user.id)
+    return send_file(buffer, mimetype='image/png')
+
+@app.route('/follow-qr/<int:user_id>/<token>')
+def handle_follow_qr(user_id, token):
+    expected = generate_follow_token(user_id)
+    if not hmac.compare_digest(token, expected):
+        abort(400, description="Invalid or expired QR code")
+    user = User.query.get_or_404(user_id)
+    if not current_user.is_authenticated:
+        flash('Please log in to follow via QR.', 'info')
+        return redirect(url_for('login', next=request.full_path))
+    if current_user.id == user_id:
+        flash("Can't follow yourself.", 'warning')
+        return redirect(url_for('profile', username=user.username))
+    if not current_user.is_following(user) and current_user.can_interact_with(user):
+        current_user.follow(user)
+        notif = Notification(
+            user_id=user.id,
+            content=f"{current_user.username} followed you via QR code",
+            link=f"/profile/{current_user.username}",
+            notification_type='follow'
+        )
+        db.session.add(notif)
+        db.session.commit()
+        flash(f"You are now following {user.username}!", 'success')
+    elif current_user.is_following(user):
+        flash(f"You already follow {user.username}.", 'info')
+    return redirect(url_for('profile', username=user.username))
 
 @app.route('/follow/<int:user_id>', methods=['POST'])
 @login_required
@@ -3107,6 +3718,263 @@ def truncate_filter(s, length=100):
         return s
     return s[:length] + '...'
 
+
+
+@app.route('/settings')
+@login_required
+def settings():
+    return render_template('settings.html', user=current_user)
+
+# Update account info
+@app.route('/settings/account', methods=['POST'])
+@login_required
+def update_account():
+    username = request.form.get('username', '').strip()
+    email = request.form.get('email', '').strip().lower()
+    bio = request.form.get('bio', '').strip()
+    
+    # Validate username
+    if username != current_user.username:
+        if User.query.filter_by(username=username).first():
+            flash('Username already taken.', 'danger')
+            return redirect(url_for('settings'))
+        current_user.username = username
+    
+    # Validate email
+    if email != current_user.email:
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered.', 'danger')
+            return redirect(url_for('settings'))
+        current_user.email = email
+    
+    current_user.bio = bio
+    
+    # Profile picture upload
+    if 'profile_picture' in request.files:
+        file = request.files['profile_picture']
+        if file and file.filename != '' and allowed_file(file.filename):
+            filename = secure_filename(f"profile_{current_user.id}_{secrets.token_hex(8)}_{file.filename}")
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], 'profiles', filename))
+            current_user.profile_picture = filename
+    
+    # Cover picture upload
+    if 'cover_picture' in request.files:
+        file = request.files['cover_picture']
+        if file and file.filename != '' and allowed_file(file.filename):
+            filename = secure_filename(f"cover_{current_user.id}_{secrets.token_hex(8)}_{file.filename}")
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], 'covers', filename))
+            current_user.cover_picture = filename
+    
+    db.session.commit()
+    flash('Account settings updated.', 'success')
+    return redirect(url_for('settings'))
+
+# Update privacy
+@app.route('/settings/privacy', methods=['POST'])
+@login_required
+def update_privacy():
+    current_user.is_private = request.form.get('is_private') == 'on'
+    current_user.allow_messages_from = request.form.get('allow_messages_from', 'everyone')
+    current_user.allow_tagging = request.form.get('allow_tagging') == 'on'
+    current_user.show_activity_status = request.form.get('show_activity_status') == 'on'
+    db.session.commit()
+    flash('Privacy settings updated.', 'success')
+    return redirect(url_for('settings'))
+
+# Update notifications
+@app.route('/settings/notifications', methods=['POST'])
+@login_required
+def update_notifications():
+    current_user.notify_likes = request.form.get('notify_likes') == 'on'
+    current_user.notify_comments = request.form.get('notify_comments') == 'on'
+    current_user.notify_follows = request.form.get('notify_follows') == 'on'
+    current_user.notify_messages = request.form.get('notify_messages') == 'on'
+    current_user.notify_mentions = request.form.get('notify_mentions') == 'on'
+    current_user.email_notifications = request.form.get('email_notifications') == 'on'
+    db.session.commit()
+    flash('Notification settings updated.', 'success')
+    return redirect(url_for('settings'))
+
+# Update content & display
+@app.route('/settings/content', methods=['POST'])
+@login_required
+def update_content():
+    current_user.theme = request.form.get('theme', 'dark')
+    current_user.language = request.form.get('language', 'en')
+    current_user.autoplay_videos = request.form.get('autoplay_videos') == 'on'
+    current_user.media_quality = request.form.get('media_quality', 'auto')
+    db.session.commit()
+    flash('Display settings updated.', 'success')
+    return redirect(url_for('settings'))
+
+# Security: change password
+@app.route('/settings/security', methods=['POST'])
+@login_required
+def update_security():
+    current_password = request.form.get('current_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+    
+    if not current_user.check_password(current_password):
+        flash('Current password is incorrect.', 'danger')
+        return redirect(url_for('settings'))
+    
+    if new_password != confirm_password:
+        flash('New passwords do not match.', 'danger')
+        return redirect(url_for('settings'))
+    
+    password_error = validate_password(new_password)
+    if password_error:
+        flash(password_error, 'danger')
+        return redirect(url_for('settings'))
+    
+    current_user.set_password(new_password)
+    current_user.last_password_change = datetime.utcnow()
+    db.session.commit()
+    flash('Password changed successfully.', 'success')
+    return redirect(url_for('settings'))
+
+# Two-factor authentication placeholder
+@app.route('/settings/2fa/enable', methods=['POST'])
+@login_required
+def enable_2fa():
+    flash('Two-factor authentication will be available soon.', 'info')
+    return redirect(url_for('settings'))
+
+# Data & storage
+@app.route('/settings/data/download', methods=['POST'])
+@login_required
+def download_data():
+    flash('Your data export is being prepared. You will receive an email shortly.', 'info')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/data/clear_cache', methods=['POST'])
+@login_required
+def clear_cache():
+    flash('Cache cleared.', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/blocked')
+@login_required
+def view_blocked_users():
+    blocked = current_user.blocked.all()
+    return render_template('blocked.html', blocked=blocked)
+
+@app.route('/settings/unblock/<int:user_id>', methods=['POST'])
+@login_required
+def unblock_from_settings(user_id):
+    user = User.query.get_or_404(user_id)
+    current_user.unblock(user)
+    db.session.commit()
+    flash(f'Unblocked {user.username}.', 'success')
+    return redirect(url_for('blocked_users'))
+
+# Deactivate account
+@app.route('/settings/deactivate', methods=['POST'])
+@login_required
+def deactivate_account():
+    flash('Account deactivation is not yet implemented.', 'warning')
+    return redirect(url_for('settings'))
+
+# Delete account
+@app.route('/settings/delete', methods=['POST'])
+@login_required
+def delete_account():
+    password = request.form.get('password')
+    if not current_user.check_password(password):
+        flash('Incorrect password.', 'danger')
+        return redirect(url_for('settings'))
+    
+    db.session.delete(current_user)
+    db.session.commit()
+    logout_user()
+    flash('Your account has been permanently deleted.', 'info')
+    return redirect(url_for('index'))
+
+
+#add vcf file 
+
+def extract_emails_from_vcard(file_stream):
+    """Extract unique email addresses from a vCard (.vcf) file."""
+    emails = set()
+    try:
+        content = file_stream.read().decode('utf-8')
+        vcards = vobject.readComponents(content)
+        for vcard in vcards:
+            if hasattr(vcard, 'email'):
+                email_attr = vcard.email
+                if isinstance(email_attr, list):
+                    for e in email_attr:
+                        emails.add(e.value)
+                else:
+                    emails.add(email_attr.value)
+    except Exception as e:
+        app.logger.error(f"vCard parsing error: {e}")
+    return list(emails)
+
+@app.route('/friends/import')
+@login_required
+def import_contacts():
+    """Page to upload contacts."""
+    return render_template('import_contacts.html')
+
+@app.route('/friends/upload-contacts', methods=['POST'])
+@login_required
+def upload_contacts():
+    """Process uploaded vCard and suggest friends."""
+    if 'contacts_file' not in request.files:
+        flash('No file uploaded.', 'danger')
+        return redirect(url_for('import_contacts'))
+
+    file = request.files['contacts_file']
+    if file.filename == '':
+        flash('No file selected.', 'danger')
+        return redirect(url_for('import_contacts'))
+
+    if not file.filename.endswith('.vcf'):
+        flash('Please upload a valid vCard (.vcf) file.', 'danger')
+        return redirect(url_for('import_contacts'))
+
+    # Parse emails
+    emails = extract_emails_from_vcard(file)
+    if not emails:
+        flash('No email addresses found in the file.', 'warning')
+        return redirect(url_for('import_contacts'))
+
+    # Find users with those emails
+    matched_users = User.query.filter(User.email.in_(emails)).all()
+
+    # Exclude self and already followed users
+    followed_ids = [u.id for u in current_user.followed.all()]
+    suggestions = [
+        u for u in matched_users
+        if u.id != current_user.id and u.id not in followed_ids
+    ]
+
+    return render_template('contact_suggestions.html', suggestions=suggestions, method='vcard')
+
+@app.route('/friends/follow-multiple', methods=['POST'])
+@login_required
+def follow_multiple():
+    """Follow multiple users at once."""
+    user_ids = request.form.getlist('user_ids')
+    followed_count = 0
+    for uid in user_ids:
+        user = User.query.get(uid)
+        if user and not current_user.is_following(user) and current_user.can_interact_with(user):
+            current_user.follow(user)
+            # Create notification
+            notif = Notification(
+                user_id=user.id,
+                content=f"{current_user.username} started following you (via contacts)",
+                link=f"/profile/{current_user.username}",
+                notification_type='follow'
+            )
+            db.session.add(notif)
+            followed_count += 1
+    db.session.commit()
+    flash(f'Followed {followed_count} user(s) from your contacts.', 'success')
+    return redirect(url_for('feed'))
 
 # Admin Panel Routes
 @app.route('/admin')

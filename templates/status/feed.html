@@ -1,421 +1,59 @@
 {% extends "base.html" %}
 
-{% block title %}Status Feed - PingMe{% endblock %}
-
-{% block extra_css %}
-<style>
-    .status-story {
-        text-decoration: none;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin-right: 20px;
-        position: relative;
-        min-width: 70px;
-    }
-    
-    .status-story-circle {
-        width: 70px;
-        height: 70px;
-        border-radius: 50%;
-        padding: 3px;
-        background: linear-gradient(45deg, #ff7e5f, #feb47b, #86a8e7, #91eae4);
-        position: relative;
-    }
-    
-    .status-unseen {
-        background: linear-gradient(45deg, #ff416c, #ff4b2b);
-        animation: pulse 2s infinite;
-    }
-    
-    .status-seen {
-        background: linear-gradient(45deg, #666, #999);
-    }
-    
-    .status-story-avatar {
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        border: 3px solid white;
-        object-fit: cover;
-    }
-    
-    .status-story-add {
-        width: 70px;
-        height: 70px;
-        border-radius: 50%;
-        background: #f0f2f5;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px dashed #ccc;
-        color: #1d9bf0;
-        font-size: 24px;
-    }
-    
-    .status-story-username {
-        font-size: 12px;
-        margin-top: 6px;
-        color: #333;
-        text-align: center;
-        max-width: 70px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-    
-    .status-stories-bar {
-        display: flex;
-        overflow-x: auto;
-        padding: 20px 10px;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
-        scrollbar-width: thin;
-    }
-    
-    .status-stories-bar::-webkit-scrollbar {
-        height: 4px;
-    }
-    
-    .status-stories-bar::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-    }
-    
-    .status-stories-bar::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 10px;
-    }
-    
-    .status-count-badge {
-        position: absolute;
-        bottom: -5px;
-        right: -5px;
-        background: #1d9bf0;
-        color: white;
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: bold;
-        border: 2px solid white;
-    }
-    
-    .profile-with-status {
-        position: relative;
-        width: 48px;
-        height: 48px;
-    }
-    
-    .status-ring {
-        position: absolute;
-        top: -3px;
-        left: -3px;
-        width: 54px;
-        height: 54px;
-        border-radius: 50%;
-        border: 2px solid #1d9bf0;
-        animation: ring-pulse 2s infinite;
-    }
-    
-    .new-status {
-        border-color: #ff416c;
-        animation: ring-pulse-danger 2s infinite;
-    }
-    
-    .profile-img-with-ring {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 2px solid white;
-        position: relative;
-        z-index: 1;
-    }
-    
-    .status-preview-card {
-        border-radius: 12px;
-        overflow: hidden;
-        position: relative;
-        cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
-        height: 200px;
-    }
-    
-    .status-preview-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    }
-    
-    .status-preview-image {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    
-    .status-overlay {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: linear-gradient(transparent, rgba(0,0,0,0.8));
-        padding: 15px;
-        color: white;
-    }
-    
-    .status-type-icon {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: rgba(0,0,0,0.6);
-        color: white;
-        border-radius: 50%;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .status-stats-item {
-        padding: 10px;
-        border-radius: 8px;
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        margin-bottom: 10px;
-    }
-    
-    .status-stats-number {
-        font-size: 24px;
-        font-weight: bold;
-        background: linear-gradient(45deg, #1d9bf0, #26a7de);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    
-    .recent-viewer-item {
-        padding: 8px;
-        border-radius: 8px;
-        transition: background 0.2s;
-    }
-    
-    .recent-viewer-item:hover {
-        background: #f8f9fa;
-    }
-    
-    .status-expiry-badge {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        background: rgba(0,0,0,0.7);
-        color: white;
-        padding: 4px 8px;
-        border-radius: 20px;
-        font-size: 11px;
-    }
-    
-    .view-indicator {
-        position: absolute;
-        bottom: 10px;
-        right: 10px;
-        background: rgba(0,0,0,0.7);
-        color: white;
-        padding: 4px 8px;
-        border-radius: 20px;
-        font-size: 11px;
-    }
-    
-    .viewed-badge {
-        background: #28a745;
-    }
-    
-    .unviewed-badge {
-        background: #ffc107;
-    }
-    
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-    }
-    
-    @keyframes ring-pulse {
-        0% { box-shadow: 0 0 0 0 rgba(29, 155, 240, 0.4); }
-        70% { box-shadow: 0 0 0 10px rgba(29, 155, 240, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(29, 155, 240, 0); }
-    }
-    
-    @keyframes ring-pulse-danger {
-        0% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0.4); }
-        70% { box-shadow: 0 0 0 10px rgba(255, 65, 108, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0); }
-    }
-    
-    .status-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        gap: 15px;
-    }
-    
-    .sort-dropdown {
-        min-width: 200px;
-    }
-    
-    .status-filters {
-        background: white;
-        border-radius: 10px;
-        padding: 15px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    }
-    
-    .filter-badge {
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .filter-badge.active {
-        background: #1d9bf0 !important;
-        color: white;
-    }
-    
-    .empty-state {
-        padding: 60px 20px;
-        text-align: center;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    }
-    
-    .empty-state-icon {
-        width: 100px;
-        height: 100px;
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 20px;
-        color: #1d9bf0;
-        font-size: 40px;
-    }
-    
-    .suggested-user-card {
-        border: 1px solid #e1e8ed;
-        border-radius: 12px;
-        padding: 15px;
-        transition: all 0.2s;
-        height: 100%;
-    }
-    
-    .suggested-user-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-    }
-</style>
-{% endblock %}
+{% block title %}Status Feed - Chatter{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row">
-        <!-- Left Sidebar - Stats -->
+        <!-- Left Sidebar – Stats & Viewers -->
         <div class="col-lg-3 mb-4">
-            <!-- Your Status Stats -->
+            <!-- Your Status Stats (without create button) -->
             <div class="card glass-effect mb-4">
-                <div class="card-header bg-transparent">
+                <div class="card-header bg-transparent border-0">
                     <h5 class="mb-0"><i class="fas fa-chart-line me-2 text-primary"></i>Your Status Stats</h5>
                 </div>
                 <div class="card-body">
-                    <div class="status-stats-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <small class="text-muted d-block">Active Statuses</small>
-                                <span class="status-stats-number">{{ current_user_active_statuses }}</span>
-                            </div>
-                            <div class="bg-primary bg-opacity-10 rounded-circle p-2">
-                                <i class="fas fa-circle text-primary"></i>
-                            </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded-3" style="background: var(--card-hover);">
+                        <div>
+                            <small class="text-muted">Active Statuses</small>
+                            <div class="fw-bold fs-4">{{ current_user_active_statuses }}</div>
+                        </div>
+                        <div class="rounded-circle p-2" style="background: rgba(29, 155, 240, 0.1);">
+                            <i class="fas fa-circle text-primary"></i>
                         </div>
                     </div>
-                    
-                    <div class="status-stats-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <small class="text-muted d-block">Views Today</small>
-                                <span class="status-stats-number">{{ current_user_views_today }}</span>
-                            </div>
-                            <div class="bg-success bg-opacity-10 rounded-circle p-2">
-                                <i class="fas fa-eye text-success"></i>
-                            </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded-3" style="background: var(--card-hover);">
+                        <div>
+                            <small class="text-muted">Views Today</small>
+                            <div class="fw-bold fs-4">{{ current_user_views_today }}</div>
+                        </div>
+                        <div class="rounded-circle p-2" style="background: rgba(0, 186, 124, 0.1);">
+                            <i class="fas fa-eye text-success"></i>
                         </div>
                     </div>
-                    
-                    <div class="status-stats-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <small class="text-muted d-block">Total Views</small>
-                                <span class="status-stats-number">{{ current_user_total_views }}</span>
-                            </div>
-                            <div class="bg-info bg-opacity-10 rounded-circle p-2">
-                                <i class="fas fa-chart-bar text-info"></i>
-                            </div>
+                    <div class="d-flex justify-content-between align-items-center p-3 rounded-3" style="background: var(--card-hover);">
+                        <div>
+                            <small class="text-muted">Total Views</small>
+                            <div class="fw-bold fs-4">{{ current_user_total_views }}</div>
+                        </div>
+                        <div class="rounded-circle p-2" style="background: rgba(249, 24, 128, 0.1);">
+                            <i class="fas fa-chart-bar text-accent"></i>
                         </div>
                     </div>
-                    
-                    
                 </div>
-                <div class="card-footer bg-transparent text-center">
-                    <a href="{{ url_for('create_status') }}" class="btn btn-primary btn-sm w-100">
-                        <i class="fas fa-plus-circle me-1"></i> Create New Status
-                    </a>
-                </div>
+                <!-- Footer with create button REMOVED -->
             </div>
-            
+
             <!-- Recent Viewers -->
             {% if recent_viewers %}
             <div class="card glass-effect mb-4">
-                <div class="card-header bg-transparent">
+                <div class="card-header bg-transparent border-0">
                     <h5 class="mb-0"><i class="fas fa-history me-2 text-info"></i>Recent Viewers</h5>
                 </div>
-                <div class="card-body p-0">
+                <div class="list-group list-group-flush bg-transparent">
                     {% for viewer in recent_viewers %}
                     <a href="{{ url_for('profile', username=viewer.user.username) }}" 
-                       class="text-decoration-none text-dark recent-viewer-item d-block">
-                        <div class="d-flex align-items-center">
-                            <div class="position-relative me-3">
-                                <div class="profile-with-status">
-                                    <img src="{{ get_user_avatar_url(viewer.user) }}" 
-                                         class="profile-img-with-ring"
-                                         alt="{{ viewer.user.username }}"
-                                         onerror="this.src='https://ui-avatars.com/api/?name={{ viewer.user.username }}&background=1d9bf0&color=fff'">
-                                </div>
-                            </div>
-                            <div class="flex-grow-1">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <strong class="small">@{{ viewer.user.username }}</strong>
-                                    <small class="text-muted">{{ viewer.viewed_at|time_ago }}</small>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-            
-            <!-- Top Viewers -->
-            {% if top_viewers %}
-            <div class="card glass-effect">
-                <div class="card-header bg-transparent">
-                    <h5 class="mb-0"><i class="fas fa-crown me-2 text-warning"></i>Top Viewers</h5>
-                </div>
-                <div class="card-body">
-                    {% for viewer in top_viewers %}
-                    <div class="d-flex align-items-center mb-3">
+                       class="list-group-item bg-transparent text-light border-light d-flex align-items-center">
                         <div class="position-relative me-3">
                             <div class="profile-with-status">
                                 <img src="{{ get_user_avatar_url(viewer.user) }}" 
@@ -426,12 +64,39 @@
                         </div>
                         <div class="flex-grow-1">
                             <div class="d-flex justify-content-between align-items-center">
+                                <strong>@{{ viewer.user.username }}</strong>
+                                <small class="text-muted">{{ viewer.viewed_at|time_ago }}</small>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Top Viewers -->
+            {% if top_viewers %}
+            <div class="card glass-effect">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0"><i class="fas fa-crown me-2 text-warning"></i>Top Viewers</h5>
+                </div>
+                <div class="list-group list-group-flush bg-transparent">
+                    {% for viewer in top_viewers %}
+                    <div class="list-group-item bg-transparent text-light border-light d-flex align-items-center">
+                        <div class="position-relative me-3">
+                            <img src="{{ get_user_avatar_url(viewer.user) }}" 
+                                 class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;"
+                                 alt="{{ viewer.user.username }}"
+                                 onerror="this.src='https://ui-avatars.com/api/?name={{ viewer.user.username }}&background=1d9bf0&color=fff'">
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <strong class="small d-block">@{{ viewer.user.username }}</strong>
-                                    <small class="text-muted">{{ viewer.view_count }} view{{ 's' if viewer.view_count != 1 }}</small>
+                                    <strong>@{{ viewer.user.username }}</strong>
+                                    <small class="text-muted ms-2">{{ viewer.view_count }} view{{ 's' if viewer.view_count != 1 }}</small>
                                 </div>
                                 {% if loop.index <= 3 %}
-                                <span class="badge bg-warning">{{ loop.index }}</span>
+                                <span class="badge bg-warning">#{{ loop.index }}</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -441,165 +106,129 @@
             </div>
             {% endif %}
         </div>
-        
-        <!-- Main Content -->
+
+        <!-- Main Content – Status Feed (unchanged) -->
         <div class="col-lg-6 mb-4">
-            <!-- Header with Filters -->
-            <div class="status-filters mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <h4 class="mb-0"><i class="fas fa-circle me-2 text-primary"></i>Status Updates</h4>
-                        <p class="text-muted mb-0 small">See what your friends are sharing</p>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <div class="dropdown">
-                            <button class="btn btn-outline-primary btn-sm dropdown-toggle sort-dropdown" 
-                                    type="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-sort-amount-down me-1"></i>
-                                {% if sort_type == 'newest' %}Newest First
-                                {% elif sort_type == 'oldest' %}Oldest First
-                                {% else %}Most Views{% endif %}
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item {% if sort_type == 'newest' %}active{% endif %}" 
-                                       href="{{ url_for('status_feed', sort='newest') }}">Newest First</a></li>
-                                <li><a class="dropdown-item {% if sort_type == 'oldest' %}active{% endif %}" 
-                                       href="{{ url_for('status_feed', sort='oldest') }}">Oldest First</a></li>
-                                <li><a class="dropdown-item {% if sort_type == 'most_views' %}active{% endif %}" 
-                                       href="{{ url_for('status_feed', sort='most_views') }}">Most Views</a></li>
-                            </ul>
-                        </div>
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createStatusModal">
-                            <i class="fas fa-plus-circle me-1"></i> Add
-                        </button>
-                    </div>
+            <!-- Header with Sort & Create -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="mb-1"><i class="fas fa-circle me-2 text-primary"></i>Status Updates</h4>
+                    <p class="text-muted small mb-0">See what your friends are sharing right now</p>
                 </div>
-                
-                <!-- Quick Filters -->
-                <div class="d-flex flex-wrap gap-2">
-                    <span class="badge bg-primary filter-badge {% if not request.args.get('filter') %}active{% endif %}" 
-                          onclick="window.location='{{ url_for('status_feed') }}'">
-                        All ({{ total_active_statuses }})
-                    </span>
-                    <span class="badge bg-success filter-badge" data-filter="unviewed">
-                        <i class="fas fa-eye-slash me-1"></i> Unviewed
-                    </span>
-                    <span class="badge bg-warning filter-badge" data-filter="friends">
-                        <i class="fas fa-user-friends me-1"></i> Friends
-                    </span>
-                    <span class="badge bg-info filter-badge" data-filter="media">
-                        <i class="fas fa-image me-1"></i> Media
-                    </span>
+                <div class="d-flex gap-2">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-sort-amount-down me-1"></i>
+                            {% if sort_type == 'newest' %}Newest First
+                            {% elif sort_type == 'oldest' %}Oldest First
+                            {% else %}Most Views{% endif %}
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item {% if sort_type == 'newest' %}active{% endif %}" 
+                                   href="{{ url_for('status_feed', sort='newest') }}">Newest First</a></li>
+                            <li><a class="dropdown-item {% if sort_type == 'oldest' %}active{% endif %}" 
+                                   href="{{ url_for('status_feed', sort='oldest') }}">Oldest First</a></li>
+                            <li><a class="dropdown-item {% if sort_type == 'most_views' %}active{% endif %}" 
+                                   href="{{ url_for('status_feed', sort='most_views') }}">Most Views</a></li>
+                        </ul>
+                    </div>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createStatusModal">
+                        <i class="fas fa-plus-circle me-1"></i> Add
+                    </button>
                 </div>
             </div>
-            
-            <!-- Status Stories Bar -->
-            {% if statuses_by_user and statuses_by_user|length > 0 %}
-            <div class="status-stories-bar mb-4">
-                <!-- Your Story -->
-                <a href="javascript:void(0)" class="status-story" data-bs-toggle="modal" data-bs-target="#createStatusModal">
-                    <div class="status-story-add">
-                        <i class="fas fa-plus"></i>
+
+            <!-- Status Stories Bar (horizontal scroll) -->
+            {% if statuses_by_user %}
+            <div class="stories-container mb-4 glass-effect rounded-3">
+                <div class="stories-scroll">
+                    <!-- Your Story (create) -->
+                    <div class="story-item">
+                        <a href="javascript:void(0)" class="story-link" onclick="quickStatus('text')">
+                            <div class="story-avatar new-story">
+                                <img src="{{ get_user_avatar_url(current_user) }}" 
+                                     class="story-image" alt="Your story">
+                                <div class="add-story">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                            </div>
+                            <small class="story-username">You</small>
+                        </a>
                     </div>
-                    <span class="status-story-username">Your story</span>
-                </a>
-                
-                <!-- Followed Users Stories -->
-                {% for user_id, user_statuses in statuses_by_user.items() %}
-                    {% if user_statuses|length > 0 %}
+
+                    {% for user_id, user_statuses in statuses_by_user.items() %}
+                        {% if user_statuses %}
                         {% set user = user_statuses[0].user %}
                         {% set latest_status = user_statuses[0] %}
                         {% set has_unviewed = latest_status.id not in viewed_status_ids %}
-                        
-                        <a href="{{ url_for('view_status', status_id=latest_status.id) }}" class="status-story">
-                            <div class="status-story-circle {% if has_unviewed %}status-unseen{% else %}status-seen{% endif %}">
-                                <img src="{{ get_user_avatar_url(user) }}" 
-                                     class="status-story-avatar"
-                                     alt="{{ user.username }}"
-                                     onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
-                                {% if user_statuses|length > 1 %}
-                                <span class="status-count-badge">{{ user_statuses|length }}</span>
-                                {% endif %}
-                            </div>
-                            <span class="status-story-username">{{ user.username }}</span>
-                        </a>
-                    {% endif %}
-                {% endfor %}
+                        <div class="story-item">
+                            <a href="{{ url_for('view_status', status_id=latest_status.id) }}" class="story-link">
+                                <div class="story-avatar {% if has_unviewed %}has-unseen{% endif %}">
+                                    <img src="{{ get_user_avatar_url(user) }}" 
+                                         class="story-image"
+                                         alt="{{ user.username }}"
+                                         onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
+                                    {% if user_statuses|length > 1 %}
+                                    <span class="story-count">{{ user_statuses|length }}</span>
+                                    {% endif %}
+                                </div>
+                                <small class="story-username">{{ user.username }}</small>
+                            </a>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
             </div>
             {% endif %}
-            
+
             <!-- Status Grid -->
-            {% if statuses_by_user and statuses_by_user|length > 0 %}
+            {% if statuses_by_user %}
             <div class="status-grid">
                 {% for user_id, user_statuses in statuses_by_user.items() %}
                     {% for status in user_statuses %}
-                    <a href="{{ url_for('view_status', status_id=status.id) }}" class="text-decoration-none">
-                        <div class="status-preview-card">
-                            <!-- Status Image/Preview -->
-                            {% if status.media_type == 'image' and status.media_url %}
-                            <img src="{{ url_for('static', filename='uploads/statuses/' + status.media_url) }}" 
-                                 class="status-preview-image" alt="Status">
-                            {% elif status.media_type == 'video' and status.media_url %}
-                            <div class="status-preview-image bg-dark d-flex align-items-center justify-content-center">
-                                <i class="fas fa-play-circle text-white fa-3x"></i>
-                            </div>
-                            {% else %}
-                            <div class="status-preview-image" 
-                                 style="background: {{ status.background_color }}; 
-                                        color: {{ status.text_color }};
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: center;
-                                        padding: 20px;">
-                                <div style="font-size: {{ status.font_size }}px; text-align: center;">
-                                    {{ status.text|truncate(100) }}
+                    <a href="{{ url_for('view_status', status_id=status.id) }}" class="status-card-link">
+                        <div class="status-card glass-effect">
+                            <!-- Preview based on media type -->
+                            <div class="status-preview" 
+                                 {% if status.media_type == 'image' and status.media_url %}
+                                 style="background-image: url('{{ url_for('static', filename='uploads/statuses/' + status.media_url) }}'); background-size: cover; background-position: center;"
+                                 {% elif status.media_type == 'video' and status.media_url %}
+                                 style="background: #000; display: flex; align-items: center; justify-content: center;"
+                                 {% else %}
+                                 style="background: {{ status.background_color or '#000' }}; color: {{ status.text_color or '#fff' }};"
+                                 {% endif %}>
+                                
+                                {% if status.media_type == 'video' %}
+                                <i class="fas fa-play-circle fa-3x" style="color: rgba(255,255,255,0.8);"></i>
+                                {% elif status.media_type == 'text' %}
+                                <div class="status-text-preview" style="font-size: {{ status.font_size or 18 }}px;">
+                                    {{ status.text|truncate(50) }}
                                 </div>
-                            </div>
-                            {% endif %}
-                            
-                            <!-- Status Type Icon -->
-                            <div class="status-type-icon">
-                                {% if status.media_type == 'image' %}
-                                <i class="fas fa-image"></i>
-                                {% elif status.media_type == 'video' %}
-                                <i class="fas fa-video"></i>
-                                {% else %}
-                                <i class="fas fa-font"></i>
                                 {% endif %}
                             </div>
-                            
-                            <!-- Expiry Badge -->
-                            <div class="status-expiry-badge">
-                                <i class="fas fa-clock me-1"></i>
-                                {% set hours_left = ((status.expires_at - datetime.utcnow()).seconds // 3600) %}
-                                {% if hours_left > 1 %}
-                                {{ hours_left }}h
-                                {% else %}
-                                < 1h
-                                {% endif %}
-                            </div>
-                            
-                            <!-- View Indicator -->
-                            <div class="view-indicator {% if status.id in viewed_status_ids %}viewed-badge{% else %}unviewed-badge{% endif %}">
-                                {% if status.id in viewed_status_ids %}
-                                <i class="fas fa-check me-1"></i> Viewed
-                                {% else %}
-                                <i class="fas fa-eye me-1"></i> New
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Overlay with Info -->
+
+                            <!-- Status metadata overlay -->
                             <div class="status-overlay">
                                 <div class="d-flex align-items-center">
                                     <img src="{{ get_user_avatar_url(status.user) }}" 
-                                         class="rounded-circle me-2" width="30" height="30"
+                                         class="rounded-circle me-2" width="28" height="28"
                                          alt="{{ status.user.username }}"
                                          onerror="this.src='https://ui-avatars.com/api/?name={{ status.user.username }}&background=1d9bf0&color=fff'">
-                                    <div>
-                                        <strong class="small d-block">@{{ status.user.username }}</strong>
-                                        <small>{{ status.views_count }} views</small>
+                                    <div class="flex-grow-1">
+                                        <small class="fw-bold d-block">@{{ status.user.username }}</small>
+                                        <small class="text-muted">{{ status.views_count }} views</small>
                                     </div>
+                                    <span class="badge {% if status.id in viewed_status_ids %}bg-secondary{% else %}bg-primary{% endif %} rounded-pill">
+                                        {% if status.id in viewed_status_ids %}Viewed{% else %}New{% endif %}
+                                    </span>
                                 </div>
+                            </div>
+
+                            <!-- Expiry badge -->
+                            <div class="status-expiry">
+                                <i class="far fa-clock me-1"></i>
+                                {% set hours_left = ((status.expires_at - datetime.utcnow()).seconds // 3600) %}
+                                {% if hours_left > 1 %}{{ hours_left }}h{% else %}< 1h{% endif %}
                             </div>
                         </div>
                     </a>
@@ -607,112 +236,106 @@
                 {% endfor %}
             </div>
             {% else %}
-            <!-- Empty State -->
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <i class="fas fa-comment-slash"></i>
+            <!-- Empty state -->
+            <div class="empty-feed text-center py-5">
+                <div class="empty-icon mb-3">
+                    <i class="fas fa-circle fa-3x text-muted"></i>
                 </div>
-                <h4 class="mb-3">No Status Updates Yet</h4>
-                <p class="text-muted mb-4">Follow more people to see their status updates, or create your own status</p>
+                <h5 class="mb-2">No status updates</h5>
+                <p class="text-muted mb-4">Follow people or create your first status to get started.</p>
                 <div class="d-flex justify-content-center gap-3">
                     <a href="{{ url_for('search') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-user-plus me-1"></i> Find People
+                        <i class="fas fa-search me-2"></i>Find People
                     </a>
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createStatusModal">
-                        <i class="fas fa-plus-circle me-1"></i> Create Status
+                        <i class="fas fa-plus-circle me-2"></i>Create Status
                     </button>
                 </div>
             </div>
             {% endif %}
         </div>
-        
-        <!-- Right Sidebar - Suggestions -->
+
+        <!-- Right Sidebar – Suggestions Only (Quick Create removed) -->
         <div class="col-lg-3 mb-4">
-            <!-- Quick Create -->
-            <div class="card glass-effect mb-4">
-                <div class="card-header bg-transparent">
-                    <h5 class="mb-0">Quick Create</h5>
-                </div>
-                <div class="card-body">
-                    <button class="btn btn-outline-primary w-100 mb-2" onclick="quickStatus('text')">
-                        <i class="fas fa-font me-2"></i> Text Status
-                    </button>
-                    <button class="btn btn-outline-success w-100 mb-2" onclick="quickStatus('image')">
-                        <i class="fas fa-image me-2"></i> Photo Status
-                    </button>
-                    <button class="btn btn-outline-info w-100" onclick="quickStatus('video')">
-                        <i class="fas fa-video me-2"></i> Video Status
-                    </button>
-                </div>
-            </div>
-            
-            
-            
-            <!-- Suggested Users with Status -->
+            <!-- Suggested Users (if any) -->
+            {% if suggested_users %}
             <div class="card glass-effect">
-                <div class="card-header bg-transparent">
-                    <h5 class="mb-0"><i class="fas fa-user-plus me-2 text-success"></i>People with Status</h5>
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0"><i class="fas fa-user-plus me-2 text-success"></i>People to Follow</h5>
                 </div>
-                <div class="card-body">
-                    <!-- This would be populated with suggested users who have active statuses -->
-                    <div class="text-center">
-                        <p class="text-muted small">Follow more people to see their status updates</p>
-                        <a href="{{ url_for('search') }}" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-search me-1"></i> Discover People
-                        </a>
+                <div class="list-group list-group-flush bg-transparent">
+                    {% for user in suggested_users %}
+                    <div class="list-group-item bg-transparent text-light border-light d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ get_user_avatar_url(user) }}" 
+                                 class="rounded-circle me-2" style="width: 36px; height: 36px; object-fit: cover;"
+                                 alt="{{ user.username }}"
+                                 onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
+                            <div>
+                                <strong class="d-block">@{{ user.username }}</strong>
+                                <small class="text-muted">{{ user.followers.count() }} followers</small>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary follow-btn" data-user-id="{{ user.id }}">
+                            Follow
+                        </button>
                     </div>
+                    {% endfor %}
                 </div>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>
 
-<!-- Create Status Modal -->
+<!-- Create Status Modal (unchanged) -->
 <div class="modal fade" id="createStatusModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content glass-effect">
+            <div class="modal-header border-0">
                 <h5 class="modal-title"><i class="fas fa-circle me-2 text-primary"></i>Create Status</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="{{ url_for('create_status') }}" enctype="multipart/form-data">
                 <div class="modal-body">
+                    <!-- Type selector -->
                     <div class="mb-3">
                         <label class="form-label">Status Type</label>
-                        <div class="d-flex gap-2 mb-3">
-                            <button type="button" class="btn btn-outline-primary flex-fill status-type-select" data-type="text">
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn flex-fill status-type-select" data-type="text">
                                 <i class="fas fa-font me-1"></i> Text
                             </button>
-                            <button type="button" class="btn btn-outline-primary flex-fill status-type-select" data-type="image">
+                            <button type="button" class="btn flex-fill status-type-select" data-type="image">
                                 <i class="fas fa-image me-1"></i> Photo
                             </button>
-                            <button type="button" class="btn btn-outline-primary flex-fill status-type-select" data-type="video">
+                            <button type="button" class="btn flex-fill status-type-select" data-type="video">
                                 <i class="fas fa-video me-1"></i> Video
                             </button>
                         </div>
                         <input type="hidden" name="media_type" id="modal_media_type" value="text">
                     </div>
-                    
+
+                    <!-- Text section -->
                     <div id="modal_text_section">
                         <div class="mb-3">
-                            <label for="modal_text" class="form-label">Text</label>
+                            <label for="modal_text" class="form-label">Your status</label>
                             <textarea name="text" id="modal_text" class="form-control" rows="3" 
-                                      placeholder="What's happening?" maxlength="500"></textarea>
+                                      placeholder="What's on your mind?" maxlength="500"></textarea>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="modal_bg_color" class="form-label">Background</label>
                                 <input type="color" name="background_color" id="modal_bg_color" 
-                                       class="form-control form-control-color" value="#000000">
+                                       class="form-control form-control-color" value="#1d9bf0">
                             </div>
                             <div class="col-md-6">
-                                <label for="modal_text_color" class="form-label">Text Color</label>
+                                <label for="modal_text_color" class="form-label">Text color</label>
                                 <input type="color" name="text_color" id="modal_text_color" 
                                        class="form-control form-control-color" value="#ffffff">
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="modal_font_size" class="form-label">Font Size</label>
+                            <label for="modal_font_size" class="form-label">Font size</label>
                             <select name="font_size" id="modal_font_size" class="form-select">
                                 <option value="18">Small</option>
                                 <option value="24" selected>Medium</option>
@@ -721,22 +344,23 @@
                             </select>
                         </div>
                     </div>
-                    
+
+                    <!-- Media section -->
                     <div id="modal_media_section" class="d-none">
                         <div class="mb-3">
-                            <label for="modal_media" class="form-label">Upload Media</label>
+                            <label for="modal_media" class="form-label">Upload media</label>
                             <input type="file" name="media" id="modal_media" class="form-control" 
                                    accept="image/*,video/*">
-                            <div class="form-text small">Max 16MB • Images & Videos</div>
+                            <div class="form-text text-muted">Max 16MB – images or videos</div>
                         </div>
                         <div class="mb-3">
-                            <label for="modal_caption" class="form-label">Caption (Optional)</label>
+                            <label for="modal_caption" class="form-label">Caption (optional)</label>
                             <textarea name="text" id="modal_caption" class="form-control" 
                                       placeholder="Add a caption..." rows="2" maxlength="200"></textarea>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer border-0">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create Status</button>
                 </div>
@@ -744,91 +368,299 @@
         </div>
     </div>
 </div>
+
+<style>
+/* Status grid specific styles */
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.status-card-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.status-card {
+    position: relative;
+    aspect-ratio: 9/16;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-light);
+    background: var(--card-color);
+}
+
+.status-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary-color);
+    box-shadow: 0 10px 25px rgba(29, 155, 240, 0.2);
+}
+
+.status-preview {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-size: cover;
+    background-position: center;
+    transition: transform 0.3s ease;
+}
+
+.status-card:hover .status-preview {
+    transform: scale(1.02);
+}
+
+.status-text-preview {
+    text-align: center;
+    padding: 20px;
+    word-break: break-word;
+    font-weight: 500;
+}
+
+.status-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    padding: 15px 10px 10px;
+    color: white;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.status-card:hover .status-overlay {
+    opacity: 1;
+}
+
+.status-expiry {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    backdrop-filter: blur(4px);
+    z-index: 2;
+}
+
+/* Stories bar */
+.stories-container {
+    background: var(--card-color);
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid var(--border-light);
+}
+
+.stories-scroll {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+}
+
+.stories-scroll::-webkit-scrollbar {
+    height: 4px;
+}
+
+.stories-scroll::-webkit-scrollbar-thumb {
+    background: var(--border-light);
+    border-radius: 4px;
+}
+
+.story-item {
+    flex: 0 0 auto;
+    text-align: center;
+    min-width: 70px;
+}
+
+.story-link {
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.story-avatar {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    padding: 3px;
+    margin-bottom: 6px;
+    position: relative;
+    background: var(--card-hover);
+}
+
+.story-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--card-hover);
+}
+
+.new-story {
+    border: 2px solid var(--border-light);
+}
+
+.add-story {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: var(--primary-color);
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--card-color);
+    font-size: 12px;
+}
+
+.has-unseen {
+    background: var(--status-gradient);
+    padding: 4px;
+}
+
+.story-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #f4212e;
+    color: white;
+    font-size: 11px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.story-username {
+    font-size: 12px;
+    display: block;
+    max-width: 70px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
+}
+
+/* Modal styling */
+.modal-content.glass-effect {
+    background: var(--card-color);
+    border: 1px solid var(--border-light);
+}
+
+.modal-content .form-control,
+.modal-content .form-select {
+    background: var(--card-hover);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+}
+
+.modal-content .form-control:focus,
+.modal-content .form-select:focus {
+    background: var(--card-hover);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.2);
+    color: var(--text-primary);
+}
+
+.modal-content .form-control-color {
+    padding: 2px;
+    height: 40px;
+}
+
+.status-type-select {
+    background: var(--card-hover);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.status-type-select:hover,
+.status-type-select.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+/* Empty state */
+.empty-feed {
+    background: var(--card-color);
+    border-radius: 16px;
+    padding: 60px 20px;
+    border: 1px solid var(--border-light);
+}
+
+.empty-icon {
+    color: var(--text-muted);
+}
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    $(document).ready(function() {
-        // Status type selection in modal
-        $('.status-type-select').click(function() {
-            const type = $(this).data('type');
-            
-            // Update active button
-            $('.status-type-select').removeClass('active').addClass('btn-outline-primary');
-            $(this).addClass('active').removeClass('btn-outline-primary');
-            
-            // Update hidden input
-            $('#modal_media_type').val(type);
-            
-            // Show/hide sections
-            if (type === 'text') {
-                $('#modal_text_section').removeClass('d-none');
-                $('#modal_media_section').addClass('d-none');
-            } else {
-                $('#modal_text_section').addClass('d-none');
-                $('#modal_media_section').removeClass('d-none');
-            }
-        });
-        
-        // Quick status function
-        window.quickStatus = function(type) {
-            $('#modal_media_type').val(type);
-            $('.status-type-select').removeClass('active').addClass('btn-outline-primary');
-            $(`[data-type="${type}"]`).addClass('active').removeClass('btn-outline-primary');
-            
-            if (type === 'text') {
-                $('#modal_text_section').removeClass('d-none');
-                $('#modal_media_section').addClass('d-none');
-            } else {
-                $('#modal_text_section').addClass('d-none');
-                $('#modal_media_section').removeClass('d-none');
-            }
-            
-            $('#createStatusModal').modal('show');
-        };
-        
-        // Filter badges
-        $('.filter-badge').click(function() {
-            const filter = $(this).data('filter');
-            if (filter) {
-                // In a real app, this would filter the statuses
-                alert('Filtering by: ' + filter);
-                $(this).toggleClass('active');
-            }
-        });
-        
-        // Auto-scroll stories
-        const storiesBar = document.querySelector('.status-stories-bar');
-        if (storiesBar) {
-            let isDown = false;
-            let startX;
-            let scrollLeft;
-            
-            storiesBar.addEventListener('mousedown', (e) => {
-                isDown = true;
-                startX = e.pageX - storiesBar.offsetLeft;
-                scrollLeft = storiesBar.scrollLeft;
-            });
-            
-            storiesBar.addEventListener('mouseleave', () => {
-                isDown = false;
-            });
-            
-            storiesBar.addEventListener('mouseup', () => {
-                isDown = false;
-            });
-            
-            storiesBar.addEventListener('mousemove', (e) => {
-                if (!isDown) return;
-                e.preventDefault();
-                const x = e.pageX - storiesBar.offsetLeft;
-                const walk = (x - startX) * 2;
-                storiesBar.scrollLeft = scrollLeft - walk;
-            });
-        }
-        
-        // Initialize with text status
-        $('[data-type="text"]').addClass('active').removeClass('btn-outline-primary');
+// Quick status creation – opens modal with preselected type
+window.quickStatus = function(type) {
+    // Update hidden input
+    document.getElementById('modal_media_type').value = type;
+
+    // Update button active states
+    document.querySelectorAll('.status-type-select').forEach(btn => {
+        btn.classList.remove('active');
     });
+    document.querySelector(`.status-type-select[data-type="${type}"]`).classList.add('active');
+
+    // Show/hide sections
+    const textSection = document.getElementById('modal_text_section');
+    const mediaSection = document.getElementById('modal_media_section');
+    if (type === 'text') {
+        textSection.classList.remove('d-none');
+        mediaSection.classList.add('d-none');
+    } else {
+        textSection.classList.add('d-none');
+        mediaSection.classList.remove('d-none');
+    }
+
+    // Show modal
+    new bootstrap.Modal(document.getElementById('createStatusModal')).show();
+};
+
+// Initialize modal type selector
+document.addEventListener('DOMContentLoaded', function() {
+    // Default to text
+    document.querySelector('.status-type-select[data-type="text"]').classList.add('active');
+
+    // Handle type clicks
+    document.querySelectorAll('.status-type-select').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const type = this.dataset.type;
+            document.getElementById('modal_media_type').value = type;
+
+            document.querySelectorAll('.status-type-select').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+
+            const textSection = document.getElementById('modal_text_section');
+            const mediaSection = document.getElementById('modal_media_section');
+            if (type === 'text') {
+                textSection.classList.remove('d-none');
+                mediaSection.classList.add('d-none');
+            } else {
+                textSection.classList.add('d-none');
+                mediaSection.classList.remove('d-none');
+            }
+        });
+    });
+});
 </script>
 {% endblock %}

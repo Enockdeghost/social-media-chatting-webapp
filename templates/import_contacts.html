@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Find Friends - Chatter{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm rounded-4" style="background: var(--card-color);">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-4"><i class="fas fa-address-book me-2"></i>Find Friends from Contacts</h4>
+                    <p class="text-muted mb-4">Upload your contacts (vCard .vcf) to see who's already on Chatter and follow them instantly.</p>
+
+                    <form method="POST" action="{{ url_for('upload_contacts') }}" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="contacts_file" class="form-label fw-semibold">Select vCard file (.vcf)</label>
+                            <input type="file" class="form-control bg-dark text-light border-secondary" id="contacts_file" name="contacts_file" accept=".vcf" required>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload me-2"></i>Upload & Find Friends
+                            </button>
+                            <a href="{{ url_for('feed') }}" class="btn btn-outline-secondary">Skip</a>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <p class="text-muted small">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Your contacts are only used to find friends. We don't store them.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
