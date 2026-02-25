@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 sticky-top" style="top: 80px; background: var(--card-color);">
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush bg-transparent" id="settings-tabs" role="tablist">
+                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3 active" 
+                           id="account-tab" data-bs-toggle="list" href="#account" role="tab">
+                            <i class="fas fa-user-circle fs-5" style="width: 24px;"></i>
+                            <span>Account</span>
+                        </a>
+                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3" 
+                           id="privacy-tab" data-bs-toggle="list" href="#privacy" role="tab">
+                            <i class="fas fa-lock fs-5" style="width: 24px;"></i>
+                            <span>Privacy & Safety</span>
+                        </a>
+                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3" 
+                           id="notifications-tab" data-bs-toggle="list" href="#notifications" role="tab">
+                            <i class="fas fa-bell fs-5" style="width: 24px;"></i>
+                            <span>Notifications</span>
+                        </a>
+                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3" 
+                           id="security-tab" data-bs-toggle="list" href="#security" role="tab">
+                            <i class="fas fa-shield-alt fs-5" style="width: 24px;"></i>
+                            <span>Security</span>
+                        </a>
+                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3" 
+                           id="content-tab" data-bs-toggle="list" href="#content" role="tab">
+                            <i class="fas fa-paint-brush fs-5" style="width: 24px;"></i>
+                            <span>Content & Display</span>
+                        </a>
+                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3" 
+                           id="data-tab" data-bs-toggle="list" href="#data" role="tab">
+                            <i class="fas fa-database fs-5" style="width: 24px;"></i>
+                            <span>Data & Storage</span>
+                        </a>
+                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3" 
+                           id="blocked-tab" data-bs-toggle="list" href="#blocked" role="tab">
+                            <i class="fas fa-ban fs-5" style="width: 24px;"></i>
+                            <span>Blocked Users</span>
+                        </a>
+                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3" 
+                           id="support-tab" data-bs-toggle="list" href="#support" role="tab">
+                            <i class="fas fa-question-circle fs-5" style="width: 24px;"></i>
+                            <span>Help & Support</span>
+                        </a>
+                        <a class="list-group-item list-group-item-action bg-transparent text-light border-light d-flex align-items-center gap-3 py-3" 
+                           id="about-tab" data-bs-toggle="list" href="#about" role="tab">
+                            <i class="fas fa-info-circle fs-5" style="width: 24px;"></i>
+                            <span>About</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Panels -->
+        <div class="col-lg-9">
+            <div class="card border-0 shadow-sm rounded-4" style="background: var(--card-color);">
+                <div class="card-body p-4">
+                    <div class="tab-content" id="settingsTabContent">
+                        <!-- Account Panel -->
+                        <div class="tab-pane fade show active" id="account" role="tabpanel">
+                            <h4 class="fw-bold mb-4">Account Settings</h4>
+                            <form method="POST" action="{{ url_for('update_account') }}" enctype="multipart/form-data">
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">Profile Picture</label>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_picture) }}" 
+                                             class="rounded-circle border" style="width: 80px; height: 80px; object-fit: cover;"
+                                             onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=1d9bf0&color=fff'">
+                                        <input type="file" class="form-control bg-dark text-light border-secondary" name="profile_picture" accept="image/*">
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">Cover Picture</label>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img src="{{ url_for('static', filename='uploads/covers/' + user.cover_picture) }}" 
+                                             class="rounded border" style="width: 150px; height: 80px; object-fit: cover;">
+                                        <input type="file" class="form-control bg-dark text-light border-secondary" name="cover_picture" accept="image/*">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="username" class="form-label fw-semibold">Username</label>
+                                    <input type="text" class="form-control bg-dark text-light border-secondary" id="username" name="username" value="{{ user.username }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email" class="form-label fw-semibold">Email</label>
+                                    <input type="email" class="form-control bg-dark text-light border-secondary" id="email" name="email" value="{{ user.email }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="bio" class="form-label fw-semibold">Bio</label>
+                                    <textarea class="form-control bg-dark text-light border-secondary" id="bio" name="bio" rows="3">{{ user.bio or '' }}</textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </form>
+                        </div>
+
+                        <!-- Privacy Panel -->
+                        <div class="tab-pane fade" id="privacy" role="tabpanel">
+                            <h4 class="fw-bold mb-4">Privacy & Safety</h4>
+                            <form method="POST" action="{{ url_for('update_privacy') }}">
+                                <div class="mb-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="is_private" id="is_private" {% if user.is_private %}checked{% endif %}>
+                                        <label class="form-check-label fw-semibold" for="is_private">Private Account</label>
+                                        <div class="small text-muted">When your account is private, only followers can see your posts and stories.</div>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="fw-semibold mb-2">Who can message you?</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="allow_messages_from" id="msg_everyone" value="everyone" {% if user.allow_messages_from == 'everyone' %}checked{% endif %}>
+                                        <label class="form-check-label" for="msg_everyone">Everyone</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="allow_messages_from" id="msg_followers" value="followers" {% if user.allow_messages_from == 'followers' %}checked{% endif %}>
+                                        <label class="form-check-label" for="msg_followers">Followers only</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="allow_messages_from" id="msg_none" value="none" {% if user.allow_messages_from == 'none' %}checked{% endif %}>
+                                        <label class="form-check-label" for="msg_none">No one</label>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="allow_tagging" id="allow_tagging" {% if user.allow_tagging %}checked{% endif %}>
+                                        <label class="form-check-label fw-semibold" for="allow_tagging">Allow tagging</label>
+                                        <div class="small text-muted">Allow others to tag you in posts and comments.</div>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="show_activity_status" id="show_activity_status" {% if user.show_activity_status %}checked{% endif %}>
+                                        <label class="form-check-label fw-semibold" for="show_activity_status">Show activity status</label>
+                                        <div class="small text-muted">Let others see when you're online.</div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Privacy Settings</button>
+                            </form>
+                        </div>
+
+                        <!-- Notifications Panel -->
+                        <div class="tab-pane fade" id="notifications" role="tabpanel">
+                            <h4 class="fw-bold mb-4">Notification Settings</h4>
+                            <form method="POST" action="{{ url_for('update_notifications') }}">
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="notify_likes" id="notify_likes" {% if user.notify_likes %}checked{% endif %}>
+                                        <label class="form-check-label fw-semibold" for="notify_likes">Likes</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="notify_comments" id="notify_comments" {% if user.notify_comments %}checked{% endif %}>
+                                        <label class="form-check-label fw-semibold" for="notify_comments">Comments</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="notify_follows" id="notify_follows" {% if user.notify_follows %}checked{% endif %}>
+                                        <label class="form-check-label fw-semibold" for="notify_follows">Follows</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="notify_messages" id="notify_messages" {% if user.notify_messages %}checked{% endif %}>
+                                        <label class="form-check-label fw-semibold" for="notify_messages">Messages</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="notify_mentions" id="notify_mentions" {% if user.notify_mentions %}checked{% endif %}>
+                                        <label class="form-check-label fw-semibold" for="notify_mentions">Mentions</label>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="email_notifications" id="email_notifications" {% if user.email_notifications %}checked{% endif %}>
+                                        <label class="form-check-label fw-semibold" for="email_notifications">Email Notifications</label>
+                                        <div class="small text-muted">Receive email summaries of your activity.</div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Notification Settings</button>
+                            </form>
+                        </div>
+
+                        <!-- Security Panel -->
+                        <div class="tab-pane fade" id="security" role="tabpanel">
+                            <h4 class="fw-bold mb-4">Security</h4>
+                            <form method="POST" action="{{ url_for('update_security') }}">
+                                <div class="mb-3">
+                                    <label for="current_password" class="form-label fw-semibold">Current Password</label>
+                                    <input type="password" class="form-control bg-dark text-light border-secondary" id="current_password" name="current_password" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="new_password" class="form-label fw-semibold">New Password</label>
+                                    <input type="password" class="form-control bg-dark text-light border-secondary" id="new_password" name="new_password" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="confirm_password" class="form-label fw-semibold">Confirm New Password</label>
+                                    <input type="password" class="form-control bg-dark text-light border-secondary" id="confirm_password" name="confirm_password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Change Password</button>
+                            </form>
+                            <hr class="my-4">
+                            <h5 class="fw-semibold mb-3">Two-Factor Authentication (2FA)</h5>
+                            <p class="text-muted small">Add an extra layer of security to your account. Once set up, you'll need your phone to generate a code when logging in.</p>
+                            <form method="POST" action="{{ url_for('enable_2fa') }}">
+                                <button type="submit" class="btn btn-outline-primary" {% if user.two_factor_enabled %}disabled{% endif %}>
+                                    {% if user.two_factor_enabled %}Enabled{% else %}Enable 2FA{% endif %}
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Content & Display Panel -->
+                        <div class="tab-pane fade" id="content" role="tabpanel">
+                            <h4 class="fw-bold mb-4">Content & Display</h4>
+                            <form method="POST" action="{{ url_for('update_content') }}">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Theme</label>
+                                    <select class="form-select bg-dark text-light border-secondary" name="theme">
+                                        <option value="dark" {% if user.theme == 'dark' %}selected{% endif %}>Dark</option>
+                                        <option value="light" {% if user.theme == 'light' %}selected{% endif %}>Light</option>
+                                        <option value="auto" {% if user.theme == 'auto' %}selected{% endif %}>Auto (follow system)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Language</label>
+                                    <select class="form-select bg-dark text-light border-secondary" name="language">
+                                        <option value="en" {% if user.language == 'en' %}selected{% endif %}>English</option>
+                                        <option value="es" {% if user.language == 'es' %}selected{% endif %}>Español</option>
+                                        <option value="fr" {% if user.language == 'fr' %}selected{% endif %}>Français</option>
+                                        <option value="de" {% if user.language == 'de' %}selected{% endif %}>Deutsch</option>
+                                        <option value="pt" {% if user.language == 'pt' %}selected{% endif %}>Português</option>
+                                        <option value="ru" {% if user.language == 'ru' %}selected{% endif %}>Русский</option>
+                                        <option value="ja" {% if user.language == 'ja' %}selected{% endif %}>日本語</option>
+                                        <option value="zh" {% if user.language == 'zh' %}selected{% endif %}>中文</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="autoplay_videos" id="autoplay_videos" {% if user.autoplay_videos %}checked{% endif %}>
+                                        <label class="form-check-label fw-semibold" for="autoplay_videos">Autoplay videos</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Media quality</label>
+                                    <select class="form-select bg-dark text-light border-secondary" name="media_quality">
+                                        <option value="auto" {% if user.media_quality == 'auto' %}selected{% endif %}>Auto (recommended)</option>
+                                        <option value="low" {% if user.media_quality == 'low' %}selected{% endif %}>Low (save data)</option>
+                                        <option value="high" {% if user.media_quality == 'high' %}selected{% endif %}>High (best quality)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Display Settings</button>
+                            </form>
+                        </div>
+
+                        <!-- Data & Storage Panel -->
+                        <div class="tab-pane fade" id="data" role="tabpanel">
+                            <h4 class="fw-bold mb-4">Data & Storage</h4>
+                            <div class="mb-4">
+                                <h5 class="fw-semibold">Download your data</h5>
+                                <p class="text-muted small">Get a copy of your posts, comments, and profile information.</p>
+                                <form method="POST" action="{{ url_for('download_data') }}">
+                                    <button type="submit" class="btn btn-outline-primary">Request Data Download</button>
+                                </form>
+                            </div>
+                            <div class="mb-4">
+                                <h5 class="fw-semibold">Clear cache</h5>
+                                <p class="text-muted small">Remove temporarily stored data from this device.</p>
+                                <form method="POST" action="{{ url_for('clear_cache') }}">
+                                    <button type="submit" class="btn btn-outline-warning">Clear Cache</button>
+                                </form>
+                            </div>
+                            <div>
+                                <h5 class="fw-semibold">Storage used</h5>
+                                <p class="text-muted small">You are using <strong>~0 MB</strong> of storage.</p>
+                            </div>
+                        </div>
+
+                        <!-- Blocked Users Panel -->
+                        <div class="tab-pane fade" id="blocked" role="tabpanel">
+                            <h4 class="fw-bold mb-4">Blocked Users</h4>
+                            {% set blocked_list = user.blocked.all() %}
+                            {% if blocked_list %}
+                                <div class="list-group">
+                                    {% for blocked in blocked_list %}
+                                    <div class="list-group-item bg-transparent border-light d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <img src="{{ url_for('static', filename='uploads/profiles/' + blocked.profile_picture) }}" 
+                                                 class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;"
+                                                 onerror="this.src='https://ui-avatars.com/api/?name={{ blocked.username }}&background=1d9bf0&color=fff'">
+                                            <div>
+                                                <strong>{{ blocked.username }}</strong>
+                                                <small class="text-muted d-block">@{{ blocked.username }}</small>
+                                            </div>
+                                        </div>
+                                        <form method="POST" action="{{ url_for('unblock_from_settings', user_id=blocked.id) }}" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Unblock</button>
+                                        </form>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted">You haven't blocked anyone.</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Help & Support Panel -->
+                        <div class="tab-pane fade" id="support" role="tabpanel">
+                            <h4 class="fw-bold mb-4">Help & Support</h4>
+                            <p>Need assistance? Visit our <a href="#" class="text-primary">Help Center</a> or contact us directly.</p>
+                            <form method="POST" action="#">
+                                <div class="mb-3">
+                                    <label for="support_message" class="form-label fw-semibold">Describe your issue</label>
+                                    <textarea class="form-control bg-dark text-light border-secondary" id="support_message" rows="4" placeholder="What's happening?"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Send Message</button>
+                            </form>
+                        </div>
+
+                        <!-- About Panel -->
+                        <div class="tab-pane fade" id="about" role="tabpanel">
+                            <h4 class="fw-bold mb-4">About</h4>
+                            <p><strong>App Version:</strong> 1.0.0</p>
+                            <p><strong>Terms of Service:</strong> <a href="#" class="text-primary">Read</a></p>
+                            <p><strong>Privacy Policy:</strong> <a href="#" class="text-primary">Read</a></p>
+                            <p><strong>Licenses:</strong> Open source libraries used under MIT, Apache 2.0, etc.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .list-group-item {
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
+    }
+    .list-group-item:hover {
+        background: rgba(255,255,255,0.05) !important;
+    }
+    .list-group-item.active {
+        background: rgba(29, 155, 240, 0.1) !important;
+        border-left-color: #1d9bf0 !important;
+        color: white !important;
+    }
+    .sticky-top {
+        z-index: 100;
+    }
+</style>
+{% endblock %}

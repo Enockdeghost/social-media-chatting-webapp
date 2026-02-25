@@ -315,15 +315,15 @@
             <div class="feed-filters mb-4">
                 <div class="d-flex justify-content-between border-bottom">
                     <div class="nav nav-tabs border-0">
-                        <button class="nav-link active" data-feed-type="following">For You</button>
+                        <button class="nav-link" data-feed-type="following">For You</button>
                         <button class="nav-link" data-feed-type="trending">Trending</button>
                         <button class="nav-link" data-feed-type="reels">Reels</button>
                     </div>
                     <div class="feed-sort">
                         <select class="form-select form-select-sm" style="max-width: 150px;">
-                            <option>Latest</option>
-                            <option>Most Liked</option>
-                            <option>Most Commented</option>
+                            <option value="latest">Latest</option>
+                            <option value="most_liked">Most Liked</option>
+                            <option value="most_commented">Most Commented</option>
                         </select>
                     </div>
                 </div>
@@ -339,7 +339,7 @@
                     <!-- Load More -->
                     {% if posts.has_next %}
                     <div class="text-center mt-4">
-                        <a href="{{ url_for('feed', page=posts.next_num) }}" class="btn btn-outline-primary rounded-pill px-4">
+                        <a href="{{ url_for('feed', page=posts.next_num, type=request.args.get('type', 'following'), sort=request.args.get('sort', 'latest')) }}" class="btn btn-outline-primary rounded-pill px-4">
                             <i class="fas fa-sync me-2"></i>Load More
                         </a>
                     </div>
@@ -377,6 +377,7 @@
                         <input type="text" 
                                class="form-control border-start-0" 
                                placeholder="Search Chatter..."
+                               id="searchInput"
                                onfocus="this.parentElement.classList.add('focused')"
                                onblur="this.parentElement.classList.remove('focused')">
                     </div>
@@ -1637,5 +1638,58 @@ function submitPollForm() {
     
     showToast('Poll added to post! Click "Post" to publish.', 'success');
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get current URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const feedType = urlParams.get('type') || 'following';
+    const sort = urlParams.get('sort') || 'latest';
+    
+    // Set active filter button
+    const filterButtons = document.querySelectorAll('[data-feed-type]');
+    filterButtons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.feedType === feedType) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Set sort dropdown
+    const sortSelect = document.querySelector('.feed-sort select');
+    if (sortSelect) {
+        sortSelect.value = sort;
+    }
+    
+    // Add click handlers to filter buttons
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const type = this.dataset.feedType;
+            const currentSort = document.querySelector('.feed-sort select').value;
+            window.location.href = `/feed?type=${type}&sort=${currentSort}`;
+        });
+    });
+    
+    // Add change handler to sort dropdown
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            const currentType = document.querySelector('[data-feed-type].active')?.dataset.feedType || 'following';
+            window.location.href = `/feed?type=${currentType}&sort=${this.value}`;
+        });
+    }
+    
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const query = this.value.trim();
+                if (query) {
+                    window.location.href = `/search?q=${encodeURIComponent(query)}`;
+                }
+            }
+        });
+    }
+});
 </script>
 {% endblock %}
