@@ -2,10 +2,271 @@
 
 {% block title %}Sign Up – Chatter{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<!-- Google Fonts Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    /* Hide right sidebar */
+    #right-sidebar { display: none; }
+
+    /* Base */
+    body {
+        font-family: 'Inter', sans-serif;
+        background: #0f172a;
+        color: white;
+    }
+
+    /* Container adjustments */
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    /* Premium glass card */
+    .glass-card {
+        background: rgba(20, 28, 40, 0.7) !important;
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        border-radius: 32px !important;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.8),
+                    0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+                    0 0 40px rgba(59, 130, 246, 0.2);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Light reflection effect */
+    .glass-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1) 0%, transparent 60%);
+        opacity: 0.4;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    /* Gradient border */
+    .glass-card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 32px;
+        padding: 2px;
+        background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.02), rgba(59,130,246,0.2));
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .glass-card:hover {
+        box-shadow: 0 40px 70px -15px rgba(59, 130, 246, 0.3),
+                    0 0 0 1px rgba(59, 130, 246, 0.1) inset,
+                    0 0 60px rgba(59, 130, 246, 0.3);
+        transform: translateY(-4px);
+    }
+
+    /* Card inner elements */
+    .glass-card h3 {
+        font-weight: 700;
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 2;
+        color: white;
+    }
+
+    .glass-card p {
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 2rem;
+        font-size: 0.95rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    /* Floating glass inputs */
+    .form-floating {
+        position: relative;
+        z-index: 2;
+    }
+
+    .form-control.glass-input {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 16px !important;
+        color: white !important;
+        font-size: 1rem;
+        padding: 1rem 1.25rem !important;
+        height: auto !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease;
+    }
+
+    .form-control.glass-input:focus {
+        border-color: #3b82f6 !important;
+        background: rgba(59, 130, 246, 0.05) !important;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .form-control.glass-input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+        font-weight: 300;
+    }
+
+    /* Floating labels fix */
+    .form-floating > label {
+        padding: 1rem 1.25rem !important;
+        font-size: 0.95rem;
+        color: rgba(255, 255, 255, 0.5) !important;
+        background: transparent !important;
+    }
+
+    .form-floating > .form-control:focus ~ label,
+    .form-floating > .form-control:not(:placeholder-shown) ~ label {
+        color: #3b82f6 !important;
+        opacity: 1;
+        transform: scale(0.85) translateY(-0.75rem) translateX(0.15rem);
+        padding: 0 0.25rem !important;
+    }
+
+    /* Password toggle inside input */
+    .password-wrapper {
+        position: relative;
+        z-index: 2;
+    }
+    .password-toggle {
+        position: absolute;
+        top: 50%;
+        right: 18px;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.5);
+        z-index: 10;
+        transition: color 0.2s;
+    }
+    .password-toggle:hover {
+        color: #3b82f6;
+    }
+
+    /* Premium gradient button */
+    .btn-premium {
+        width: 100%;
+        padding: 1rem;
+        border: none;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+        letter-spacing: 0.3px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 25px -8px rgba(59, 130, 246, 0.6);
+        position: relative;
+        overflow: hidden;
+        z-index: 2;
+    }
+
+    .btn-premium::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .btn-premium:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 30px -6px rgba(59, 130, 246, 0.8);
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+    }
+
+    .btn-premium:hover::before {
+        left: 100%;
+    }
+
+    .btn-premium:active {
+        transform: translateY(0);
+        box-shadow: 0 5px 15px -3px rgba(59, 130, 246, 0.6);
+    }
+
+    .btn-premium .spinner-border {
+        vertical-align: middle;
+    }
+
+    /* Sign in link */
+    .signin-link {
+        color: #3b82f6;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .signin-link:hover {
+        text-decoration: underline;
+    }
+
+    /* Footer links */
+    .footer-links a {
+        color: rgba(255, 255, 255, 0.4);
+        text-decoration: none;
+        margin: 0 0.5rem;
+        transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    /* Flash messages */
+    .flash-message {
+        margin-bottom: 1.5rem;
+        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        background: rgba(59, 130, 246, 0.2);
+        border-left: 4px solid #3b82f6;
+        color: white;
+        font-size: 0.9rem;
+        backdrop-filter: blur(4px);
+        z-index: 2;
+        position: relative;
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 576px) {
+        .glass-card {
+            padding: 1.5rem !important;
+        }
+        .glass-card h3 {
+            font-size: 1.6rem;
+        }
+        .form-control.glass-input {
+            padding: 0.875rem 1rem !important;
+        }
+        .form-floating > label {
+            padding: 0.875rem 1rem !important;
+        }
+        .btn-premium {
+            padding: 0.875rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container min-vh-100 d-flex align-items-center justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <!-- Brand for mobile/desktop (small logo) -->
+<div class="container min-vh-100 d-flex align-items-center justify-content-center py-4">
+    <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+        <!-- Brand -->
         <div class="text-center mb-4">
             <i class="fas fa-comments fa-3x text-primary mb-2"></i>
             <h2 class="fw-bold">Chatter</h2>
@@ -15,130 +276,73 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show animate__animated animate__shakeX" role="alert">
+                    <div class="flash-message animate__animated animate__shakeX">
                         {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
         <!-- Signup Card -->
-        <div class="card bg-dark border-0 shadow-lg" style="border-radius: 24px; backdrop-filter: blur(10px); background: rgba(33, 37, 41, 0.8) !important;">
-            <div class="card-body p-4 p-md-5">
-                <h3 class="fw-bold mb-4">Create account</h3>
-                <p class="text-secondary mb-4">Join millions already on Chatter.</p>
+        <div class="card glass-card border-0 p-4 p-md-5">
+            <h3 class="fw-bold mb-4">Create account</h3>
+            <p class="text-secondary mb-4">Join millions already on Chatter.</p>
 
-                <form method="POST" action="{{ url_for('signup') }}" id="signupForm" novalidate>
-                    <!-- Username -->
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control bg-dark text-light border-secondary" 
-                               id="username" name="username" placeholder="username" 
-                               required autofocus>
-                        <label for="username" class="text-secondary">Username</label>
-                        <div class="invalid-feedback">Please choose a username.</div>
+            <form method="POST" action="{{ url_for('signup') }}" id="signupForm" novalidate>
+                <!-- Username -->
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control glass-input" 
+                           id="username" name="username" placeholder="username" 
+                           required autofocus>
+                    <label for="username">Username</label>
+                    <div class="invalid-feedback">Please choose a username.</div>
+                </div>
+
+                <!-- Email -->
+                <div class="form-floating mb-3">
+                    <input type="email" class="form-control glass-input" 
+                           id="email" name="email" placeholder="email@example.com" required>
+                    <label for="email">Email address</label>
+                    <div class="invalid-feedback">Please enter a valid email.</div>
+                </div>
+
+                <!-- Password with eye toggle inside -->
+                <div class="password-wrapper mb-3">
+                    <div class="form-floating">
+                        <input type="password" class="form-control glass-input" 
+                               id="password" name="password" placeholder="Password" required>
+                        <label for="password">Password</label>
                     </div>
+                    <span class="password-toggle" onclick="togglePasswordVisibility()">
+                        <i class="far fa-eye" id="togglePasswordIcon"></i>
+                    </span>
+                    <div class="invalid-feedback">Please enter a password.</div>
+                </div>
 
-                    <!-- Email -->
-                    <div class="form-floating mb-3">
-                        <input type="email" class="form-control bg-dark text-light border-secondary" 
-                               id="email" name="email" placeholder="email@example.com" required>
-                        <label for="email" class="text-secondary">Email address</label>
-                        <div class="invalid-feedback">Please enter a valid email.</div>
-                    </div>
+                <!-- Submit button with spinner -->
+                <button type="submit" class="btn-premium" id="submitBtn">
+                    <span id="spinner" class="spinner-border spinner-border-sm d-none me-2" role="status"></span>
+                    Create account
+                </button>
 
-                    <!-- Password with eye toggle -->
-                    <div class="mb-3 position-relative">
-                        <div class="form-floating">
-                            <input type="password" class="form-control bg-dark text-light border-secondary" 
-                                   id="password" name="password" placeholder="Password" required>
-                            <label for="password" class="text-secondary">Password</label>
-                        </div>
-                        <span class="password-toggle" onclick="togglePasswordVisibility()">
-                            <i class="far fa-eye" id="togglePasswordIcon"></i>
-                        </span>
-                        <div class="invalid-feedback">Please enter a password.</div>
-                    </div>
-
-                    <!-- Submit button with spinner -->
-                    <button type="submit" class="btn btn-primary btn-lg w-100 mb-3" id="submitBtn">
-                        <span id="spinner" class="spinner-border spinner-border-sm d-none me-2" role="status"></span>
-                        Create account
-                    </button>
-
-                    <!-- Sign in link -->
-                    <div class="text-center">
-                        <span class="text-secondary">Already have an account?</span>
-                        <a href="{{ url_for('login') }}" class="text-primary text-decoration-none fw-semibold">
-                            Sign in
-                        </a>
-                    </div>
-                </form>
-            </div>
+                <!-- Sign in link -->
+                <div class="text-center mt-4">
+                    <span class="text-secondary">Already have an account?</span>
+                    <a href="{{ url_for('login') }}" class="signin-link ms-1">
+                        Sign in
+                    </a>
+                </div>
+            </form>
         </div>
 
         <!-- Footer links -->
-        <div class="text-center mt-4 small text-secondary">
-            <a href="#" class="text-secondary text-decoration-none me-3">Privacy</a>
-            <a href="#" class="text-secondary text-decoration-none me-3">Terms</a>
-            <a href="#" class="text-secondary text-decoration-none">Contact</a>
+        <div class="footer-links text-center mt-4 small">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Contact</a>
         </div>
     </div>
 </div>
-
-<style>
-    /* Hide right sidebar */
-    #right-sidebar { display: none; }
-
-    /* Password toggle icon */
-    .password-toggle {
-        position: absolute;
-        top: 50%;
-        right: 15px;
-        transform: translateY(-50%);
-        cursor: pointer;
-        color: #adb5bd;
-        z-index: 10;
-    }
-    .password-toggle:hover {
-        color: #1d9bf0;
-    }
-
-    /* Card hover effect */
-    .card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 20px 30px -10px rgba(29, 155, 240, 0.3) !important;
-    }
-
-    /* Floating labels fix */
-    .form-floating > .form-control:focus ~ label,
-    .form-floating > .form-control:not(:placeholder-shown) ~ label {
-        color: #adb5bd !important;
-        opacity: 0.9;
-    }
-
-    /* Better focus states */
-    .form-control:focus {
-        border-color: #1d9bf0 !important;
-        box-shadow: 0 0 0 0.2rem rgba(29, 155, 240, 0.25) !important;
-    }
-    .btn-primary {
-        background-color: #1d9bf0;
-        border: none;
-        transition: background-color 0.2s;
-    }
-    .btn-primary:hover {
-        background-color: #1a8cd8;
-    }
-
-    /* Center the form on all screen sizes */
-    .container {
-        max-width: 100%;
-    }
-</style>
 {% endblock %}
 
 {% block right_sidebar %}{% endblock %}

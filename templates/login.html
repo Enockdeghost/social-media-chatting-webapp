@@ -5,25 +5,20 @@
 {% block content %}
 <div class="container-fluid min-vh-100 p-0">
     <div class="row g-0 min-vh-100">
-        <!-- Left side – Video background with overlay and auto-typing text (now on the left) -->
         <div class="col-lg-6 d-none d-lg-block position-relative overflow-hidden">
             <!-- Video background -->
             <video class="video-bg" autoplay muted loop playsinline>
                 <source src="https://www.pexels.com/download/video/4107018/" type="video/mp4">
-                <!-- Fallback image -->
                 <img src="https://images.pexels.com/photos/697244/pexels-photo-697244.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" 
                      alt="Background" class="fallback-image">
             </video>
-            <!-- Dark overlay -->
             <div class="overlay"></div>
-            <!-- Content on top of video -->
             <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center text-white p-5">
                 <div class="text-center" style="max-width: 500px; z-index: 2;">
                     <div class="mb-4">
                         <i class="fas fa-comments fa-5x text-primary mb-3"></i>
                     </div>
                     <h1 class="display-4 fw-bold mb-3">Chatter</h1>
-                    <!-- Auto-typing phrases -->
                     <div class="typing-container mb-4">
                         <span class="lead" style="font-size: 1.5rem;">Join the conversation, </span>
                         <span id="typed-text" class="lead fw-semibold" style="font-size: 1.5rem; color: #1d9bf0;"></span>
