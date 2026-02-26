@@ -1,47 +1,187 @@
 {% extends "base.html" %}
 
-{% block title %}Sign Up {% endblock %}
+{% block title %}Sign Up – Chatter{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center align-items-center min-vh-100">
-    <div class="col-md-5">
-        <div class="text-center mb-5">
-            <h1 class="h3 fw-bold">Join Chatter today</h1>
+<div class="container min-vh-100 d-flex align-items-center justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <!-- Brand for mobile/desktop (small logo) -->
+        <div class="text-center mb-4">
+            <i class="fas fa-comments fa-3x text-primary mb-2"></i>
+            <h2 class="fw-bold">Chatter</h2>
         </div>
 
-        <div class="card bg-dark border border-secondary">
-            <div class="card-body p-4">
-                <form method="POST" action="{{ url_for('signup') }}">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control form-control-lg bg-dark text-light border-secondary" 
-                               id="username" name="username" required autofocus>
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show animate__animated animate__shakeX" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Signup Card -->
+        <div class="card bg-dark border-0 shadow-lg" style="border-radius: 24px; backdrop-filter: blur(10px); background: rgba(33, 37, 41, 0.8) !important;">
+            <div class="card-body p-4 p-md-5">
+                <h3 class="fw-bold mb-4">Create account</h3>
+                <p class="text-secondary mb-4">Join millions already on Chatter.</p>
+
+                <form method="POST" action="{{ url_for('signup') }}" id="signupForm" novalidate>
+                    <!-- Username -->
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control bg-dark text-light border-secondary" 
+                               id="username" name="username" placeholder="username" 
+                               required autofocus>
+                        <label for="username" class="text-secondary">Username</label>
+                        <div class="invalid-feedback">Please choose a username.</div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control form-control-lg bg-dark text-light border-secondary" 
-                               id="email" name="email" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control form-control-lg bg-dark text-light border-secondary" 
-                               id="password" name="password" required>
+                    <!-- Email -->
+                    <div class="form-floating mb-3">
+                        <input type="email" class="form-control bg-dark text-light border-secondary" 
+                               id="email" name="email" placeholder="email@example.com" required>
+                        <label for="email" class="text-secondary">Email address</label>
+                        <div class="invalid-feedback">Please enter a valid email.</div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">Create account</button>
-                    
+                    <!-- Password with eye toggle -->
+                    <div class="mb-3 position-relative">
+                        <div class="form-floating">
+                            <input type="password" class="form-control bg-dark text-light border-secondary" 
+                                   id="password" name="password" placeholder="Password" required>
+                            <label for="password" class="text-secondary">Password</label>
+                        </div>
+                        <span class="password-toggle" onclick="togglePasswordVisibility()">
+                            <i class="far fa-eye" id="togglePasswordIcon"></i>
+                        </span>
+                        <div class="invalid-feedback">Please enter a password.</div>
+                    </div>
+
+                    <!-- Submit button with spinner -->
+                    <button type="submit" class="btn btn-primary btn-lg w-100 mb-3" id="submitBtn">
+                        <span id="spinner" class="spinner-border spinner-border-sm d-none me-2" role="status"></span>
+                        Create account
+                    </button>
+
+                    <!-- Sign in link -->
                     <div class="text-center">
-                        <a href="{{ url_for('login') }}" class="text-primary text-decoration-none">
-                            Already have an account? Sign in
+                        <span class="text-secondary">Already have an account?</span>
+                        <a href="{{ url_for('login') }}" class="text-primary text-decoration-none fw-semibold">
+                            Sign in
                         </a>
                     </div>
                 </form>
             </div>
         </div>
+
+        <!-- Footer links -->
+        <div class="text-center mt-4 small text-secondary">
+            <a href="#" class="text-secondary text-decoration-none me-3">Privacy</a>
+            <a href="#" class="text-secondary text-decoration-none me-3">Terms</a>
+            <a href="#" class="text-secondary text-decoration-none">Contact</a>
+        </div>
     </div>
 </div>
+
+<style>
+    /* Hide right sidebar */
+    #right-sidebar { display: none; }
+
+    /* Password toggle icon */
+    .password-toggle {
+        position: absolute;
+        top: 50%;
+        right: 15px;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #adb5bd;
+        z-index: 10;
+    }
+    .password-toggle:hover {
+        color: #1d9bf0;
+    }
+
+    /* Card hover effect */
+    .card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 30px -10px rgba(29, 155, 240, 0.3) !important;
+    }
+
+    /* Floating labels fix */
+    .form-floating > .form-control:focus ~ label,
+    .form-floating > .form-control:not(:placeholder-shown) ~ label {
+        color: #adb5bd !important;
+        opacity: 0.9;
+    }
+
+    /* Better focus states */
+    .form-control:focus {
+        border-color: #1d9bf0 !important;
+        box-shadow: 0 0 0 0.2rem rgba(29, 155, 240, 0.25) !important;
+    }
+    .btn-primary {
+        background-color: #1d9bf0;
+        border: none;
+        transition: background-color 0.2s;
+    }
+    .btn-primary:hover {
+        background-color: #1a8cd8;
+    }
+
+    /* Center the form on all screen sizes */
+    .container {
+        max-width: 100%;
+    }
+</style>
 {% endblock %}
 
 {% block right_sidebar %}{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    (function() {
+        // Password visibility toggle
+        window.togglePasswordVisibility = function() {
+            const passwordInput = document.getElementById('password');
+            const icon = document.getElementById('togglePasswordIcon');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        };
+
+        // Client‑side validation
+        'use strict';
+        const form = document.getElementById('signupForm');
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+
+        // Spinner on submit
+        const submitBtn = document.getElementById('submitBtn');
+        const spinner = document.getElementById('spinner');
+        form.addEventListener('submit', function(e) {
+            if (form.checkValidity()) {
+                submitBtn.disabled = true;
+                spinner.classList.remove('d-none');
+            }
+        });
+    })();
+</script>
+{% endblock %}

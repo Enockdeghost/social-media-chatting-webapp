@@ -1,122 +1,210 @@
-<!-- Poll Creation Modal/Form -->
-<div class="poll-creation-container d-none" id="pollCreationContainer">
-    <div class="card glass-effect border-0 mb-3">
-        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="fas fa-poll me-2 text-primary"></i>
-                Create Poll
-            </h5>
-            <button type="button" class="btn-close btn-close-white" onclick="closePollCreator()"></button>
+<div class="poll-creator p-3 rounded-3" style="background: var(--card-hover);">
+    <h6 class="mb-3">Create a Poll</h6>
+
+    <!-- Poll Title -->
+    <div class="mb-3">
+        <input type="text" name="poll_title" class="form-control" placeholder="Poll title (required)" maxlength="500" required>
+    </div>
+
+    <!-- Poll Type & Duration -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label class="form-label">Poll Type</label>
+            <select name="poll_type" class="form-select">
+                <option value="single_choice">Single Choice</option>
+                <option value="multiple_choice">Multiple Choice</option>
+                <option value="ranked">Ranked Choice</option>
+                <option value="quiz">Quiz</option>
+            </select>
         </div>
-        
-        <div class="card-body">
-            <!-- Poll Configuration -->
-            <div class="poll-config mb-4">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold">
-                            <i class="fas fa-heading me-1"></i>Poll Title
-                        </label>
-                        <input type="text" 
-                               class="form-control" 
-                               id="pollTitle" 
-                               name="poll_title"
-                               placeholder="What's your poll about?"
-                               maxlength="500"
-                               required>
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label small fw-bold">
-                            <i class="fas fa-list-alt me-1"></i>Questions
-                        </label>
-                        <select class="form-select" id="maxQuestions" name="max_questions">
-                            <option value="1">1 Question</option>
-                            <option value="2" selected>2 Questions</option>
-                            <option value="3">3 Questions</option>
-                            <option value="4">4 Questions</option>
-                            <option value="5">5 Questions</option>
-                            <option value="6">6 Questions</option>
-                            <option value="7">7 Questions</option>
-                            <option value="8">8 Questions</option>
-                            <option value="9">9 Questions</option>
-                            <option value="10">10 Questions</option>
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label small fw-bold">
-                            <i class="fas fa-clock me-1"></i>Duration
-                        </label>
-                        <select class="form-select" id="pollDuration" name="poll_duration">
-                            <option value="1">1 Hour</option>
-                            <option value="3">3 Hours</option>
-                            <option value="6">6 Hours</option>
-                            <option value="12">12 Hours</option>
-                            <option value="24" selected>24 Hours</option>
-                            <option value="48">2 Days</option>
-                            <option value="72">3 Days</option>
-                            <option value="168">7 Days</option>
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold">
-                            <i class="fas fa-tasks me-1"></i>Poll Type
-                        </label>
-                        <select class="form-select" id="pollType" name="poll_type">
-                            <option value="single_choice">Single Choice</option>
-                            <option value="multiple_choice">Multiple Choice</option>
-                            <option value="quiz">Quiz</option>
-                            <option value="ranked">Ranked Choice</option>
-                            <option value="image_poll">Image Poll</option>
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold">
-                            <i class="fas fa-sliders-h me-1"></i>Options per Question
-                        </label>
-                        <select class="form-select" id="maxOptionsPerQuestion" name="max_options_per_question">
-                            <option value="2">2 Options</option>
-                            <option value="3">3 Options</option>
-                            <option value="4" selected>4 Options</option>
-                            <option value="5">5 Options</option>
-                            <option value="6">6 Options</option>
-                            <option value="7">7 Options</option>
-                            <option value="8">8 Options</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Questions Container -->
-            <div class="questions-container" id="questionsContainer">
-                <!-- Questions will be dynamically generated here -->
-            </div>
-            
-            <!-- Actions -->
-            <div class="d-flex justify-content-between align-items-center mt-4">
-                <div>
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addQuestion()">
-                        <i class="fas fa-plus-circle me-1"></i>Add Question
-                    </button>
-                    <button type="button" class="btn btn-outline-success btn-sm ms-2" onclick="previewPoll()">
-                        <i class="fas fa-eye me-1"></i>Preview
-                    </button>
-                </div>
-                <div>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="resetPollForm()">
-                        <i class="fas fa-redo me-1"></i>Reset
-                    </button>
-                    <button type="button" class="btn btn-danger btn-sm ms-2" onclick="closePollCreator()">
-                        <i class="fas fa-times me-1"></i>Cancel
-                    </button>
-                </div>
-            </div>
+        <div class="col-md-6">
+            <label class="form-label">Duration (hours)</label>
+            <select name="poll_duration" class="form-select">
+                <option value="1">1 hour</option>
+                <option value="3">3 hours</option>
+                <option value="6">6 hours</option>
+                <option value="12">12 hours</option>
+                <option value="24" selected>24 hours</option>
+                <option value="48">48 hours</option>
+                <option value="72">3 days</option>
+                <option value="168">7 days</option>
+            </select>
         </div>
+    </div>
+
+    <!-- Configuration limits (hidden, can be dynamic later) -->
+    <input type="hidden" name="max_questions" id="max_questions" value="4">
+    <input type="hidden" name="max_options_per_question" id="max_options_per_question" value="4">
+
+    <!-- Questions Container -->
+    <div id="questions-container">
+        <!-- Question 1 will be added by JavaScript -->
+    </div>
+
+    <!-- Add Question Button -->
+    <div class="text-center mb-3">
+        <button type="button" class="btn btn-outline-primary" id="add-question">+ Add Question</button>
+        <small class="text-muted d-block">Max 4 questions, each with 2‑4 options</small>
     </div>
 </div>
 
-<!-- Hidden input to track poll creation -->
-<input type="hidden" name="has_poll" id="hasPoll" value="false">
+<script>
+    (function() {
+        // Ensure the script runs only once and doesn't conflict with other toggles
+        if (window.pollCreatorInitialized) return;
+        window.pollCreatorInitialized = true;
+
+        let questionCount = 0;
+        const MAX_QUESTIONS = 4;
+        const MAX_OPTIONS = 4;
+
+        const container = document.getElementById('questions-container');
+
+        // Helper to create a new question element
+        function createQuestion(qnum) {
+            const div = document.createElement('div');
+            div.className = 'question-card mb-4 p-3 border rounded';
+            div.dataset.qnum = qnum;
+            div.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6>Question ${qnum}</h6>
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-question" ${qnum === 1 ? 'disabled style="visibility:hidden;"' : ''}>×</button>
+                </div>
+                <div class="mb-2">
+                    <input type="text" name="question_${qnum}_text" class="form-control" placeholder="Question text" required>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Options (min 2, max 4)</label>
+                    <div class="options-container" data-qnum="${qnum}"></div>
+                    <button type="button" class="btn btn-sm btn-outline-primary add-option" data-qnum="${qnum}">Add Option</button>
+                </div>
+            `;
+            return div;
+        }
+
+        // Helper to add an option to a question
+        function addOptionToQuestion(qnum, container) {
+            const optContainer = container.querySelector(`.options-container[data-qnum="${qnum}"]`);
+            if (!optContainer) return;
+            const currentOptions = optContainer.querySelectorAll('.option-item').length;
+            if (currentOptions >= MAX_OPTIONS) {
+                alert(`Maximum ${MAX_OPTIONS} options per question.`);
+                return;
+            }
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option-item d-flex align-items-center mb-2';
+            optionDiv.innerHTML = `
+                <input type="text" name="question_${qnum}_options[]" class="form-control form-control-sm me-2" placeholder="Option ${currentOptions + 1}" required>
+                <button type="button" class="btn btn-sm btn-outline-danger remove-option">×</button>
+            `;
+            optContainer.appendChild(optionDiv);
+        }
+
+        // Initialize first question
+        function initFirstQuestion() {
+            questionCount = 1;
+            const q1 = createQuestion(1);
+            container.appendChild(q1);
+            // Add two default options
+            addOptionToQuestion(1, q1);
+            addOptionToQuestion(1, q1);
+        }
+
+        // Add a new question
+        document.getElementById('add-question').addEventListener('click', function() {
+            if (questionCount >= MAX_QUESTIONS) {
+                alert('Maximum 4 questions allowed.');
+                return;
+            }
+            questionCount++;
+            const newQ = createQuestion(questionCount);
+            container.appendChild(newQ);
+            // Add two default options
+            addOptionToQuestion(questionCount, newQ);
+            addOptionToQuestion(questionCount, newQ);
+            // Update remove buttons visibility
+            updateRemoveButtons();
+        });
+
+        // Remove question
+        container.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-question')) {
+                const questionCard = e.target.closest('.question-card');
+                if (questionCard && questionCount > 1) {
+                    questionCard.remove();
+                    questionCount--;
+                    renumberQuestions();
+                }
+            }
+        });
+
+        // Add option (delegation)
+        container.addEventListener('click', function(e) {
+            if (e.target.classList.contains('add-option')) {
+                const qnum = e.target.dataset.qnum;
+                const questionCard = e.target.closest('.question-card');
+                if (questionCard) {
+                    addOptionToQuestion(qnum, questionCard);
+                }
+            }
+        });
+
+        // Remove option
+        container.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-option')) {
+                const optionItem = e.target.closest('.option-item');
+                const optContainer = optionItem.closest('.options-container');
+                const qnum = optContainer.dataset.qnum;
+                const currentOptions = optContainer.querySelectorAll('.option-item').length;
+                if (currentOptions <= 2) {
+                    alert('At least 2 options required.');
+                    return;
+                }
+                optionItem.remove();
+            }
+        });
+
+        // Renumber questions after deletion
+        function renumberQuestions() {
+            const questionCards = document.querySelectorAll('.question-card');
+            questionCards.forEach((card, idx) => {
+                const newNum = idx + 1;
+                card.dataset.qnum = newNum;
+                // Update heading
+                card.querySelector('h6').textContent = `Question ${newNum}`;
+                // Update input names
+                const qInput = card.querySelector('input[name^="question_"]');
+                if (qInput && qInput.name.includes('_text')) {
+                    qInput.name = `question_${newNum}_text`;
+                }
+                // Update option names
+                const options = card.querySelectorAll('input[name^="question_"]');
+                options.forEach(opt => {
+                    if (opt.name.includes('_options[]')) {
+                        opt.name = `question_${newNum}_options[]`;
+                    }
+                });
+                // Update add-option button data-qnum
+                const addBtn = card.querySelector('.add-option');
+                if (addBtn) addBtn.dataset.qnum = newNum;
+            });
+            updateRemoveButtons();
+        }
+
+        function updateRemoveButtons() {
+            const removeButtons = document.querySelectorAll('.remove-question');
+            removeButtons.forEach((btn, idx) => {
+                if (idx === 0) {
+                    btn.disabled = true;
+                    btn.style.visibility = 'hidden';
+                } else {
+                    btn.disabled = false;
+                    btn.style.visibility = 'visible';
+                }
+            });
+        }
+
+        // Start with first question
+        initFirstQuestion();
+    })();
+</script>
