@@ -26,7 +26,7 @@ app = Flask(__name__)
 DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///twitter_clone.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chatter.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 
